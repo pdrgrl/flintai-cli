@@ -45,7 +45,6 @@ from flintai.scan.scorer import (
     map_opengrep_to_taxonomy,
     score_finding,
 )
-from flintai.scan.secret_anonymizer import anonymize_secrets
 from flintai.scan.static_scanner import (
     StaticFinding,
     run_static_scan,
@@ -59,6 +58,7 @@ from flintai.scan.triage import (
 )
 from flintai.scan.triage import run_triage
 from flintai.scan.llm_provider import get_model_name, make_model
+from flintai.secret_anonymizer import anonymize_secrets
 
 logger = logging.getLogger(__name__)
 

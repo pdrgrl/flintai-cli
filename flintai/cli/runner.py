@@ -264,42 +264,18 @@ def print_results(results: list[CliRunResult]) -> None:
     )
 
 
-def _strip_session(session: dict | None) -> dict | None:
-    if session is None:
-        return None
-    session.pop("id", None)
-    session.pop("timestamp", None)
-    session.pop("metadata", None)
-    for msg in session.get("messages", []):
-        msg.pop("id", None)
-        msg.pop("timestamp", None)
-        msg.pop("metadata", None)
-    return session
-
-
-def _strip_result(result: dict) -> dict:
-    result.pop("status", None)
-    result["session"] = _strip_session(
-        result.get("session"),
-    )
-    return result
-
-
 def write_output(
     runs: list[CliRunResult],
     config_path: str,
     output_path: str,
+    fmt: str = "json",
 ) -> None:
-    overall = _aggregate_summary(runs)
-    raw = {
-        "config_file": config_path,
-        "timestamp": now_utc().isoformat(),
-        "summary": overall.to_dict(),
-        "runs": [r.to_dict() for r in runs],
-    }
-    for run in raw["runs"]:
-        for result in run.get("results", []):
-            _strip_result(result)
-    output = strip_nulls(raw)
+    from flintai.cli.output_formatters import (
+        OutputFormat,
+        get_eval_output_formatter,
+    )
+
+    formatter = get_eval_output_formatter(OutputFormat(fmt))
+    content = formatter.format(runs, config_path)
     with open(output_path, "w") as f:
-        json.dump(output, f, indent=2, default=str)
+        f.write(content)

@@ -352,11 +352,8 @@ class TestCreateEvaluation(unittest.TestCase):
         mock_get_model_helpers.return_value = mock_model
 
         mock_det_repo = MagicMock()
-        mock_db_detector = MagicMock()
-        mock_db_detector.prompt = (
-            "Evaluate prompt injection."
-        )
-        mock_det_repo.get.return_value = mock_db_detector
+        mock_detector = MagicMock()
+        mock_det_repo.get_detector.return_value = mock_detector
 
         db_eval = DbEvaluation(
             type=EvaluationType.ADVERSARIAL_PROBE,
@@ -373,13 +370,13 @@ class TestCreateEvaluation(unittest.TestCase):
         MockAdversarial.assert_called_once_with(
             goals=["Extract system prompt"],
             attack_techniques=["Use direct requests"],
-            detector_prompt="Evaluate prompt injection.",
+            detector=mock_detector,
             num_prompts=3,
             max_turns=4,
             attacker_model=mock_model,
         )
         self.assertEqual(result, MockAdversarial.return_value)
-        mock_det_repo.get.assert_called_once_with("det-1")
+        mock_det_repo.get_detector.assert_called_once_with("det-1")
 
     @unittest.mock.patch(
         "flintai.eval.core.models.generator_model"
@@ -402,9 +399,8 @@ class TestCreateEvaluation(unittest.TestCase):
         mock_get_model_helpers.return_value = mock_model
 
         mock_det_repo = MagicMock()
-        mock_db_detector = MagicMock()
-        mock_db_detector.prompt = "Evaluate."
-        mock_det_repo.get.return_value = mock_db_detector
+        mock_detector = MagicMock()
+        mock_det_repo.get_detector.return_value = mock_detector
 
         db_eval = DbEvaluation(
             type=EvaluationType.ADVERSARIAL_PROBE,
@@ -419,7 +415,7 @@ class TestCreateEvaluation(unittest.TestCase):
         MockAdversarial.assert_called_once_with(
             goals=["Extract system prompt"],
             attack_techniques=["Use direct requests"],
-            detector_prompt="Evaluate.",
+            detector=mock_detector,
             num_prompts=5,
             max_turns=5,
             attacker_model=mock_model,
@@ -457,9 +453,8 @@ class TestCreateEvaluation(unittest.TestCase):
         )
 
         mock_det_repo = MagicMock()
-        mock_db_detector = MagicMock()
-        mock_db_detector.prompt = "Evaluate."
-        mock_det_repo.get.return_value = mock_db_detector
+        mock_detector = MagicMock()
+        mock_det_repo.get_detector.return_value = mock_detector
 
         db_eval = DbEvaluation(
             type=EvaluationType.ADVERSARIAL_PROBE,
@@ -478,7 +473,7 @@ class TestCreateEvaluation(unittest.TestCase):
         MockAdversarial.assert_called_once_with(
             goals=["goal A", "goal B"],
             attack_techniques=["Use leading questions"],
-            detector_prompt="Evaluate.",
+            detector=mock_detector,
             num_prompts=3,
             max_turns=4,
             attacker_model=mock_model,

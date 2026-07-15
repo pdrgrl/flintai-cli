@@ -13,24 +13,26 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 
 from flintai.eval.common.schema import Content, Message, Role, Session
-from flintai.eval.core.detectors.detector import DetectorResult
 from flintai.eval.core.detectors.detector_topic_guard import (
     TopicGuardDetector,
 )
 from flintai.eval.core.eval.evaluation import Evaluation, EvaluationStatus
 from flintai.eval.core.eval.evaluation_adversarial import (
     AdversarialEvaluation,
-    AdversarialTurnEvaluation,
-    _extract_final_text,
-    _extract_text,
-    _format_conversation,
     _generate_starting_prompts,
     _parse_attacker_response,
+    _ATTACKER_SYSTEM,
     _BLOCKED_STATUSES,
-    _format_attacker_system,
+    _TARGET_BROKEN_SCORE_THRESHOLD,
 )
 from flintai.eval.core.eval.evaluation_single import SingleEvaluation
-from flintai.eval.core.models.model import Model, ModelResponse
+from flintai.eval.core.models.model import (
+    Model,
+    ModelResponse,
+    extract_final_text,
+    extract_text_from_message,
+    extract_text_from_conversation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -123,8 +125,8 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
             )
 
         conversation: list[Message] = []
-        attacker_system = _format_attacker_system(
-            self.goal, "",
+        attacker_system = _ATTACKER_SYSTEM.replace(
+            "{goal}", self.goal,
         )
 
         current_prompt = self.starting_prompt
@@ -172,10 +174,13 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
                 min_detector_score, detector_result.score,
             )
 
-            target_text = _extract_final_text(
+            if detector_result.score < _TARGET_BROKEN_SCORE_THRESHOLD:
+                break
+
+            target_text = extract_final_text(
                 target_response.message,
             )
-            conversation_text = _format_conversation(
+            conversation_text = extract_text_from_conversation(
                 conversation,
             )
             attacker_msgs = [
@@ -209,15 +214,11 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
                 )
                 continue
 
-            attacker_text = _extract_text(
+            attacker_text = extract_text_from_message(
                 attacker_response.message,
             )
-            judgment = _parse_attacker_response(attacker_text)
-
-            if judgment.broken:
-                break
-
-            current_prompt = judgment.next_prompt
+            attacker_response = _parse_attacker_response(attacker_text)
+            current_prompt = attacker_response.next_prompt
 
         self.session = Session(messages=list(conversation))
         return min_detector_score
@@ -263,17 +264,6 @@ class TopicGuardEvaluation(AdversarialEvaluation):
         goal = _build_adversarial_goal(
             agent_objective, agent_instructions,
         )
-        super().__init__(
-            goals=[goal],
-            attack_techniques=self._DEFAULT_ATTACK_TECHNIQUES,
-            detector_prompt="",
-            num_prompts=num_prompts,
-            max_turns=max_turns,
-            attacker_model=attacker_model,
-        )
-        self.agent_objective = agent_objective
-        self.agent_instructions = agent_instructions
-
         if detector is None:
             from flintai.eval.core.models.generator_model import (
                 get_generator_model,
@@ -283,6 +273,16 @@ class TopicGuardEvaluation(AdversarialEvaluation):
                 agent_objective=agent_objective,
                 agent_instructions=agent_instructions,
             )
+        super().__init__(
+            goals=[goal],
+            attack_techniques=self._DEFAULT_ATTACK_TECHNIQUES,
+            detector=detector,
+            num_prompts=num_prompts,
+            max_turns=max_turns,
+            attacker_model=attacker_model,
+        )
+        self.agent_objective = agent_objective
+        self.agent_instructions = agent_instructions
         self._detector = detector
 
     async def get_children(self) -> list[Evaluation]:

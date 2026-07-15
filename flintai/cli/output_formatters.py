@@ -1,0 +1,413 @@
+"""
+Output format abstraction for flintai CLI.
+
+Provides pluggable formatters for scan and eval results.
+To add a new format: subclass ScanOutputFormatter / EvalOutputFormatter,
+register in the SCAN_OUTPUT_FORMATTERS / EVAL_OUTPUT_FORMATTERS dicts.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import json
+import re
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import Any
+
+from flintai.cli.version import VERSION
+from flintai.eval.common.utils import now_utc, strip_nulls
+
+
+class OutputFormat(str, Enum):
+    JSON = "json"
+    SARIF = "sarif"
+
+
+# ── Scan output formatters ──────────────────────────────────────────────────
+
+
+class ScanOutputFormatter(ABC):
+    @abstractmethod
+    def format(self, report: Any) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def extension(self) -> str:
+        ...
+
+
+class JsonScanOutputFormatter(ScanOutputFormatter):
+    @property
+    def extension(self) -> str:
+        return "json"
+
+    def format(self, report: Any) -> str:
+        return json.dumps(dataclasses.asdict(report), indent=2)
+
+
+class SarifScanOutputFormatter(ScanOutputFormatter):
+    @property
+    def extension(self) -> str:
+        return "sarif"
+
+    def format(self, report: Any) -> str:
+        return json.dumps(self._to_sarif(report), indent=2)
+
+    def _severity_to_level(self, severity: str) -> str:
+        s = severity.lower()
+        if s in ("critical", "high"):
+            return "error"
+        if s == "medium":
+            return "warning"
+        return "note"
+
+    @staticmethod
+    def _normalize_text_paths(text: str) -> str:
+        return re.sub(r"(?<![/\w])Users/", "/Users/", text)
+
+    @staticmethod
+    def _normalize_uri(path: str) -> str:
+        if not path:
+            return path
+        if path.startswith("/"):
+            return path
+        if len(path) > 1 and path[0].isalpha() and path[1] == ":":
+            return path
+        if path.startswith("file:"):
+            return path
+        parts = path.split("/")
+        if len(parts) >= 2 and parts[0].lower() == "users":
+            return "/" + path
+        return path
+
+    def _to_sarif(self, report: Any) -> dict:
+        rules: list[dict] = []
+        rule_index: dict[str, int] = {}
+        results: list[dict] = []
+
+        for finding in report.findings:
+            rule_id = f"{finding.category}/{finding.subcategory}"
+            if rule_id not in rule_index:
+                rule_index[rule_id] = len(rules)
+                rule: dict[str, Any] = {
+                    "id": rule_id,
+                    "shortDescription": {"text": finding.subcategory},
+                    "properties": {"tags": [finding.category]},
+                }
+                if finding.remediation:
+                    rule["help"] = {"text": finding.remediation}
+                rules.append(rule)
+
+            locations = []
+            for comp in finding.affected_components or []:
+                loc: dict[str, Any] = {
+                    "physicalLocation": {
+                        "artifactLocation": {"uri": self._normalize_uri(comp.path or comp.name)},
+                    },
+                }
+                locations.append(loc)
+
+            for ev in finding.evidence or []:
+                if ev.file and not locations:
+                    loc = {
+                        "physicalLocation": {
+                            "artifactLocation": {"uri": self._normalize_uri(ev.file)},
+                        },
+                    }
+                    if ev.line:
+                        loc["physicalLocation"]["region"] = {
+                            "startLine": ev.line,
+                        }
+                        if ev.column:
+                            loc["physicalLocation"]["region"]["startColumn"] = ev.column
+                    locations.append(loc)
+
+            related_locations = []
+            for idx, ev in enumerate(finding.evidence or []):
+                if not ev.file:
+                    continue
+                rel: dict[str, Any] = {
+                    "id": idx,
+                    "physicalLocation": {
+                        "artifactLocation": {"uri": self._normalize_uri(ev.file)},
+                    },
+                }
+                if ev.line:
+                    rel["physicalLocation"]["region"] = {"startLine": ev.line}
+                if ev.code_snippet:
+                    rel["physicalLocation"]["region"] = rel["physicalLocation"].get("region", {})
+                    rel["physicalLocation"]["region"]["snippet"] = {"text": ev.code_snippet}
+                if ev.context:
+                    rel["message"] = {"text": ev.context}
+                related_locations.append(rel)
+
+            message_parts = []
+            if finding.impact:
+                message_parts.append(f"Impact: {finding.impact}")
+            if not message_parts:
+                message_parts.append(finding.title or finding.description)
+
+            result: dict[str, Any] = {
+                "ruleId": rule_id,
+                "ruleIndex": rule_index[rule_id],
+                "level": self._severity_to_level(finding.ai_spm_severity),
+                "message": {"text": self._normalize_text_paths(" ".join(message_parts))},
+            }
+
+            if finding.id:
+                result["guid"] = finding.id
+
+            if locations:
+                result["locations"] = locations
+
+            if related_locations:
+                result["relatedLocations"] = related_locations
+
+            props: dict[str, Any] = {}
+            if finding.cvss_scores:
+                props["cvssv4"] = {
+                    "baseScore": finding.cvss_scores.base_score,
+                    "vector": finding.cvss_scores.vector,
+                }
+            if finding.source:
+                props["source"] = finding.source
+            if finding.ai_spm_severity:
+                props["severity"] = finding.ai_spm_severity
+            if finding.hallucination_flag:
+                props["hallucinationFlag"] = True
+            if props:
+                result["properties"] = props
+
+            results.append(result)
+
+        invocation: dict[str, Any] = {"executionSuccessful": True}
+        if report.scan_timestamp:
+            invocation["startTimeUtc"] = report.scan_timestamp
+
+        run: dict[str, Any] = {
+            "tool": {
+                "driver": {
+                    "name": "flintai-scan",
+                    "version": VERSION,
+                    "informationUri": "https://github.com/sandbox-quantum/flintai-cli",
+                    "rules": rules,
+                },
+            },
+            "invocations": [invocation],
+            "results": results,
+        }
+
+        artifacts = []
+        seen_uris: set[str] = set()
+        for r in results:
+            for loc in r.get("locations", []):
+                uri = loc.get("physicalLocation", {}).get("artifactLocation", {}).get("uri", "")
+                if uri and uri not in seen_uris:
+                    seen_uris.add(uri)
+                    artifacts.append({"location": {"uri": uri}})
+        if artifacts:
+            run["artifacts"] = artifacts
+
+        run_props: dict[str, Any] = {}
+        if report.repo_name:
+            run_props["repoName"] = report.repo_name
+        if report.scan_metadata:
+            run_props["scanMetadata"] = report.scan_metadata
+        if run_props:
+            run["properties"] = run_props
+
+        return {
+            "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [run],
+        }
+
+
+# ── Eval output formatters ──────────────────────────────────────────────────
+
+EVAL_SCHEMA_VERSION = "1.0"
+
+
+class EvalOutputFormatter(ABC):
+    @abstractmethod
+    def format(self, runs: list, config_path: str) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def extension(self) -> str:
+        ...
+
+
+class JsonEvalOutputFormatter(EvalOutputFormatter):
+    @property
+    def extension(self) -> str:
+        return "json"
+
+    def format(self, runs: list, config_path: str) -> str:
+        output = prepare_eval_output(runs, config_path)
+        return json.dumps(output, indent=2, default=str)
+
+
+class SarifEvalOutputFormatter(EvalOutputFormatter):
+    @property
+    def extension(self) -> str:
+        return "sarif"
+
+    def format(self, runs: list, config_path: str) -> str:
+        return json.dumps(self._to_sarif(runs, config_path), indent=2, default=str)
+
+    def _score_to_level(self, score: float) -> str:
+        if score >= 0.7:
+            return "error"
+        if score >= 0.3:
+            return "warning"
+        return "note"
+
+    def _to_sarif(self, runs: list, config_path: str) -> dict:
+        rules: list[dict] = []
+        rule_index: dict[str, int] = {}
+        results: list[dict] = []
+
+        for run in runs:
+            eval_name = run.evaluation.get("name", "unknown")
+            eval_type = run.evaluation.get("type", "unknown")
+            model_name = run.model.get("name", "unknown")
+
+            if eval_name not in rule_index:
+                rule_index[eval_name] = len(rules)
+                rules.append({
+                    "id": eval_name,
+                    "shortDescription": {"text": eval_name},
+                    "properties": {"tags": ["ai-red-teaming", eval_type]},
+                })
+
+            achieved = 0.0
+            max_score = 0.0
+            total = 0
+            summary_props: dict[str, Any] = {}
+            if run.summary:
+                s = run.summary if isinstance(run.summary, dict) else run.summary.to_dict()
+                achieved = s.get("achieved_score", 0.0)
+                max_score = s.get("max_score", 0.0)
+                total = s.get("total_evaluations", 0)
+                summary_props = {
+                    "status": s.get("status", ""),
+                    "totalEvaluations": total,
+                    "finishedEvaluations": s.get("finished_evaluations", 0),
+                    "errorEvaluations": s.get("error_evaluations", 0),
+                }
+
+            if achieved > 0:
+                avg_score = achieved / total if total > 0 else 0.0
+                results.append({
+                    "ruleId": eval_name,
+                    "ruleIndex": rule_index[eval_name],
+                    "level": self._score_to_level(avg_score),
+                    "message": {
+                        "text": (
+                            f"Model '{model_name}' scored {achieved:.1f}/{max_score:.1f} "
+                            f"({avg_score:.0%}) on evaluation '{eval_name}' "
+                            f"across {total} prompts."
+                        ),
+                    },
+                    "locations": [{
+                        "logicalLocations": [{
+                            "name": model_name,
+                            "kind": "module",
+                            "fullyQualifiedName": run.model.get("id", model_name),
+                        }],
+                    }],
+                    "properties": {
+                        "modelEvaluationId": run.model_evaluation_id,
+                        "modelEvaluationName": run.model_evaluation_name,
+                        "achievedScore": achieved,
+                        "maxScore": max_score,
+                        "averageScore": round(avg_score, 4),
+                        "totalPrompts": total,
+                        **summary_props,
+                    },
+                })
+
+        return {
+            "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [{
+                "tool": {
+                    "driver": {
+                        "name": "flintai-eval",
+                        "version": VERSION,
+                        "informationUri": "https://github.com/sandbox-quantum/flintai-cli",
+                        "rules": rules,
+                    },
+                },
+                "invocations": [{"executionSuccessful": True}],
+                "results": results,
+                "properties": {
+                    "configFile": config_path,
+                },
+            }],
+        }
+
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+
+def _strip_session(session: dict | None) -> dict | None:
+    if session is None:
+        return None
+    session.pop("id", None)
+    session.pop("timestamp", None)
+    session.pop("metadata", None)
+    for msg in session.get("messages", []):
+        msg.pop("id", None)
+        msg.pop("timestamp", None)
+        msg.pop("metadata", None)
+    return session
+
+
+def _strip_result(result: dict) -> dict:
+    result.pop("status", None)
+    result["session"] = _strip_session(result.get("session"))
+    return result
+
+
+def prepare_eval_output(runs: list, config_path: str) -> dict:
+    from flintai.cli.runner import _aggregate_summary
+
+    overall = _aggregate_summary(runs)
+    raw: dict[str, Any] = {
+        "schemaVersion": EVAL_SCHEMA_VERSION,
+        "config_file": config_path,
+        "timestamp": now_utc().isoformat(),
+        "summary": overall.to_dict(),
+        "runs": [r.to_dict() for r in runs],
+    }
+    for run in raw["runs"]:
+        for result in run.get("results", []):
+            _strip_result(result)
+    return strip_nulls(raw)
+
+
+# ── Registry ─────────────────────────────────────────────────────────────────
+
+
+SCAN_OUTPUT_FORMATTERS: dict[OutputFormat, ScanOutputFormatter] = {
+    OutputFormat.JSON: JsonScanOutputFormatter(),
+    OutputFormat.SARIF: SarifScanOutputFormatter(),
+}
+
+EVAL_OUTPUT_FORMATTERS: dict[OutputFormat, EvalOutputFormatter] = {
+    OutputFormat.JSON: JsonEvalOutputFormatter(),
+    OutputFormat.SARIF: SarifEvalOutputFormatter(),
+}
+
+
+def get_scan_output_formatter(fmt: OutputFormat) -> ScanOutputFormatter:
+    return SCAN_OUTPUT_FORMATTERS[fmt]
+
+
+def get_eval_output_formatter(fmt: OutputFormat) -> EvalOutputFormatter:
+    return EVAL_OUTPUT_FORMATTERS[fmt]

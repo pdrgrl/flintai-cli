@@ -34,8 +34,8 @@ import yaml
 from cvss import CVSS4
 from flintai.schema import RepoFile
 from flintai.scan.schema import AgentProfile, RawFinding
-from flintai.scan.secret_anonymizer import anonymize_secrets
 from flintai.scan.static_scanner import StaticFinding
+from flintai.secret_anonymizer import anonymize_secrets
 
 logger = logging.getLogger(__name__)
 

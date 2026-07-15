@@ -6,7 +6,7 @@
   <img src="https://raw.githubusercontent.com/sandbox-quantum/flintai-cli/main/images/flint-ai-wordmark.svg" alt="Flint AI" width="350">
 </picture>
 
-[![PyPI version](https://img.shields.io/pypi/v/flintai-cli?color=A1C9D2&logo=pypi&logoColor=white)](https://pypi.org/project/flintai-cli/) [![Python](https://img.shields.io/badge/python-3.13+-A1C9D2?logo=python&logoColor=white)](https://www.python.org/downloads/) [![Documentation](https://img.shields.io/badge/docs-docs.flintai.dev-FF895E)](https://docs.flintai.dev) [![Website](https://img.shields.io/badge/website-flintai.dev-FF895E)](https://flintai.dev)
+[![PyPI version](https://img.shields.io/pypi/v/flintai-cli?color=A1C9D2&logo=pypi&logoColor=white)](https://pypi.org/project/flintai-cli/) [![Python](https://img.shields.io/badge/python-3.11+-A1C9D2?logo=python&logoColor=white)](https://www.python.org/downloads/) [![Documentation](https://img.shields.io/badge/docs-docs.flintai.dev-FF895E)](https://docs.flintai.dev) [![Website](https://img.shields.io/badge/website-flintai.dev-FF895E)](https://flintai.dev)
 
 </div>
 
@@ -29,7 +29,7 @@ One CLI to analyze agent code and runtime behavior, any framework.
 ## Try it now - 5 minute Quickstart
 
 > **Requirements**  
-> - Python 3.13 or later  
+> - Python 3.11 or later  
 > - [OpenGrep](https://github.com/opengrep/opengrep#linux--macos) (required for Flint AI Scan)
 > - A running agent accessible via HTTP (required for Flint AI Eval)
 > 
@@ -39,7 +39,7 @@ One CLI to analyze agent code and runtime behavior, any framework.
 
 Using a virtual environment is recommended to avoid dependency conflicts:
 ```bash
-python3.13 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
