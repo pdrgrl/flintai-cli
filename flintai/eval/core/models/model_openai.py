@@ -1,10 +1,10 @@
 from typing import Any
 
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APIError, BadRequestError
 
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
-from flintai.eval.core.models.model import Model, ModelResponse
+from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
 
 
 class OpenAIModel(Model):
@@ -24,12 +24,30 @@ class OpenAIModel(Model):
         openai_messages = [
             converter_openai.from_message(m) for m in messages
         ]
-        response = await self._client.chat.completions.create(
-            model=self._model,
-            messages=openai_messages,
-            temperature=kwargs.pop("temperature", self._temperature),
-            **kwargs,
-        )
+        try:
+            response = await self._client.chat.completions.create(
+                model=self._model,
+                messages=openai_messages,
+                temperature=kwargs.pop("temperature", self._temperature),
+                **kwargs,
+            )
+        except Exception as e:
+            return ModelResponse(
+                None,
+                _classify_block_reason(e),
+            )
         choice = response.choices[0]
         message = converter_openai.to_message(choice.message)
         return ModelResponse(message)
+
+
+def _classify_block_reason(api_error: APIError) -> ResponseStatus:
+    """Determine why a OpenAI response was blocked."""
+
+    # Check prompt-level blocking
+    if isinstance(api_error, BadRequestError):
+        code = api_error.body.get('code', '')
+        if code == 'cyber_policy':
+            return ResponseStatus.BLOCKED_PROHIBITED
+
+    return ResponseStatus.ERROR

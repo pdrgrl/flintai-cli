@@ -99,6 +99,37 @@ def make_model(model_string: str | None = None, temperature: float = 0.0) -> ADK
     return LiteLlm(model=f"{provider}/{model}", temperature=temperature)
 
 
+def is_anthropic_model(model: ADKModel) -> bool:
+    """Return True if *model* looks like an Anthropic / Claude model."""
+    name = getattr(model, "model", str(model))
+    return "anthropic" in name or "claude" in name
+
+
+def is_openai_model(model: ADKModel) -> bool:
+    """Return True if *model* looks like an OpenAI model."""
+    name = getattr(model, "model", str(model))
+    return "openai" in name or "gpt" in name
+
+
+def apply_provider_limits(
+    config: genai_types.GenerateContentConfig,
+    model: ADKModel,
+    top_p: float | None = None,
+) -> None:
+    """Adjust *config* in-place for provider-specific constraints.
+
+    Anthropic models reject requests that set both ``temperature`` and
+    ``top_p``.  This helper centralises that check so every scanner
+    doesn't re-implement it.
+
+    * If the model is **not** Anthropic and *top_p* is given, sets
+      ``config.top_p``.
+    * If the model **is** Anthropic, leaves ``top_p`` unset.
+    """
+    if not is_anthropic_model(model) and top_p is not None:
+        config.top_p = top_p
+
+
 def get_model_name(model_string: str | None = None) -> str:
     """Return the resolved model name for logging/metadata."""
     _, model = _resolve_model_string(model_string)
@@ -157,9 +188,9 @@ def complete_text(
     config = genai_types.GenerateContentConfig(
         system_instruction=system_prompt,
         temperature=temperature,
-        top_p=top_p,
         max_output_tokens=max_tokens,
     )
+    apply_provider_limits(config, model, top_p=top_p)
     contents = [
         genai_types.Content(
             role="user",

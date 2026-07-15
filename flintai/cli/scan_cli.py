@@ -34,14 +34,24 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     scan_parser.add_argument(
         "--output", "-o",
-        help="Output JSON file path "
-             "(default: results_<timestamp>.json)",
+        help="Output file path "
+             "(default: scan_<timestamp>.<format>)",
+    )
+    scan_parser.add_argument(
+        "--format", "-f",
+        choices=["json", "sarif"],
+        default="json",
+        help="Output format (default: json)",
     )
 
 
-def write_output(report: ScanReport, output_path: str):
+def write_output(report: ScanReport, output_path: str, fmt: str = "json"):
+    from flintai.cli.output_formatters import OutputFormat, get_scan_output_formatter
+
+    formatter = get_scan_output_formatter(OutputFormat(fmt))
+    content = formatter.format(report)
     with open(output_path, "w") as f:
-        json.dump(dataclasses.asdict(report), f, indent=2)
+        f.write(content)
 
 
 def print_report(report: ScanReport) -> None:
@@ -229,10 +239,12 @@ def handle_scan(args: argparse.Namespace) -> str:
         sys.exit(1)
 
     print_report(report)
+    fmt = getattr(args, "format", "json") or "json"
+    ext = fmt if fmt != "json" else "json"
     output_path = args.output or (
         f"scan_"
         f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}"
-        f".json"
+        f".{ext}"
     )
-    write_output(report, output_path)
+    write_output(report, output_path, fmt=fmt)
     return output_path

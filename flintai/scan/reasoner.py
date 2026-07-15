@@ -20,7 +20,7 @@ MULTI-PROVIDER SUPPORT:
     all others        → LiteLlm("provider/model") via llm_provider
 
 CONTROL PLANE (ASI compliance for our own scanner):
-  MAX_ITERATIONS     = 20   — hard cap on tool call rounds (ASI08)
+  MAX_ITERATIONS     = 40   — hard cap on tool call rounds (ASI08)
   MAX_FILES_FETCHED  = 50   — limit on files the agent can read (ASI08)
   LOOP_TIMEOUT_SECS  = 600  — wall-clock timeout (ASI08)
 
@@ -44,7 +44,6 @@ from typing import Any
 
 from flintai.schema import RepoFile
 from flintai.scan.schema import AgentProfile, RawFinding
-from flintai.scan.secret_anonymizer import anonymize_secrets
 from flintai.scan.static_scanner import StaticFinding
 from flintai.scan.taxonomy import AGENT_TAXONOMY
 from flintai.scan.tool_dispatcher import ToolDispatcher
@@ -55,6 +54,7 @@ from google.adk import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
 from flintai.scan.llm_provider import _safe_error, make_model
+from flintai.secret_anonymizer import anonymize_secrets
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +63,11 @@ logger = logging.getLogger(__name__)
 # The values below are the production defaults — override per-deployment
 # without code changes or redeployment.
 #
-#   ADK_MAX_ITERATIONS    — max tool-call rounds before forced stop      (default: 20)
+#   ADK_MAX_ITERATIONS    — max tool-call rounds before forced stop      (default: 40)
 #   ADK_MAX_FILES_FETCHED — max distinct files the agent may read        (default: 50)
 #   ADK_MAX_FETCH_TOKENS  — token budget for all fetch_file content      (default: 200000)
 #   ADK_LOOP_TIMEOUT_SECS — wall-clock timeout for the full ADK loop     (default: 600)
-MAX_ITERATIONS = int(os.getenv("ADK_MAX_ITERATIONS", "20"))
+MAX_ITERATIONS = int(os.getenv("ADK_MAX_ITERATIONS", "40"))
 MAX_FILES_FETCHED = int(os.getenv("ADK_MAX_FILES_FETCHED", "50"))
 MAX_FETCH_TOKENS = int(os.getenv("ADK_MAX_FETCH_TOKENS", "200000"))
 LOOP_TIMEOUT_SECS = int(os.getenv("ADK_LOOP_TIMEOUT_SECS", "600"))

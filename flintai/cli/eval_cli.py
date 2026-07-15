@@ -676,8 +676,14 @@ def _register_run(
     )
     run_parser.add_argument(
         "--output", "-o",
-        help="Output JSON file path "
-             "(default: eval_<timestamp>.json)",
+        help="Output file path "
+             "(default: eval_<timestamp>.<format>)",
+    )
+    run_parser.add_argument(
+        "--format", "-f",
+        choices=["json", "sarif"],
+        default="json",
+        help="Output format (default: json)",
     )
     run_parser.add_argument(
         "--concurrency", "-c",
@@ -746,12 +752,14 @@ async def handle_run(
     print_results(results)
     log_run_summary(results)
 
+    fmt = getattr(args, "format", "json") or "json"
+    ext = fmt if fmt != "json" else "json"
     output_path = args.output or (
         f"eval_"
         f"{datetime.now().strftime('%Y%m%dT%H%M%S')}"
-        f".json"
+        f".{ext}"
     )
-    write_output(results, args.config, output_path)
+    write_output(results, args.config, output_path, fmt=fmt)
     return output_path
 
 

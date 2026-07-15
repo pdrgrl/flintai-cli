@@ -6,7 +6,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from flintai.scan.schema import ADKModel
+from flintai.scan import ADKModel
 from flintai.scan.llm_provider import (
     DEFAULT_MODEL,
     PROVIDER_GOOGLE,
@@ -33,14 +33,14 @@ class TestResolveModelString(unittest.TestCase):
         self.assertEqual(provider, "anthropic")
         self.assertEqual(model, DEFAULT_MODEL)
 
-    @patch.dict(os.environ, {"AGENT_SCANNER_MODEL": "google:gemini-2.5-pro"})
+    @patch.dict(os.environ, {"SCANNER_MODEL": "google:gemini-2.5-pro"})
     def test_env_var_fallback(self):
         provider, model = _resolve_model_string(None)
         self.assertEqual(provider, "google")
         self.assertEqual(model, "gemini-2.5-pro")
 
     def test_explicit_overrides_env(self):
-        with patch.dict(os.environ, {"AGENT_SCANNER_MODEL": "google:gemini-flash"}):
+        with patch.dict(os.environ, {"SCANNER_MODEL": "google:gemini-flash"}):
             provider, model = _resolve_model_string("openai:gpt-4o")
             self.assertEqual(provider, "openai")
             self.assertEqual(model, "gpt-4o")
@@ -53,12 +53,15 @@ class TestResolveModelString(unittest.TestCase):
 
 
 class TestMakeModel(unittest.TestCase):
-    def test_google_returns_adk(self):
+    def test_google_returns_bare_string(self):
         result = make_model("gemini:gemini-2.5-flash")
-        self.assertIsInstance(result, ADKModel)
-        self.assertIn("gemini/gemini-2.5-flash", str(result))
+        self.assertEqual(result, "gemini-2.5-flash")
 
     def test_non_google_returns_adk(self):
+        try:
+            import litellm  # noqa: F401
+        except ImportError:
+            self.skipTest("litellm not installed")
         result = make_model("openai:gpt-4o")
         self.assertIsInstance(result, ADKModel)
         self.assertIn("openai/gpt-4o", str(result))

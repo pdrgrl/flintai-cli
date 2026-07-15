@@ -20,7 +20,7 @@ class ResponseStatus(str, Enum):
     ERROR = "error"
 
 
-type ModelContent = str | Message | list[Message]
+ModelContent = str | Message | list[Message]
 
 
 class ModelResponse:
@@ -132,7 +132,7 @@ def extract_final_text(message: Message) -> str:
     ]
     if text_parts:
         return "".join(text_parts)
-    return extract_text(message)
+    return extract_text_from_message(message)
 
 
 def extract_text_from_conversation(
