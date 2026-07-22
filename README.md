@@ -68,7 +68,7 @@ You'll be prompted to select a provider (Gemini, OpenAI, Anthropic, or LiteLLM),
 
 </details>
 
-> Run into issues? See [installation troubleshooting](https://docs.flintai.dev/troubleshooting/common-issues#installation)
+> Run into issues? See [installation troubleshooting](https://docs.flintai.dev/flintai/cli/troubleshooting/common-issues#installation)
 
 ### Step 3: Try the example agents
 
@@ -113,12 +113,12 @@ flintai eval run --model model-bookstore-agent --config examples/config.json
 
 See our documentation to configure, scan and evaluate your agents:
 - `flintai scan`
-  - [Scan your own agent](https://docs.flintai.dev/scan/getting-started) — Apply Flint AI Scan to your codebase
-  - [Understand scan results](https://docs.flintai.dev/scan/scan-results) — Interpret findings and severity scores
+  - [Scan your own agent](https://docs.flintai.dev/flintai/cli/scan/getting-started) — Apply Flint AI Scan to your codebase
+  - [Understand scan results](https://docs.flintai.dev/flintai/cli/scan/scan-results) — Interpret findings and severity scores
 - `flintai eval`
-  - [Evaluate your own agent](https://docs.flintai.dev/eval/getting-started) — Configure and test your agent's behavior
-  - [Configuration](https://docs.flintai.dev/eval/eval-configuration) — In-depth documentation of our configuration
-  - [Understand eval results](https://docs.flintai.dev/eval/eval-results) — What the scores means and how to improve
+  - [Evaluate your own agent](https://docs.flintai.dev/flintai/cli/eval/getting-started) — Configure and test your agent's behavior
+  - [Configuration](https://docs.flintai.dev/flintai/cli/eval/eval-configuration) — In-depth documentation of our configuration
+  - [Understand eval results](https://docs.flintai.dev/flintai/cli/eval/eval-results) — What the scores means and how to improve
 
 **Ship with confidence.** Validate behavior, catch risks, prove readiness.
 
@@ -150,7 +150,7 @@ flintai scan agent.py
 flintai scan /path/to/code --output results.json
 ```
 
-[Full scan guide](https://docs.flintai.dev/scan/getting-started)
+[Full scan guide](https://docs.flintai.dev/flintai/cli/scan/getting-started)
 
 ### `eval`
 
@@ -172,23 +172,23 @@ flintai eval model-evaluations attach \
 flintai eval run --model my-agent
 ```
 
-The `flintai eval` command requires configuration. See [Configuration](https://docs.flintai.dev/eval/eval-configuration) to:
+The `flintai eval` command requires configuration. See [Configuration](https://docs.flintai.dev/flintai/cli/eval/eval-configuration) to:
 1. Define your models (agents to test)
 2. View available evaluations
 3. Attach evaluations to models
 
-[Full eval guide](https://docs.flintai.dev/eval/getting-started)
+[Full eval guide](https://docs.flintai.dev/flintai/cli/eval/getting-started)
 
 ## Documentation
 
 **Complete guides and reference:**
 - [Getting started](https://docs.flintai.dev)
-- [Command reference](https://docs.flintai.dev/reference/commands)
-- [Configuration](https://docs.flintai.dev/eval/eval-configuration)
-- [Environment variables](https://docs.flintai.dev/reference/env-vars)
-- [Built-in evaluations](https://docs.flintai.dev/reference/builtin-evaluations)
-- [Data privacy](https://docs.flintai.dev/reference/data-privacy)
-- [FAQ](https://docs.flintai.dev/resources/faq)
+- [Command reference](https://docs.flintai.dev/flintai/cli/reference/commands)
+- [Configuration](https://docs.flintai.dev/flintai/cli/eval/eval-configuration)
+- [Environment variables](https://docs.flintai.dev/flintai/cli/reference/env-vars)
+- [Built-in evaluations](https://docs.flintai.dev/flintai/cli/reference/builtin-evaluations)
+- [Data privacy](https://docs.flintai.dev/flintai/cli/reference/data-privacy)
+- [FAQ](https://docs.flintai.dev/flintai/cli/resources/faq)
 
 ## Data privacy
 
@@ -196,7 +196,7 @@ Flint AI runs on your machine, but several features can call external LLM provid
 (located in `~/.flintai/.env`, created by `flintai init`). You can set this to a remote managed LLM (i.e. `gemini`, `openai`, `anthropic`)
 or a locally hosted LLM (i.e. `litellm` or `ollama`).
 
-[Read more](https://docs.flintai.dev/reference/data-privacy).
+[Read more](https://docs.flintai.dev/flintai/cli/reference/data-privacy).
 
 ## Contributing
 
