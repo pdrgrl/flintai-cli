@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
-from anthropic.types import Message as AnthropicMessage, TextBlock, Usage
-
-from flintai.eval.common.schema import Content, Message, PartType, Role
+from anthropic.types import Message as AnthropicMessage
+from anthropic.types import TextBlock, Usage
+from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model_anthropic import AnthropicModel
 
 
@@ -20,7 +20,6 @@ def _make_response(text: str) -> AnthropicMessage:
 
 
 class TestAnthropicModel(unittest.IsolatedAsyncioTestCase):
-
     async def test_generate_text(self):
         mock_client = MagicMock()
         mock_client.messages.create = AsyncMock(return_value=_make_response("Hello!"))
@@ -72,7 +71,9 @@ class TestAnthropicModel(unittest.IsolatedAsyncioTestCase):
         mock_client = MagicMock()
         mock_client.messages.create = AsyncMock(return_value=_make_response("Hi"))
 
-        model = AnthropicModel(client=mock_client, model="claude-sonnet-4-6-20250514", max_tokens=2048)
+        model = AnthropicModel(
+            client=mock_client, model="claude-sonnet-4-6-20250514", max_tokens=2048
+        )
         msg = Message(content=Content.text(Role.USER, "Hi"))
         await model.generate(msg, max_tokens=512)
 

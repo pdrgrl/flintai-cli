@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector import DetectorResult
 from flintai.eval.core.eval.evaluation import EvaluationStatus
-from flintai.eval.core.eval.evaluation_single_prompt import SinglePromptEvaluation
+from flintai.eval.core.eval.evaluation_single_prompt import (
+    SinglePromptEvaluation,
+)
 from flintai.eval.core.models.model import ModelResponse, ResponseStatus
 
 
@@ -30,7 +32,8 @@ class TestSinglePromptEvaluation(unittest.IsolatedAsyncioTestCase):
         )
 
         e = SinglePromptEvaluation(
-            prompt=_make_prompt(), detector=detector,
+            prompt=_make_prompt(),
+            detector=detector,
         )
         await e.init()
         await e.run(model, concurrency=1)
@@ -48,7 +51,8 @@ class TestSinglePromptEvaluation(unittest.IsolatedAsyncioTestCase):
         detector = AsyncMock()
 
         e = SinglePromptEvaluation(
-            prompt=_make_prompt(), detector=detector,
+            prompt=_make_prompt(),
+            detector=detector,
         )
         await e.init()
         await e.run(model, concurrency=1)
@@ -65,7 +69,8 @@ class TestSinglePromptEvaluation(unittest.IsolatedAsyncioTestCase):
         detector = AsyncMock()
 
         e = SinglePromptEvaluation(
-            prompt=_make_prompt(), detector=detector,
+            prompt=_make_prompt(),
+            detector=detector,
         )
         await e.init()
         await e.run(model, concurrency=1)
@@ -101,7 +106,8 @@ class TestSinglePromptEvaluation(unittest.IsolatedAsyncioTestCase):
         )
 
         e = SinglePromptEvaluation(
-            prompt=_make_prompt(), detector=detector,
+            prompt=_make_prompt(),
+            detector=detector,
         )
         await e.init()
         await e.run(model, concurrency=1)

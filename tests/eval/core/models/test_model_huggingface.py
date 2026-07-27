@@ -1,12 +1,11 @@
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-from flintai.eval.common.schema import Content, Message, PartType, Role
+from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model_huggingface import HuggingFaceModel
 
 
 class TestHuggingFaceModel(unittest.IsolatedAsyncioTestCase):
-
     async def test_generate_text(self):
         mock_pipeline = MagicMock()
         mock_pipeline.return_value = [{"generated_text": "Hello!"}]
@@ -48,10 +47,14 @@ class TestHuggingFaceModel(unittest.IsolatedAsyncioTestCase):
         mock_pipeline.return_value = [{"generated_text": "response"}]
 
         from flintai.eval.common.schema import Part
-        content = Content(role=Role.USER, parts=[
-            Part.text_part("Hello"),
-            Part.text_part("World"),
-        ])
+
+        content = Content(
+            role=Role.USER,
+            parts=[
+                Part.text_part("Hello"),
+                Part.text_part("World"),
+            ],
+        )
         model = HuggingFaceModel(model=mock_pipeline)
         msg = Message(content=content)
         await model.generate(msg)

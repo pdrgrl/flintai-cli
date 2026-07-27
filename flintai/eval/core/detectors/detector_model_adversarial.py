@@ -1,15 +1,16 @@
-from dataclasses import dataclass
-import logging
 import json
+import logging
+from dataclasses import dataclass
 
-from flintai.eval.core.detectors.detector import DetectorResult
-from flintai.eval.core.models.model import (
-    extract_text_from_message,
-    extract_text_from_conversation,
-)
-from flintai.eval.core.detectors.detector_model import ModelDetector
-from flintai.eval.core.models.model import Model, ModelResponse
 from flintai.eval.common.schema import Content, Message, Role
+from flintai.eval.core.detectors.detector import DetectorResult
+from flintai.eval.core.detectors.detector_model import ModelDetector
+from flintai.eval.core.models.model import (
+    Model,
+    ModelResponse,
+    extract_text_from_conversation,
+    extract_text_from_message,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +66,8 @@ class AdversarialModelDetector(ModelDetector):
             )
         except Exception as e:
             raise ValueError(
-                "AdversarialModelDetector LLM returned invalid data "
-                "structure: %s ", e
+                "AdversarialModelDetector LLM returned invalid data " "structure: %s ",
+                e,
             ) from e
         logger.debug(
             "AdversarialModelDetector: score=%.2f",

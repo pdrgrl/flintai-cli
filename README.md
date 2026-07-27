@@ -22,17 +22,17 @@ One CLI to analyze agent code and runtime behavior, any framework.
 
 **Why Flint AI?**
 - **AI-powered analysis** — Contextual code understanding, not just pattern matching
-- **OWASP ASI mapped** — Findings aligned to Top 10 for Agentic Applications  
+- **OWASP ASI mapped** — Findings aligned to Top 10 for Agentic Applications
 - **100% free** — First results in minutes
 
 
 ## Try it now - 5 minute Quickstart
 
-> **Requirements**  
-> - Python 3.11 or later  
+> **Requirements**
+> - Python 3.11 or later
 > - [OpenGrep](https://github.com/opengrep/opengrep#linux--macos) (required for Flint AI Scan)
 > - A running agent accessible via HTTP (required for Flint AI Eval)
-> 
+>
 > **Supported frameworks:** Google ADK, Google GenAI, Anthropic, OpenAI, OpenAI Agents SDK, LangGraph, CrewAI, AutoGen, HuggingFace Transformers, HuggingFace smolagents
 
 ### Step 1: Install Flint AI
@@ -83,7 +83,7 @@ To demonstrate the CLIs capabilities, we've shipped this tool with two example a
 
 The included `examples/config.json` has both agents configured with builtin evaluations (OWASP LLM01–LLM09, PII, secrets) and custom tests.
 
---- 
+---
 
 `flintai scan` finds security issues in the code without running the agent. We'll scan the bookstore agent to see what issues Flint AI can find:
 ```bash
@@ -192,7 +192,7 @@ The `flintai eval` command requires configuration. See [Configuration](https://d
 
 ## Data privacy
 
-Flint AI runs on your machine, but several features can call external LLM providers. This can be configured via `GENERATOR_MODEL` 
+Flint AI runs on your machine, but several features can call external LLM providers. This can be configured via `GENERATOR_MODEL`
 (located in `~/.flintai/.env`, created by `flintai init`). You can set this to a remote managed LLM (i.e. `gemini`, `openai`, `anthropic`)
 or a locally hosted LLM (i.e. `litellm` or `ollama`).
 
@@ -210,5 +210,3 @@ Free to use - [full license](LICENSE).
 
 - Website: [https://flintai.dev](https://flintai.dev)
 - Email: [info@flintai.dev](mailto:info@flintai.dev)
-
-

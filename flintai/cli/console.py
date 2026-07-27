@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import sys
-import tty
 import termios
+import tty
 
 from rich.console import Console
 from rich.prompt import Prompt
@@ -10,18 +10,20 @@ from rich.theme import Theme
 
 CLI_WIDTH = 120
 
-_theme = Theme({
-    "score.high": "bold green",
-    "score.mid": "bold yellow",
-    "score.low": "bold red",
-    "status.finished": "bold green",
-    "status.running": "bold blue",
-    "status.error": "bold red",
-    "status.waiting": "dim",
-    "status.initializing": "bold cyan",
-    "status.initialized": "cyan",
-    "key": "dim",
-})
+_theme = Theme(
+    {
+        "score.high": "bold green",
+        "score.mid": "bold yellow",
+        "score.low": "bold red",
+        "status.finished": "bold green",
+        "status.running": "bold blue",
+        "status.error": "bold red",
+        "status.waiting": "dim",
+        "status.initializing": "bold cyan",
+        "status.initialized": "cyan",
+        "key": "dim",
+    }
+)
 
 console = Console(theme=_theme, width=CLI_WIDTH)
 
@@ -36,10 +38,19 @@ def score_style(score: float) -> str:
 
 def status_style(status: str) -> str:
     normalized = status.lower().strip()
-    return f"status.{normalized}" if normalized in (
-        "finished", "running", "error", "waiting",
-        "initializing", "initialized",
-    ) else ""
+    return (
+        f"status.{normalized}"
+        if normalized
+        in (
+            "finished",
+            "running",
+            "error",
+            "waiting",
+            "initializing",
+            "initialized",
+        )
+        else ""
+    )
 
 
 def severity_style(severity: str) -> str:

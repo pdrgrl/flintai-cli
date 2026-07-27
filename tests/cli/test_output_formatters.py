@@ -8,13 +8,11 @@ import unittest
 
 from flintai.cli.output_formatters import (
     EVAL_SCHEMA_VERSION,
-    EvalOutputFormatter,
     JsonEvalOutputFormatter,
     JsonScanOutputFormatter,
     OutputFormat,
     SarifEvalOutputFormatter,
     SarifScanOutputFormatter,
-    ScanOutputFormatter,
     get_eval_output_formatter,
     get_scan_output_formatter,
     prepare_eval_output,
@@ -25,9 +23,12 @@ from flintai.eval.core.eval.evaluation import (
     EvaluationStatus,
     EvaluationSummary,
 )
-from flintai.scan.schema import CvssScores, Finding, ScanReport
+from flintai.scan.schema import (
+    CvssScores,
+    Finding,
+    ScanReport,
+)
 from flintai.schema import AffectedComponent, Evidence
-
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -166,9 +167,13 @@ class TestRegistry(unittest.TestCase):
 
     def test_extensions(self):
         self.assertEqual(get_scan_output_formatter(OutputFormat.JSON).extension, "json")
-        self.assertEqual(get_scan_output_formatter(OutputFormat.SARIF).extension, "sarif")
+        self.assertEqual(
+            get_scan_output_formatter(OutputFormat.SARIF).extension, "sarif"
+        )
         self.assertEqual(get_eval_output_formatter(OutputFormat.JSON).extension, "json")
-        self.assertEqual(get_eval_output_formatter(OutputFormat.SARIF).extension, "sarif")
+        self.assertEqual(
+            get_eval_output_formatter(OutputFormat.SARIF).extension, "sarif"
+        )
 
 
 # ── Scan JSON ────────────────────────────────────────────────────────────────
@@ -347,7 +352,9 @@ class TestScanSarif(unittest.TestCase):
         )
         formatter = SarifScanOutputFormatter()
         sarif = json.loads(formatter.format(report))
-        self.assertTrue(sarif["runs"][0]["results"][0]["properties"]["hallucinationFlag"])
+        self.assertTrue(
+            sarif["runs"][0]["results"][0]["properties"]["hallucinationFlag"]
+        )
 
     def test_message_uses_impact_without_title(self):
         formatter = SarifScanOutputFormatter()
@@ -380,7 +387,9 @@ class TestScanSarif(unittest.TestCase):
         )
         formatter = SarifScanOutputFormatter()
         sarif = json.loads(formatter.format(report))
-        self.assertEqual(sarif["runs"][0]["results"][0]["message"]["text"], "Some Title")
+        self.assertEqual(
+            sarif["runs"][0]["results"][0]["message"]["text"], "Some Title"
+        )
 
     def test_paths_have_leading_slash(self):
         report = ScanReport(
@@ -417,8 +426,12 @@ class TestScanSarif(unittest.TestCase):
         result = sarif["runs"][0]["results"][0]
         uri = result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]
         self.assertTrue(uri.startswith("/"), f"URI missing leading slash: {uri}")
-        rel_uri = result["relatedLocations"][0]["physicalLocation"]["artifactLocation"]["uri"]
-        self.assertTrue(rel_uri.startswith("/"), f"Related URI missing leading slash: {rel_uri}")
+        rel_uri = result["relatedLocations"][0]["physicalLocation"]["artifactLocation"][
+            "uri"
+        ]
+        self.assertTrue(
+            rel_uri.startswith("/"), f"Related URI missing leading slash: {rel_uri}"
+        )
 
     def test_relative_paths_unchanged(self):
         formatter = SarifScanOutputFormatter()
@@ -595,5 +608,5 @@ class TestPrepareEvalOutput(unittest.TestCase):
     def test_nulls_removed(self):
         output = prepare_eval_output([self.eval_run], "/config.json")
         for result in output["runs"][0]["results"]:
-            for key, val in result.items():
+            for _key, val in result.items():
                 self.assertIsNotNone(val)

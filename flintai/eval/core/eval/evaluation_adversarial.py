@@ -7,25 +7,28 @@ prompts from a goal description, then iteratively probes the
 target, judging each response and adapting its strategy.
 """
 
-from dataclasses import dataclass
 import json
 import logging
 import re
 import uuid
+from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
-
 from flintai.eval.common.schema import Content, Message, Role, Session
-from flintai.eval.common.schema import PartType
+from flintai.eval.core.detectors.detector_model_adversarial import (
+    AdversarialModelDetector,
+)
 from flintai.eval.core.eval.evaluation import Evaluation, EvaluationStatus
-from flintai.eval.core.models.model import extract_text_from_message, extract_text_from_conversation, extract_final_text
 from flintai.eval.core.eval.evaluation_multi import MultiEvaluation
 from flintai.eval.core.eval.evaluation_single import SingleEvaluation
-from flintai.eval.core.models.generator_model import (
-    get_generator_model,
+from flintai.eval.core.models.generator_model import get_generator_model
+from flintai.eval.core.models.model import (
+    Model,
+    ResponseStatus,
+    extract_final_text,
+    extract_text_from_conversation,
+    extract_text_from_message,
 )
-from flintai.eval.core.models.model import Model, ResponseStatus
-from flintai.eval.core.detectors.detector_model_adversarial import AdversarialModelDetector
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +108,8 @@ def _extract_json(text: str) -> dict:
     if "```" in cleaned:
         fence = re.search(
             r"```(?:json)?\s*\n?(.*?)```",
-            cleaned, re.DOTALL,
+            cleaned,
+            re.DOTALL,
         )
         if fence:
             cleaned = fence.group(1).strip()
@@ -113,7 +117,8 @@ def _extract_json(text: str) -> dict:
     # Fix double braces (models sometimes echo {{ }})
     if "{{" in cleaned:
         cleaned = cleaned.replace("{{", "{").replace(
-            "}}", "}",
+            "}}",
+            "}",
         )
 
     # Try parsing directly first
@@ -134,14 +139,15 @@ def _extract_json(text: str) -> dict:
                 if depth == 0:
                     try:
                         return json.loads(
-                            cleaned[start:i + 1],
+                            cleaned[start : i + 1],
                         )
                     except json.JSONDecodeError:
                         break
 
     raise json.JSONDecodeError(
         "No valid JSON object found in model output",
-        cleaned, 0,
+        cleaned,
+        0,
     )
 
 
@@ -158,8 +164,7 @@ def _parse_attacker_response(
         data = _extract_json(response_text)
     except json.JSONDecodeError:
         logger.warning(
-            "Failed to parse attacker JSON, treating "
-            "as not broken",
+            "Failed to parse attacker JSON, treating " "as not broken",
         )
         return AttackerResponse(
             reasoning="Parse error",
@@ -168,9 +173,7 @@ def _parse_attacker_response(
 
     return AttackerResponse(
         reasoning=str(data.get("reasoning", "")),
-        next_prompt=str(
-            data.get("next_prompt", "Please continue.")
-        ),
+        next_prompt=str(data.get("next_prompt", "Please continue.")),
     )
 
 
@@ -181,11 +184,13 @@ async def _generate_starting_prompts(
     attack_techniques: list[str],
 ) -> list[str]:
     system_prompt = _GENERATE_PROMPTS_SYSTEM.replace(
-        "{attack_technique}", "\n".join(attack_techniques),
+        "{attack_technique}",
+        "\n".join(attack_techniques),
     )
     system_msg = Message(
         content=Content.text(
-            Role.SYSTEM, system_prompt,
+            Role.SYSTEM,
+            system_prompt,
         ),
     )
     user_msg = Message(
@@ -210,15 +215,12 @@ async def _generate_starting_prompts(
         data = _extract_json(text)
     except json.JSONDecodeError as e:
         raise ValueError(
-            f"Attacker model returned invalid JSON "
-            f"for starting prompts: {e}"
+            f"Attacker model returned invalid JSON " f"for starting prompts: {e}"
         ) from e
 
     prompts = data.get("prompts", [])
     if not isinstance(prompts, list) or len(prompts) == 0:
-        raise ValueError(
-            "'prompts' must be a non-empty list"
-        )
+        raise ValueError("'prompts' must be a non-empty list")
     return [str(p) for p in prompts]
 
 
@@ -262,9 +264,7 @@ class AdversarialTurnEvaluation(SingleEvaluation):
 
     async def init(self):
         if not self.starting_prompt or not self.goal:
-            raise ValueError(
-                "starting_prompt and goal must be set"
-            )
+            raise ValueError("starting_prompt and goal must be set")
         if self._attacker_model is None:
             raise ValueError("attacker_model must be set")
         self.status = EvaluationStatus.INITIALIZED
@@ -277,9 +277,7 @@ class AdversarialTurnEvaluation(SingleEvaluation):
             or self._detector is None
         ):
             raise ValueError(
-                "starting_prompt, goal, "
-                "attacker_model, and "
-                "detector must be set"
+                "starting_prompt, goal, " "attacker_model, and " "detector must be set"
             )
 
         conversation: list[Message] = []
@@ -311,8 +309,7 @@ class AdversarialTurnEvaluation(SingleEvaluation):
 
             if target_response.message is None:
                 raise ValueError(
-                    "Target model returned no message "
-                    "and no block status"
+                    "Target model returned no message " "and no block status"
                 )
 
             conversation.append(target_response.message)
@@ -341,7 +338,8 @@ class AdversarialTurnEvaluation(SingleEvaluation):
             attacker_msgs = [
                 Message(
                     content=Content.text(
-                        Role.SYSTEM, attacker_system,
+                        Role.SYSTEM,
+                        attacker_system,
                     ),
                 ),
                 Message(
@@ -362,8 +360,8 @@ class AdversarialTurnEvaluation(SingleEvaluation):
 
             if attacker_response.message is None:
                 logger.warning(
-                    "Attacker model returned no "
-                    "response at turn %d", turn,
+                    "Attacker model returned no " "response at turn %d",
+                    turn,
                 )
                 continue
 
@@ -427,7 +425,7 @@ class AdversarialEvaluation(MultiEvaluation):
                 "detector must be set"
             )
 
-        selected_goals = self.goals[:self.num_prompts]
+        selected_goals = self.goals[: self.num_prompts]
 
         children: list[Evaluation] = []
         for g in selected_goals:

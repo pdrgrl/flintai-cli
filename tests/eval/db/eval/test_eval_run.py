@@ -39,7 +39,6 @@ def _make_summary(
 
 
 class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
-
     def _setup_mocks(self):
         me = _make_model_evaluation()
         me_repo = MagicMock()
@@ -49,9 +48,7 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
         mock_evaluation.observers = []
         mock_evaluation.init = AsyncMock()
         mock_evaluation.run = AsyncMock()
-        mock_evaluation.get_summary.return_value = (
-            _make_summary()
-        )
+        mock_evaluation.get_summary.return_value = _make_summary()
         mock_evaluation.get_results.return_value = [
             EvaluationResult(
                 score=0.8,
@@ -69,12 +66,8 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
         def fake_remove_observer(obs):
             mock_evaluation.observers.remove(obs)
 
-        mock_evaluation.add_observer.side_effect = (
-            fake_add_observer
-        )
-        mock_evaluation.remove_observer.side_effect = (
-            fake_remove_observer
-        )
+        mock_evaluation.add_observer.side_effect = fake_add_observer
+        mock_evaluation.remove_observer.side_effect = fake_remove_observer
 
         eval_repo = MagicMock()
         eval_repo.get_evaluation.return_value = mock_evaluation
@@ -86,14 +79,24 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
         run_repo = MagicMock()
 
         return (
-            me, me_repo, mock_evaluation, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_evaluation,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         )
 
     async def test_creates_and_returns_run(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         result = await run_model_evaluation(
@@ -107,7 +110,8 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(result, DbModelEvaluationRun)
         self.assertEqual(
-            result.model_evaluation_id, "me-1",
+            result.model_evaluation_id,
+            "me-1",
         )
         self.assertIsNotNone(result.started)
         self.assertIsNotNone(result.finished)
@@ -115,8 +119,13 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
     async def test_looks_up_model_evaluation(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         await run_model_evaluation(
@@ -132,8 +141,13 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
     async def test_creates_evaluation_and_model(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
         mc_repo = MagicMock()
         det_repo = MagicMock()
@@ -158,8 +172,13 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
     async def test_persists_run_on_create(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         await run_model_evaluation(
@@ -174,14 +193,20 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
         run_repo.create.assert_called_once()
         created_run = run_repo.create.call_args[0][0]
         self.assertEqual(
-            created_run.model_evaluation_id, "me-1",
+            created_run.model_evaluation_id,
+            "me-1",
         )
         self.assertIsNotNone(created_run.started)
 
     async def test_inits_and_runs_evaluation(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         await run_model_evaluation(
@@ -195,13 +220,19 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
         mock_eval.init.assert_called_once()
         mock_eval.run.assert_called_once_with(
-            mock_model, 1,
+            mock_model,
+            1,
         )
 
     async def test_registers_observer(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         await run_model_evaluation(
@@ -217,8 +248,13 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
     async def test_observer_writes_summary_on_progress(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         running_summary = _make_summary(
@@ -245,13 +281,19 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
         # Observer should have triggered an update
         # plus the final update after run completes
         self.assertGreaterEqual(
-            run_repo.update.call_count, 2,
+            run_repo.update.call_count,
+            2,
         )
 
     async def test_observer_sets_finished_on_completion(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         finished_summary = _make_summary(
@@ -259,9 +301,7 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
         )
 
         async def fake_run(model, concurrency):
-            mock_eval.get_summary.return_value = (
-                finished_summary
-            )
+            mock_eval.get_summary.return_value = finished_summary
             observer = mock_eval.observers[0]
             observer(mock_eval)
 
@@ -278,13 +318,19 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(result.finished)
         self.assertEqual(
-            result.summary.status, EvaluationStatus.FINISHED,
+            result.summary.status,
+            EvaluationStatus.FINISHED,
         )
 
     async def test_persists_results_when_repo_provided(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         result_repo = MagicMock()
@@ -306,8 +352,13 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
     async def test_no_error_without_result_repo(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         result = await run_model_evaluation(
@@ -323,15 +374,20 @@ class TestRunModelEvaluation(unittest.IsolatedAsyncioTestCase):
 
     async def test_cleans_up_observer_on_error(self):
         (
-            me, me_repo, mock_eval, eval_repo,
-            mock_model, model_repo, run_repo,
+            me,
+            me_repo,
+            mock_eval,
+            eval_repo,
+            mock_model,
+            model_repo,
+            run_repo,
         ) = self._setup_mocks()
 
         mock_eval.run = AsyncMock(
             side_effect=RuntimeError("boom"),
         )
 
-        result = await run_model_evaluation(
+        await run_model_evaluation(
             model_evaluation_id="me-1",
             concurrency=1,
             model_evaluation_repo=me_repo,

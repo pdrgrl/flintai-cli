@@ -11,7 +11,6 @@ from flintai.eval.db.base.message.message_collection_types import (
 
 
 class TestCreateCSV(unittest.TestCase):
-
     @patch(
         "flintai.eval.core.message.message_collection_csv"
         ".CsvMessageCollection",
@@ -26,7 +25,8 @@ class TestCreateCSV(unittest.TestCase):
         result = create_message_collection(db)
 
         MockCSV.assert_called_once_with(
-            filename="data.csv", column="text",
+            filename="data.csv",
+            column="text",
         )
         self.assertEqual(result, MockCSV.return_value)
 
@@ -39,12 +39,13 @@ class TestCreateCSV(unittest.TestCase):
             type=MessageCollectionType.CSV,
             name="test",
             filename="data.csv",
-            column="prompt"
+            column="prompt",
         )
         create_message_collection(db)
 
         MockCSV.assert_called_once_with(
-            filename="data.csv", column="prompt",
+            filename="data.csv",
+            column="prompt",
         )
 
     def test_requires_filename(self):

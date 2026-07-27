@@ -2,7 +2,6 @@ import logging
 import os
 import re
 
-
 _REDACT_PATTERNS = re.compile(
     r"("
     r"Bearer\s+[A-Za-z0-9\-_.~+/]+=*"
@@ -27,19 +26,20 @@ class RedactingFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if isinstance(record.msg, str):
             record.msg = _REDACT_PATTERNS.sub(
-                _REPLACEMENT, record.msg,
+                _REPLACEMENT,
+                record.msg,
             )
         if record.args:
             if isinstance(record.args, tuple):
                 record.args = tuple(
-                    _REDACT_PATTERNS.sub(_REPLACEMENT, a)
-                    if isinstance(a, str) else a
+                    _REDACT_PATTERNS.sub(_REPLACEMENT, a) if isinstance(a, str) else a
                     for a in record.args
                 )
             elif isinstance(record.args, dict):
                 record.args = {
                     k: _REDACT_PATTERNS.sub(_REPLACEMENT, v)
-                    if isinstance(v, str) else v
+                    if isinstance(v, str)
+                    else v
                     for k, v in record.args.items()
                 }
         return True
@@ -71,8 +71,7 @@ def silence_noisy_loggers() -> None:
 
 
 LOG_FORMAT = (
-    "%(asctime)s %(levelname)s "
-    "%(name)s [%(filename)s:%(lineno)d]: %(message)s"
+    "%(asctime)s %(levelname)s " "%(name)s [%(filename)s:%(lineno)d]: %(message)s"
 )
 
 
@@ -90,6 +89,7 @@ def setup_file_logging(log_path: str) -> None:
     os.environ["LITELLM_LOG"] = "CRITICAL"
     try:
         import litellm
+
         litellm.suppress_debug_info = True
     except ImportError:
         pass

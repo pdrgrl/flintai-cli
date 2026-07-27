@@ -33,14 +33,14 @@ def _make_attacker_response(
     }
     msg = Message(
         content=Content.text(
-            Role.ASSISTANT, json.dumps(data),
+            Role.ASSISTANT,
+            json.dumps(data),
         ),
     )
     return ModelResponse(message=msg)
 
 
 class TestTopicGuardEvaluationInit(unittest.TestCase):
-
     def test_requires_at_least_one_param(self):
         with self.assertRaises(ValueError):
             TopicGuardEvaluation()
@@ -54,7 +54,8 @@ class TestTopicGuardEvaluationInit(unittest.TestCase):
             detector=mock_detector,
         )
         self.assertEqual(
-            e.agent_objective, "Book flights",
+            e.agent_objective,
+            "Book flights",
         )
         self.assertIsNone(e.agent_instructions)
         self.assertIn("Book flights", e.goals[0])
@@ -69,17 +70,18 @@ class TestTopicGuardEvaluationInit(unittest.TestCase):
             detector=mock_detector,
         )
         self.assertEqual(
-            e.agent_objective, "Book flights",
+            e.agent_objective,
+            "Book flights",
         )
         self.assertEqual(
-            e.agent_instructions, "Be polite",
+            e.agent_instructions,
+            "Be polite",
         )
 
 
 class TestTopicGuardTurnEvaluation(
     unittest.IsolatedAsyncioTestCase,
 ):
-
     async def test_on_topic_responses_score_high(self):
         target = AsyncMock()
         target.generate = AsyncMock(
@@ -91,7 +93,8 @@ class TestTopicGuardTurnEvaluation(
         attacker = AsyncMock()
         attacker.generate = AsyncMock(
             return_value=_make_attacker_response(
-                broken=False, score=1.0,
+                broken=False,
+                score=1.0,
                 next_prompt="What about cooking?",
             ),
         )
@@ -112,7 +115,8 @@ class TestTopicGuardTurnEvaluation(
         await e.run(target, concurrency=1)
 
         self.assertEqual(
-            e.status, EvaluationStatus.FINISHED,
+            e.status,
+            EvaluationStatus.FINISHED,
         )
         self.assertAlmostEqual(e.score, 0.95)
 
@@ -127,7 +131,8 @@ class TestTopicGuardTurnEvaluation(
         attacker = AsyncMock()
         attacker.generate = AsyncMock(
             return_value=_make_attacker_response(
-                broken=True, score=0.1,
+                broken=True,
+                score=0.1,
             ),
         )
 
@@ -147,7 +152,8 @@ class TestTopicGuardTurnEvaluation(
         await e.run(target, concurrency=1)
 
         self.assertEqual(
-            e.status, EvaluationStatus.FINISHED,
+            e.status,
+            EvaluationStatus.FINISHED,
         )
         self.assertAlmostEqual(e.score, 0.2)
 
@@ -161,11 +167,13 @@ class TestTopicGuardTurnEvaluation(
         attacker.generate = AsyncMock(
             side_effect=[
                 _make_attacker_response(
-                    broken=False, score=1.0,
+                    broken=False,
+                    score=1.0,
                     next_prompt="Next question.",
                 ),
                 _make_attacker_response(
-                    broken=False, score=1.0,
+                    broken=False,
+                    score=1.0,
                     next_prompt="Another question.",
                 ),
             ],
@@ -220,7 +228,6 @@ class TestTopicGuardTurnEvaluation(
 class TestTopicGuardEvaluation(
     unittest.IsolatedAsyncioTestCase,
 ):
-
     async def test_get_children_generates_correct_count(self):
         attacker = AsyncMock()
         prompt_data = {
@@ -251,7 +258,8 @@ class TestTopicGuardEvaluation(
         self.assertEqual(len(e.children), 3)
         for child in e.children:
             self.assertIsInstance(
-                child, TopicGuardTurnEvaluation,
+                child,
+                TopicGuardTurnEvaluation,
             )
             self.assertEqual(child.max_turns, 4)
 
@@ -274,13 +282,16 @@ class TestTopicGuardEvaluation(
                     ),
                 ),
                 _make_attacker_response(
-                    broken=False, score=1.0,
+                    broken=False,
+                    score=1.0,
                 ),
                 _make_attacker_response(
-                    broken=True, score=0.2,
+                    broken=True,
+                    score=0.2,
                 ),
                 _make_attacker_response(
-                    broken=True, score=0.1,
+                    broken=True,
+                    score=0.1,
                 ),
             ],
         )
@@ -306,7 +317,8 @@ class TestTopicGuardEvaluation(
 
         summary = e.get_summary()
         self.assertEqual(
-            summary.status, EvaluationStatus.FINISHED,
+            summary.status,
+            EvaluationStatus.FINISHED,
         )
         self.assertEqual(summary.total_evaluations, 2)
 

@@ -1,17 +1,17 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from garak.detectors.apikey import ApiKey
-
-from flintai.eval.common.schema import Content, Message, Part, PartType, Role
-from flintai.eval.core.detectors.detector_garak import GarakDetector, _extract_text, _create_conversation
+from flintai.eval.common.schema import Content, Message, Part, Role
+from flintai.eval.core.detectors.detector_garak import (
+    GarakDetector,
+    _create_conversation,
+    _extract_text,
+)
 from flintai.eval.core.models.model import ModelResponse
 
 
 def _make_response(text: str) -> ModelResponse:
-    return ModelResponse(
-        message=Message(content=Content.text(Role.ASSISTANT, text))
-    )
+    return ModelResponse(message=Message(content=Content.text(Role.ASSISTANT, text)))
 
 
 def _make_multipart_response(*texts: str) -> ModelResponse:
@@ -22,7 +22,6 @@ def _make_multipart_response(*texts: str) -> ModelResponse:
 
 
 class TestExtractText(unittest.TestCase):
-
     def test_single_text_part(self):
         response = _make_response("hello world")
         self.assertEqual(_extract_text(response), "hello world")
@@ -47,7 +46,6 @@ class TestExtractText(unittest.TestCase):
 
 
 class TestCreateConversation(unittest.TestCase):
-
     def test_creates_turn_from_response(self):
         response = _make_response("test output")
         conversation = _create_conversation(response)
@@ -77,7 +75,6 @@ class TestCreateConversation(unittest.TestCase):
 
 
 class TestGarakDetector(unittest.IsolatedAsyncioTestCase):
-
     def _make_detector(self, mock_garak):
         """Create a GarakDetector with a pre-injected mock."""
         detector = GarakDetector("detectors.test.Test")
@@ -156,13 +153,10 @@ class TestGarakDetector(unittest.IsolatedAsyncioTestCase):
         detector = GarakDetector("detectors.test.Test")
         await detector.detect(_make_response("output"))
 
-        mock_load_plugin.assert_called_once_with(
-            "detectors.test.Test"
-        )
+        mock_load_plugin.assert_called_once_with("detectors.test.Test")
 
 
 class TestGarakDetectorApiKeyE2E(unittest.IsolatedAsyncioTestCase):
-
     def setUp(self):
         self.detector = GarakDetector("detectors.apikey.ApiKey")
 
@@ -181,7 +175,9 @@ class TestGarakDetectorApiKeyE2E(unittest.IsolatedAsyncioTestCase):
     async def test_passes_message_without_key(self):
         response = ModelResponse(
             message=Message(
-                content=Content.text(Role.ASSISTANT, "I cannot generate API keys for you.")
+                content=Content.text(
+                    Role.ASSISTANT, "I cannot generate API keys for you."
+                )
             )
         )
 

@@ -2,7 +2,6 @@ from typing import Any
 
 import requests
 from openai import AsyncOpenAI
-
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse
@@ -14,7 +13,8 @@ class OllamaModel(Model):
     _temperature: float
 
     def __init__(
-        self, model: str,
+        self,
+        model: str,
         host: str = "http://localhost:11434",
         temperature: float = 0.0,
     ):
@@ -26,9 +26,7 @@ class OllamaModel(Model):
         self._temperature = temperature
 
     async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
-        openai_messages = [
-            converter_openai.from_message(m) for m in messages
-        ]
+        openai_messages = [converter_openai.from_message(m) for m in messages]
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=openai_messages,

@@ -13,7 +13,9 @@ class TestGarakModuleEvaluation(unittest.IsolatedAsyncioTestCase):
     @patch("flintai.eval.core.eval.evaluation_garak_module.enumerate_plugins")
     @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
     async def test_init_creates_probe_children(
-        self, mock_probe_plugins, mock_enumerate,
+        self,
+        mock_probe_plugins,
+        mock_enumerate,
     ):
         mock_enumerate.return_value = [
             ("probes.mymod.ProbeA", True),
@@ -41,7 +43,9 @@ class TestGarakModuleEvaluation(unittest.IsolatedAsyncioTestCase):
     @patch("flintai.eval.core.eval.evaluation_garak_module.enumerate_plugins")
     @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
     async def test_run_executes_all_probes(
-        self, mock_probe_plugins, mock_enumerate,
+        self,
+        mock_probe_plugins,
+        mock_enumerate,
     ):
         mock_enumerate.return_value = [
             ("probes.mod.ProbeA", True),
@@ -61,7 +65,8 @@ class TestGarakModuleEvaluation(unittest.IsolatedAsyncioTestCase):
         )
         model.generate = AsyncMock(
             return_value=ModelResponse(
-                message=response_msg, status=ResponseStatus.OK,
+                message=response_msg,
+                status=ResponseStatus.OK,
             ),
         )
 

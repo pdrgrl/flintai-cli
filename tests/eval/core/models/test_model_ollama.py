@@ -3,9 +3,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from openai.types.chat import ChatCompletionMessage
 from openai.types.chat.chat_completion import ChatCompletion, Choice
-
-from flintai.eval.common.schema import Content, Message, PartType, Role
-from flintai.eval.core.models.model_ollama import OllamaModel, discover_ollama_models
+from flintai.eval.common.schema import Content, Message, Role
+from flintai.eval.core.models.model_ollama import (
+    OllamaModel,
+    discover_ollama_models,
+)
 
 
 def _make_completion(text: str) -> ChatCompletion:
@@ -25,7 +27,6 @@ def _make_completion(text: str) -> ChatCompletion:
 
 
 class TestOllamaModel(unittest.IsolatedAsyncioTestCase):
-
     async def test_generate_text(self):
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(
@@ -89,7 +90,9 @@ class TestOllamaModel(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(call_kwargs.kwargs["model"], "mistral:7b")
 
     def test_init_sets_base_url(self):
-        with patch("flintai.eval.core.models.model_ollama.AsyncOpenAI") as mock_cls:
+        with patch(
+            "flintai.eval.core.models.model_ollama.AsyncOpenAI"
+        ) as mock_cls:
             OllamaModel(model="llama3", host="http://myhost:11434")
             mock_cls.assert_called_once_with(
                 base_url="http://myhost:11434/v1",
@@ -97,7 +100,9 @@ class TestOllamaModel(unittest.IsolatedAsyncioTestCase):
             )
 
     def test_init_default_host(self):
-        with patch("flintai.eval.core.models.model_ollama.AsyncOpenAI") as mock_cls:
+        with patch(
+            "flintai.eval.core.models.model_ollama.AsyncOpenAI"
+        ) as mock_cls:
             OllamaModel(model="llama3")
             mock_cls.assert_called_once_with(
                 base_url="http://localhost:11434/v1",
@@ -106,7 +111,6 @@ class TestOllamaModel(unittest.IsolatedAsyncioTestCase):
 
 
 class TestDiscoverOllamaModels(unittest.TestCase):
-
     @patch("flintai.eval.core.models.model_ollama.requests.get")
     def test_returns_model_names(self, mock_get: MagicMock):
         mock_response = MagicMock()
@@ -147,7 +151,7 @@ class TestDiscoverOllamaModels(unittest.TestCase):
         mock_response.raise_for_status.side_effect = Exception("connection refused")
         mock_get.return_value = mock_response
 
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "connection refused"):
             discover_ollama_models()
 
     @patch("flintai.eval.core.models.model_ollama.requests.get")

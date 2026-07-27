@@ -1,13 +1,18 @@
 import unittest
 
 from google.genai import types as genai_types
-
 from flintai.eval.common import converter_genai as genai_converter
-from flintai.eval.common.schema import Content, Part, PartType, Role, ToolCall, ToolResult
+from flintai.eval.common.schema import (
+    Content,
+    Part,
+    PartType,
+    Role,
+    ToolCall,
+    ToolResult,
+)
 
 
 class TestGenAIConverter(unittest.TestCase):
-
     # -- to_content from dict -------------------------------------------------
 
     def test_user_text_dict(self):
@@ -43,7 +48,8 @@ class TestGenAIConverter(unittest.TestCase):
         self.assertEqual(content.parts[0].part_type, PartType.TOOL_CALL)
         self.assertEqual(content.parts[0].tool_call.name, "get_weather")
         self.assertEqual(
-            content.parts[0].tool_call.arguments, {"city": "Paris"},
+            content.parts[0].tool_call.arguments,
+            {"city": "Paris"},
         )
 
     def test_function_response_dict(self):
@@ -198,6 +204,7 @@ class TestGenAIConverter(unittest.TestCase):
 
     def test_from_message_obj(self):
         from flintai.eval.common.schema import Message
+
         msg = Message(content=Content.text(Role.USER, "hi"))
         obj = genai_converter.from_message_obj(msg)
         self.assertIsInstance(obj, genai_types.Content)
@@ -257,7 +264,8 @@ class TestGenAIConverter(unittest.TestCase):
         self.assertEqual(content.parts[0].part_type, PartType.TOOL_RESULT)
         self.assertEqual(content.parts[0].tool_result.tool_call_id, "fr_1")
         self.assertEqual(
-            content.parts[0].tool_result.content, {"celsius": 22},
+            content.parts[0].tool_result.content,
+            {"celsius": 22},
         )
 
     # -- part dict with no recognized keys -----------------------------------
@@ -273,7 +281,9 @@ class TestGenAIConverter(unittest.TestCase):
     # -- _part_to_genai fallback for unknown part type -----------------------
 
     def test_from_content_unknown_part_type(self):
-        part = Part(part_type=PartType.TEXT, text=None, tool_call=None, tool_result=None)
+        part = Part(
+            part_type=PartType.TEXT, text=None, tool_call=None, tool_result=None
+        )
         # Force an impossible part_type to hit the fallback
         part.part_type = "unknown_type"  # type: ignore
         content = Content(role=Role.USER, parts=[part])

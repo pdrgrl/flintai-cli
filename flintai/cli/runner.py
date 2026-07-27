@@ -7,28 +7,22 @@ configuration and printing progress to the console.
 
 from __future__ import annotations
 
-import json
 import logging
-import sys
 from dataclasses import dataclass, field
-from datetime import datetime
 
 from dataclasses_json import dataclass_json
 from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
-
 from flintai.cli.console import CLI_WIDTH, console, score_style, status_style
-from flintai.eval.db.json.repository_json import JsonRepository
 from flintai.cli.rich_observer import RichObserver, pad_description
-from flintai.eval.common.utils import now_utc, strip_nulls
 from flintai.eval.core.eval.evaluation import (
-    Evaluation,
     EvaluationResult,
     EvaluationStatus,
     EvaluationSummary,
 )
 from flintai.eval.db.base.eval.model_eval_types import DbModelEvaluation
+from flintai.eval.db.json.repository_json import JsonRepository
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +79,9 @@ async def run_cli_evaluation(
     except Exception as e:
         logger.error(
             "Evaluation failed: %s (%s: %s)",
-            db_eval.name, type(e).__name__, e,
+            db_eval.name,
+            type(e).__name__,
+            e,
         )
         progress.console.print(
             f"[red]Error ({db_eval.name}): {e}[/red]",
@@ -168,7 +164,8 @@ def _aggregate_summary(
 
 
 def _make_summary_panel(
-    summary: EvaluationSummary, title: str,
+    summary: EvaluationSummary,
+    title: str,
     width: int | None = None,
 ) -> Panel:
     grid = Table.grid(padding=(0, 1))
@@ -205,27 +202,23 @@ def log_run_summary(results: list[CliRunResult]) -> None:
             continue
 
         score_str = f"{s.score:.2f}" if s.score is not None else "N/A"
-        error_str = (
-            f" | error={s.error_messages[0]}"
-            if s.error_messages else ""
-        )
+        error_str = f" | error={s.error_messages[0]}" if s.error_messages else ""
         logger.info(
-            "Evaluation: %s | status=%s | score=%s"
-            " | completed=%d/%d%s",
-            name, s.status.value, score_str,
-            s.finished_evaluations, s.total_evaluations,
+            "Evaluation: %s | status=%s | score=%s" " | completed=%d/%d%s",
+            name,
+            s.status.value,
+            score_str,
+            s.finished_evaluations,
+            s.total_evaluations,
             error_str,
         )
 
     overall = _aggregate_summary(results)
-    overall_score = (
-        f"{overall.score:.2f}"
-        if overall.score is not None else "N/A"
-    )
+    overall_score = f"{overall.score:.2f}" if overall.score is not None else "N/A"
     logger.info(
-        "Overall: status=%s | score=%s"
-        " | completed=%d/%d | errors=%d",
-        overall.status.value, overall_score,
+        "Overall: status=%s | score=%s" " | completed=%d/%d | errors=%d",
+        overall.status.value,
+        overall_score,
         overall.finished_evaluations,
         overall.total_evaluations,
         overall.error_evaluations,
@@ -233,9 +226,7 @@ def log_run_summary(results: list[CliRunResult]) -> None:
 
 
 def print_results(results: list[CliRunResult]) -> None:
-    with_summary = [
-        r for r in results if r.summary is not None
-    ]
+    with_summary = [r for r in results if r.summary is not None]
     console.print()
 
     if with_summary:
@@ -244,14 +235,15 @@ def print_results(results: list[CliRunResult]) -> None:
 
         renderables = [
             _make_summary_panel(
-                r.summary, r.evaluation.get("name", "?"),
+                r.summary,
+                r.evaluation.get("name", "?"),
                 width=col_width,
             )
             for r in with_summary
         ]
 
         for row_start in range(0, len(renderables), cols_per_row):
-            row = renderables[row_start:row_start + cols_per_row]
+            row = renderables[row_start : row_start + cols_per_row]
             grid = Table.grid(padding=0)
             for _ in row:
                 grid.add_column()

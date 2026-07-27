@@ -11,7 +11,6 @@ from flintai.eval.db.base.message.message_collection_types import (
 
 
 class TestCreateGarak(unittest.TestCase):
-
     @patch(
         "flintai.eval.core.message.message_collection_garak"
         ".GarakMessageCollection",
@@ -39,7 +38,6 @@ class TestCreateGarak(unittest.TestCase):
 
 
 class TestCreateUnknownType(unittest.TestCase):
-
     def test_raises_value_error(self):
         db = DbMessageCollection(
             type=MessageCollectionType.IN_MEMORY,

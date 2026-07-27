@@ -3,8 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from openai.types.chat import ChatCompletionMessage
 from openai.types.chat.chat_completion import ChatCompletion, Choice
-
-from flintai.eval.common.schema import Content, Message, PartType, Role
+from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model_openai import OpenAIModel
 
 
@@ -25,10 +24,11 @@ def _make_completion(text: str) -> ChatCompletion:
 
 
 class TestOpenAIModel(unittest.IsolatedAsyncioTestCase):
-
     async def test_generate_text(self):
         mock_client = MagicMock()
-        mock_client.chat.completions.create = AsyncMock(return_value=_make_completion("Hello!"))
+        mock_client.chat.completions.create = AsyncMock(
+            return_value=_make_completion("Hello!")
+        )
 
         model = OpenAIModel(client=mock_client, model="gpt-4o")
         msg = Message(content=Content.text(Role.USER, "Hi"))
@@ -41,7 +41,9 @@ class TestOpenAIModel(unittest.IsolatedAsyncioTestCase):
 
     async def test_generate_passes_kwargs(self):
         mock_client = MagicMock()
-        mock_client.chat.completions.create = AsyncMock(return_value=_make_completion("Hi"))
+        mock_client.chat.completions.create = AsyncMock(
+            return_value=_make_completion("Hi")
+        )
 
         model = OpenAIModel(client=mock_client, model="gpt-4o")
         msg = Message(content=Content.text(Role.USER, "Hi"))
@@ -53,7 +55,9 @@ class TestOpenAIModel(unittest.IsolatedAsyncioTestCase):
 
     async def test_generate_system_message(self):
         mock_client = MagicMock()
-        mock_client.chat.completions.create = AsyncMock(return_value=_make_completion("OK"))
+        mock_client.chat.completions.create = AsyncMock(
+            return_value=_make_completion("OK")
+        )
 
         model = OpenAIModel(client=mock_client, model="gpt-4o")
         msg = Message(content=Content.text(Role.SYSTEM, "You are helpful."))

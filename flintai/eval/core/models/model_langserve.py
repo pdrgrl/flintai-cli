@@ -16,12 +16,12 @@ Response format::
 from typing import Any
 
 import aiohttp
-
 from flintai.eval.common.schema import Content, Message, Part, Role
 from flintai.eval.core.models.model import (
     Model,
     ModelResponse,
     ResponseStatus,
+    flatten_messages,
 )
 
 
@@ -44,9 +44,11 @@ class LangServeModel(Model):
         self._headers = headers or {}
 
     async def _generate(
-        self, messages: list[Message], **kwargs: Any,
+        self,
+        messages: list[Message],
+        **kwargs: Any,
     ) -> ModelResponse:
-        prompt_text = _flatten_messages(messages)
+        prompt_text = flatten_messages(messages)
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -74,21 +76,3 @@ class LangServeModel(Model):
             ),
         )
         return ModelResponse(message=message)
-
-
-def _flatten_messages(messages: list[Message]) -> str:
-    if len(messages) == 1:
-        parts = [
-            p.text for p in messages[0].content.parts
-            if p.text
-        ]
-        return " ".join(parts)
-
-    lines: list[str] = []
-    for msg in messages:
-        role = msg.content.role.value.upper()
-        text = " ".join(
-            p.text for p in msg.content.parts if p.text
-        )
-        lines.append(f"{role}: {text}")
-    return "\n\n".join(lines)

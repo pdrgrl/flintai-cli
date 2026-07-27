@@ -1,9 +1,8 @@
 from typing import Any
 
 from anthropic import AsyncAnthropic
-
 from flintai.eval.common import converter_anthropic
-from flintai.eval.common.schema import Message, PartType, Role
+from flintai.eval.common.schema import Message, Role
 from flintai.eval.core.models.model import Model, ModelResponse
 
 
@@ -14,7 +13,9 @@ class AnthropicModel(Model):
     _temperature: float
 
     def __init__(
-        self, client: AsyncAnthropic, model: str,
+        self,
+        client: AsyncAnthropic,
+        model: str,
         max_tokens: int = 1024,
         temperature: float = 0.0,
     ):

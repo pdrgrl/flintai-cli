@@ -8,9 +8,12 @@ import os
 import stat
 
 from rich.prompt import Prompt
-
 from flintai.cli.console import console, select
-from flintai.cli.utils import get_flintai_config_path, get_flintai_env_path, get_flintai_dir
+from flintai.cli.utils import (
+    get_flintai_config_path,
+    get_flintai_dir,
+    get_flintai_env_path,
+)
 
 _PROVIDER_DEFAULTS: dict[str, dict[str, str | None]] = {
     "gemini": {
@@ -55,8 +58,7 @@ def run_init() -> None:
 
     if flintai_dir.exists():
         proceed = select(
-            "Existing configuration will be overwritten."
-            " Do you want to proceed?",
+            "Existing configuration will be overwritten." " Do you want to proceed?",
             options=["yes", "no"],
             default_index=0,
         )
@@ -106,7 +108,7 @@ def run_init() -> None:
     env_lines = [
         f"GENERATOR_MODEL={generator_model}",
         f"{api_key_var}={api_key}",
-        "EXECUTOR_MAX_WORKERS=20"
+        "EXECUTOR_MAX_WORKERS=20",
     ]
 
     default_config = {
@@ -138,7 +140,6 @@ def run_init() -> None:
     )
     console.print()
     console.print(
-        "[bold green]Flint AI initialized"
-        " successfully![/bold green]",
+        "[bold green]Flint AI initialized" " successfully![/bold green]",
     )
     console.print()

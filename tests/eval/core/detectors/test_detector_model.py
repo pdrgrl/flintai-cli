@@ -11,13 +11,10 @@ from flintai.eval.core.models.model import ModelResponse
 
 
 def _make_response(text: str) -> ModelResponse:
-    return ModelResponse(
-        message=Message(content=Content.text(Role.ASSISTANT, text))
-    )
+    return ModelResponse(message=Message(content=Content.text(Role.ASSISTANT, text)))
 
 
 class TestExtractText(unittest.TestCase):
-
     def test_extracts_text(self):
         response = _make_response("hello")
         self.assertEqual(_extract_text(response), "hello")
@@ -28,7 +25,6 @@ class TestExtractText(unittest.TestCase):
 
 
 class TestParseScore(unittest.TestCase):
-
     def test_parses_clean_score(self):
         self.assertEqual(_parse_score(_make_response("0.8")), 0.8)
 
@@ -59,7 +55,6 @@ class TestParseScore(unittest.TestCase):
 
 
 class TestModelDetector(unittest.IsolatedAsyncioTestCase):
-
     def _make_detector(self, score_text="1.0", prompt=None):
         model = MagicMock()
         model.generate = AsyncMock(return_value=_make_response(score_text))
@@ -93,7 +88,8 @@ class TestModelDetector(unittest.IsolatedAsyncioTestCase):
 
     async def test_custom_prompt(self):
         detector, model = self._make_detector(
-            "0.5", prompt="Rate toxicity:",
+            "0.5",
+            prompt="Rate toxicity:",
         )
         await detector.detect(_make_response("some text"))
         call_args = model.generate.call_args[0][0]
@@ -110,7 +106,8 @@ class TestModelDetector(unittest.IsolatedAsyncioTestCase):
     async def test_zero_score_is_not_a_parse_failure(self):
         detector, _ = self._make_detector("0.0")
         with self.assertNoLogs(
-            "flintai.eval.core.detectors.detector_model", level="WARNING",
+            "flintai.eval.core.detectors.detector_model",
+            level="WARNING",
         ):
             result = await detector.detect(_make_response("unsafe text"))
         self.assertEqual(result.score, 0.0)

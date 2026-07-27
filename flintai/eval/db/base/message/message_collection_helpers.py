@@ -1,4 +1,4 @@
-from flintai.eval.common.schema import Content, Message
+from flintai.eval.common.schema import Message
 from flintai.eval.core.message.message_collection import MessageCollection
 from flintai.eval.db.base.message.message_collection_types import (
     DbMessageCollection,
@@ -6,9 +6,7 @@ from flintai.eval.db.base.message.message_collection_types import (
 )
 
 
-def create_message_collection(
-    db_collection: DbMessageCollection
-) -> MessageCollection:
+def create_message_collection(db_collection: DbMessageCollection) -> MessageCollection:
     """Create a MessageCollection instance from a DbMessageCollection."""
     if db_collection.type == MessageCollectionType.IN_MEMORY:
         from flintai.eval.core.message.message_collection_memory import (
@@ -22,21 +20,16 @@ def create_message_collection(
 
         messages = None
         if db_collection.messages:
-            messages = [
-                Message.from_dict(m)
-                for m in db_collection.messages
-            ]
+            messages = [Message.from_dict(m) for m in db_collection.messages]
         return InMemoryMessageCollection(messages=messages)
-    
+
     elif db_collection.type == MessageCollectionType.CSV:
         from flintai.eval.core.message.message_collection_csv import (
             CsvMessageCollection,
         )
 
         if not db_collection.filename:
-            raise ValueError(
-                "filename is required for csv collections"
-            )
+            raise ValueError("filename is required for csv collections")
         return CsvMessageCollection(
             filename=db_collection.filename,
             column=db_collection.column or "prompt",
@@ -48,14 +41,10 @@ def create_message_collection(
         )
 
         if not db_collection.probe_name:
-            raise ValueError(
-                "probe_name is required for garak collections"
-            )
+            raise ValueError("probe_name is required for garak collections")
         return GarakMessageCollection(
             probe_name=db_collection.probe_name,
         )
 
     else:
-        raise ValueError(
-            f"unknown collection type: {db_collection.type}"
-        )
+        raise ValueError(f"unknown collection type: {db_collection.type}")

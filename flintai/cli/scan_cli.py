@@ -5,40 +5,40 @@ Subcommands for `flintai scan`.
 from __future__ import annotations
 
 import argparse
-import os
-import sys
 import dataclasses
-import json
 import datetime
 import logging
+import os
+import sys
 
 from rich.panel import Panel
 from rich.table import Table
-
-from flintai.schema import RepoFile
-from flintai.scan.agent_scanner import run_core
-from flintai.scan.file_filter import find_relevant_files, RelevantFile, FileType
-from flintai.scan.schema import ScanReport
 from flintai.cli.console import CLI_WIDTH, console, severity_style
+from flintai.cli.file_filter import FileType, RelevantFile, find_relevant_files
+from flintai.scan.agent_scanner import run_core
+from flintai.schema import RepoFile
+from flintai.scan.schema import ScanReport
 
 logger = logging.getLogger(__name__)
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
     scan_parser = subparsers.add_parser(
-        "scan", help="Agent security scanning commands",
+        "scan",
+        help="Agent security scanning commands",
     )
     scan_parser.add_argument(
         "path",
         help="Path to a file or folder to scan",
     )
     scan_parser.add_argument(
-        "--output", "-o",
-        help="Output file path "
-             "(default: scan_<timestamp>.<format>)",
+        "--output",
+        "-o",
+        help="Output file path " "(default: scan_<timestamp>.<format>)",
     )
     scan_parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["json", "sarif"],
         default="json",
         help="Output format (default: json)",
@@ -46,7 +46,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 
 
 def write_output(report: ScanReport, output_path: str, fmt: str = "json"):
-    from flintai.cli.output_formatters import OutputFormat, get_scan_output_formatter
+    from flintai.cli.output_formatters import (
+        OutputFormat,
+        get_scan_output_formatter,
+    )
 
     formatter = get_scan_output_formatter(OutputFormat(fmt))
     content = formatter.format(report)
@@ -70,7 +73,9 @@ def print_report(report: ScanReport) -> None:
     grid.add_row("Files", f"{py_files} Python, {total_files} total scanned")
 
     total = len(report.findings)
-    pre_triage = len(report.pre_triage_findings) if report.pre_triage_findings else total
+    pre_triage = (
+        len(report.pre_triage_findings) if report.pre_triage_findings else total
+    )
     if pre_triage != total:
         grid.add_row("Findings", f"{total} [dim]({pre_triage} pre-triage)[/dim]")
     else:
@@ -103,7 +108,11 @@ def print_report(report: ScanReport) -> None:
     table.add_column("Source", style="dim", ratio=1)
 
     for f in report.findings:
-        sev = f.ai_spm_severity if isinstance(f, dataclasses.Field) or hasattr(f, "ai_spm_severity") else f.get("ai_spm_severity", "")
+        sev = (
+            f.ai_spm_severity
+            if isinstance(f, dataclasses.Field) or hasattr(f, "ai_spm_severity")
+            else f.get("ai_spm_severity", "")
+        )
         cvss = ""
         title = ""
         source = ""
@@ -127,7 +136,11 @@ def print_report(report: ScanReport) -> None:
                 file_name = os.path.basename(f.affected_components[0].name)
 
         sev_display = f"[{severity_style(sev)}]{sev}[/]"
-        source_label = source.replace("_", " ").replace("ai reasoning", "AI").replace("static ", "")
+        source_label = (
+            source.replace("_", " ")
+            .replace("ai reasoning", "AI")
+            .replace("static ", "")
+        )
 
         table.add_row(sev_display, cvss, title, file_name, source_label)
 
@@ -135,7 +148,8 @@ def print_report(report: ScanReport) -> None:
 
     # ── Category summary ─────────────────────────────────────────
     non_zero = {
-        k: v for k, v in (report.category_summary or {}).items()
+        k: v
+        for k, v in (report.category_summary or {}).items()
         if (v.get("count", 0) if isinstance(v, dict) else getattr(v, "count", 0)) > 0
     }
 
@@ -197,7 +211,9 @@ def handle_scan(args: argparse.Namespace) -> str:
 
     model = os.environ.get("GENERATOR_MODEL")
 
-    logger.info("Starting agent scan on %s files with model '%s'", len(files), model or "none")
+    logger.info(
+        "Starting agent scan on %s files with model '%s'", len(files), model or "none"
+    )
 
     python_files: list[RepoFile] = []
     requirements_files: list[RepoFile] = []
@@ -210,7 +226,11 @@ def handle_scan(args: argparse.Namespace) -> str:
         elif rf.type == FileType.PYTHON:
             python_files.append(repo_file)
 
-    logger.info("Files categorized: %d Python, %d requirements", len(python_files), len(requirements_files))
+    logger.info(
+        "Files categorized: %d Python, %d requirements",
+        len(python_files),
+        len(requirements_files),
+    )
 
     fw_counts: dict[str, int] = {}
     for rf in files:
@@ -242,9 +262,7 @@ def handle_scan(args: argparse.Namespace) -> str:
     fmt = getattr(args, "format", "json") or "json"
     ext = fmt if fmt != "json" else "json"
     output_path = args.output or (
-        f"scan_"
-        f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}"
-        f".{ext}"
+        f"scan_" f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}" f".{ext}"
     )
     write_output(report, output_path, fmt=fmt)
     return output_path

@@ -6,7 +6,7 @@ import os
 import tempfile
 import unittest
 
-from flintai.scan.file_filter import (
+from flintai.cli.file_filter import (
     FRAMEWORK_ROOTS,
     RelevantFile,
     _detect_framework_in_file,
@@ -55,14 +55,25 @@ class TestGetFrameworkName(unittest.TestCase):
 
 class TestMatchesFramework(unittest.TestCase):
     def test_exact_match(self):
-        for name in ["openai", "anthropic", "langgraph", "agents", "google.adk", "google.genai"]:
+        for name in [
+            "openai",
+            "anthropic",
+            "langgraph",
+            "agents",
+            "google.adk",
+            "google.genai",
+        ]:
             with self.subTest(name=name):
                 self.assertTrue(_matches_framework(name))
 
     def test_subpackage_match(self):
         cases = [
-            "openai.agents", "anthropic.types.message", "langgraph.graph",
-            "google.adk.agents", "google.genai.types", "agents.run",
+            "openai.agents",
+            "anthropic.types.message",
+            "langgraph.graph",
+            "google.adk.agents",
+            "google.genai.types",
+            "agents.run",
         ]
         for name in cases:
             with self.subTest(name=name):
@@ -76,14 +87,24 @@ class TestMatchesFramework(unittest.TestCase):
 
 class TestHasRelevantImports(unittest.TestCase):
     def test_simple_imports(self):
-        for code in ["import openai", "import anthropic", "import langgraph",
-                      "import agents", "import google.adk", "import google.genai"]:
+        for code in [
+            "import openai",
+            "import anthropic",
+            "import langgraph",
+            "import agents",
+            "import google.adk",
+            "import google.genai",
+        ]:
             with self.subTest(code=code):
                 self.assertTrue(has_relevant_imports(code))
 
     def test_from_imports(self):
-        for code in ["from openai import ChatCompletion", "from anthropic import Anthropic",
-                      "from langgraph.graph import StateGraph", "from google.adk.agents import Agent"]:
+        for code in [
+            "from openai import ChatCompletion",
+            "from anthropic import Anthropic",
+            "from langgraph.graph import StateGraph",
+            "from google.adk.agents import Agent",
+        ]:
             with self.subTest(code=code):
                 self.assertTrue(has_relevant_imports(code))
 

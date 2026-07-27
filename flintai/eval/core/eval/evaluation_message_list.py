@@ -1,13 +1,14 @@
 import random
-
-from dataclasses_json import dataclass_json
 from dataclasses import dataclass
 
+from dataclasses_json import dataclass_json
 from flintai.eval.common.schema import Message
 from flintai.eval.core.detectors.detector import Detector
 from flintai.eval.core.eval.evaluation import Evaluation
 from flintai.eval.core.eval.evaluation_multi import MultiEvaluation
-from flintai.eval.core.eval.evaluation_single_prompt import SinglePromptEvaluation
+from flintai.eval.core.eval.evaluation_single_prompt import (
+    SinglePromptEvaluation,
+)
 
 
 @dataclass_json

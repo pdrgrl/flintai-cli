@@ -3,15 +3,14 @@ from abc import abstractmethod
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
-
 from flintai.eval.common.schema import Session
-from flintai.eval.core.models.model import Model
 from flintai.eval.core.eval.evaluation import (
     Evaluation,
     EvaluationResult,
     EvaluationStatus,
     EvaluationSummary,
 )
+from flintai.eval.core.models.model import Model
 
 logger = logging.getLogger(__name__)
 
@@ -19,15 +18,11 @@ logger = logging.getLogger(__name__)
 @dataclass_json
 @dataclass
 class SingleEvaluation(Evaluation):
-    status: EvaluationStatus = EvaluationStatus.WAITING
-    error_message: str | None = None
     score: float = 0.0
     session: Session | None = None
 
     def __init__(self):
         super().__init__()
-        self.status = EvaluationStatus.WAITING
-        self.error_message = None
         self.score = 0.0
         self.session = None
 
@@ -42,7 +37,9 @@ class SingleEvaluation(Evaluation):
             finished_evaluations=1 if self.status == EvaluationStatus.FINISHED else 0,
             error_evaluations=1 if self.status == EvaluationStatus.ERROR else 0,
             max_score=1.0,
-            achieved_score=self.score if self.status == EvaluationStatus.FINISHED else 0.0,
+            achieved_score=self.score
+            if self.status == EvaluationStatus.FINISHED
+            else 0.0,
             error_messages=[self.error_message] if self.error_message else [],
         )
 
@@ -67,12 +64,14 @@ class SingleEvaluation(Evaluation):
             self._notify_observers()
 
     def get_results(self) -> list[EvaluationResult]:
-        return [EvaluationResult(
-            score=self.score,
-            status=self.status,
-            error_message=self.error_message,
-            session=self.session,
-        )]
+        return [
+            EvaluationResult(
+                score=self.score,
+                status=self.status,
+                error_message=self.error_message,
+                session=self.session,
+            )
+        ]
 
     @abstractmethod
     async def execute_internal(self, model: Model) -> float:

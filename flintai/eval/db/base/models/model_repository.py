@@ -11,7 +11,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from flintai.eval.core.models.model import Model
-from flintai.eval.db.base.models.model_types import DbModel, DbModelListView, ModelSortOrder
+from flintai.eval.db.base.models.model_types import (
+    DbModel,
+    DbModelListView,
+    ModelSortOrder,
+)
 
 
 class ModelRepository(ABC):
@@ -52,7 +56,8 @@ class ModelRepository(ABC):
 
     @abstractmethod
     def create(
-        self, config: DbModel,
+        self,
+        config: DbModel,
     ) -> DbModel:
         """Persist a new model configuration.
 
@@ -63,7 +68,8 @@ class ModelRepository(ABC):
 
     @abstractmethod
     def update(
-        self, config: DbModel,
+        self,
+        config: DbModel,
     ) -> DbModel:
         """Replace an existing model configuration.
 
@@ -79,6 +85,7 @@ class ModelRepository(ABC):
         Raises KeyError if the model does not exist.
         """
         from flintai.eval.db.base.models.model_helpers import create_model
+
         return create_model(self.get(id))
 
     @abstractmethod

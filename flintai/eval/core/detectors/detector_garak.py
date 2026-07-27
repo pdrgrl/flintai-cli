@@ -1,11 +1,12 @@
 import asyncio
 import logging
 
-from garak.attempt import Attempt, Conversation, Turn, Message as GarakMessage
-
+from garak.attempt import Attempt, Conversation
+from garak.attempt import Message as GarakMessage
+from garak.attempt import Turn
 from flintai.eval.common.schema import PartType, Role
-from flintai.eval.core.models.model import ModelResponse
 from flintai.eval.core.detectors.detector import Detector, DetectorResult
+from flintai.eval.core.models.model import ModelResponse
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +22,14 @@ class GarakDetector(Detector):
         if self._detector is None:
             logger.debug("Loading garak detector: %s", self._detector_name)
             from garak import _plugins
-            self._detector = _plugins.load_plugin(
-                self._detector_name
-            )
+
+            self._detector = _plugins.load_plugin(self._detector_name)
         return self._detector
 
     async def detect(self, response: ModelResponse) -> DetectorResult:
         return await asyncio.to_thread(
-            self._detect_sync, response,
+            self._detect_sync,
+            response,
         )
 
     def _detect_sync(self, response: ModelResponse) -> DetectorResult:
@@ -40,7 +41,9 @@ class GarakDetector(Detector):
             logger.debug("GarakDetector(%s): score=%.2f", self._detector_name, 1.0)
             return DetectorResult(score=1.0)
         max_hit = max(scores)
-        logger.debug("GarakDetector(%s): score=%.2f", self._detector_name, 1.0 - max_hit)
+        logger.debug(
+            "GarakDetector(%s): score=%.2f", self._detector_name, 1.0 - max_hit
+        )
         return DetectorResult(score=1.0 - max_hit)
 
 

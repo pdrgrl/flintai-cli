@@ -3,22 +3,9 @@ import os
 import tempfile
 import unittest
 
-from flintai.eval.db.json.repository_json import (
-    JsonRepository,
-    JsonDetectorRepository,
-    JsonEvaluationRepository,
-    JsonMessageCollectionRepository,
-    JsonModelEvaluationRepository,
-    JsonModelRepository,
-)
-from flintai.eval.db.base.detectors.detector_types import DbDetector
-from flintai.eval.db.base.eval.eval_types import DbEvaluation
 from flintai.eval.db.base.eval.model_eval_types import DbModelEvaluation
-from flintai.eval.db.base.message.message_collection_types import (
-    DbMessageCollection,
-)
 from flintai.eval.db.base.models.model_types import DbModel
-
+from flintai.eval.db.json.repository_json import JsonRepository
 
 _SAMPLE_CONFIG = {
     "models": [
@@ -124,12 +111,14 @@ class TestJsonRepository(unittest.TestCase):
         )
         self.assertEqual(result.total, 1)
         self.assertEqual(
-            result.items[0].name, "test-model",
+            result.items[0].name,
+            "test-model",
         )
 
     def test_models_search_pagination(self):
         result = self.store.models.search(
-            offset=1, limit=1,
+            offset=1,
+            limit=1,
         )
         self.assertEqual(result.total, 2)
         self.assertEqual(len(result.items), 1)
@@ -169,7 +158,8 @@ class TestJsonRepository(unittest.TestCase):
         )
         self.assertEqual(view.total, 1)
         self.assertEqual(
-            view.items[0].config.id, "me1",
+            view.items[0].config.id,
+            "me1",
         )
         self.assertIsNotNone(view.items[0].model_ref)
         self.assertIsNotNone(view.items[0].evaluation_ref)
@@ -181,10 +171,7 @@ class TestJsonRepository(unittest.TestCase):
         self.assertEqual(view.total, 0)
 
     def test_model_evaluations_list_by_evaluation(self):
-        view = (
-            self.store.model_evaluations
-            .list_by_evaluation("e1")
-        )
+        view = self.store.model_evaluations.list_by_evaluation("e1")
         self.assertEqual(view.total, 1)
 
 
@@ -240,7 +227,8 @@ class TestJsonModelEvaluationAdd(unittest.TestCase):
         added = self.store.model_evaluations.add(me)
         self.assertTrue(added)
         self.assertEqual(
-            len(self.store.model_evaluations.list_all()), 2,
+            len(self.store.model_evaluations.list_all()),
+            2,
         )
 
     def test_add_duplicate_skipped(self):
@@ -252,7 +240,8 @@ class TestJsonModelEvaluationAdd(unittest.TestCase):
         added = self.store.model_evaluations.add(me)
         self.assertFalse(added)
         self.assertEqual(
-            len(self.store.model_evaluations.list_all()), 1,
+            len(self.store.model_evaluations.list_all()),
+            1,
         )
 
     def test_add_same_model_different_eval(self):
@@ -277,7 +266,8 @@ class TestJsonModelEvaluationAdd(unittest.TestCase):
             )
             self.assertTrue(store.model_evaluations.add(me))
             self.assertEqual(
-                len(store.model_evaluations.list_all()), 2,
+                len(store.model_evaluations.list_all()),
+                2,
             )
         finally:
             os.unlink(path)
@@ -308,12 +298,14 @@ class TestJsonModelEvaluationRemove(unittest.TestCase):
 
     def test_remove_by_model_and_eval(self):
         removed = self.store.model_evaluations.remove(
-            model_id="m1", evaluation_id="e1",
+            model_id="m1",
+            evaluation_id="e1",
         )
         self.assertEqual(len(removed), 1)
         self.assertEqual(removed[0].id, "me1")
         self.assertEqual(
-            len(self.store.model_evaluations.list_all()), 1,
+            len(self.store.model_evaluations.list_all()),
+            1,
         )
 
     def test_remove_by_model_only(self):
@@ -322,7 +314,8 @@ class TestJsonModelEvaluationRemove(unittest.TestCase):
         )
         self.assertEqual(len(removed), 1)
         self.assertEqual(
-            len(self.store.model_evaluations.list_all()), 1,
+            len(self.store.model_evaluations.list_all()),
+            1,
         )
 
     def test_remove_by_eval_only(self):
@@ -331,7 +324,8 @@ class TestJsonModelEvaluationRemove(unittest.TestCase):
         )
         self.assertEqual(len(removed), 2)
         self.assertEqual(
-            len(self.store.model_evaluations.list_all()), 0,
+            len(self.store.model_evaluations.list_all()),
+            0,
         )
 
     def test_remove_no_match(self):
@@ -340,7 +334,8 @@ class TestJsonModelEvaluationRemove(unittest.TestCase):
         )
         self.assertEqual(len(removed), 0)
         self.assertEqual(
-            len(self.store.model_evaluations.list_all()), 2,
+            len(self.store.model_evaluations.list_all()),
+            2,
         )
 
     def test_remove_no_filters_returns_empty(self):
@@ -368,7 +363,8 @@ class TestJsonRepositorySave(unittest.TestCase):
 
         reloaded = JsonRepository(self._path)
         self.assertEqual(
-            len(reloaded.model_evaluations.list_all()), 2,
+            len(reloaded.model_evaluations.list_all()),
+            2,
         )
         self.assertIsNotNone(
             reloaded.model_evaluations.get("me-new"),
@@ -380,7 +376,8 @@ class TestJsonRepositorySave(unittest.TestCase):
 
         reloaded = JsonRepository(self._path)
         self.assertEqual(
-            len(reloaded.model_evaluations.list_all()), 0,
+            len(reloaded.model_evaluations.list_all()),
+            0,
         )
 
 
@@ -397,10 +394,12 @@ class TestJsonRepositoryEmptyConfig(unittest.TestCase):
         self.assertEqual(self.store.evaluations.list(), [])
         self.assertEqual(self.store.detectors.list(), [])
         self.assertEqual(
-            self.store.message_collections.list(), [],
+            self.store.message_collections.list(),
+            [],
         )
         self.assertEqual(
-            self.store.model_evaluations.list_all(), [],
+            self.store.model_evaluations.list_all(),
+            [],
         )
 
 
@@ -555,7 +554,8 @@ class TestJsonEvaluationSearch(unittest.TestCase):
 
     def test_search_by_query_and_type(self):
         result = self.store.evaluations.search(
-            query="tox", types=["metric_toxicity"],
+            query="tox",
+            types=["metric_toxicity"],
         )
         self.assertEqual(result.total, 1)
         self.assertEqual(result.items[0].name, "Toxicity")
@@ -665,6 +665,7 @@ class TestJsonMessageCollectionSearch(unittest.TestCase):
         from flintai.eval.core.message.message_collection import (
             MessageCollection,
         )
+
         mc = self.store.message_collections.get_message_collection("mc1")
         self.assertIsInstance(mc, MessageCollection)
 
@@ -727,25 +728,19 @@ class TestJsonModelEvaluationResolveRefs(unittest.TestCase):
 
     def test_valid_refs_resolved(self):
         view = self.store.model_evaluations.list_by_model("m1")
-        item = [
-            i for i in view.items if i.config.id == "me1"
-        ][0]
+        item = [i for i in view.items if i.config.id == "me1"][0]
         self.assertIsNotNone(item.model_ref)
         self.assertIsNotNone(item.evaluation_ref)
 
     def test_missing_model_ref(self):
         view = self.store.model_evaluations.list_by_evaluation("e1")
-        item = [
-            i for i in view.items if i.config.id == "me2"
-        ][0]
+        item = [i for i in view.items if i.config.id == "me2"][0]
         self.assertIsNone(item.model_ref)
         self.assertIsNotNone(item.evaluation_ref)
 
     def test_missing_eval_ref(self):
         view = self.store.model_evaluations.list_by_model("m1")
-        item = [
-            i for i in view.items if i.config.id == "me3"
-        ][0]
+        item = [i for i in view.items if i.config.id == "me3"][0]
         self.assertIsNotNone(item.model_ref)
         self.assertIsNone(item.evaluation_ref)
 
@@ -880,10 +875,12 @@ class TestJsonRepositoryMerge(unittest.TestCase):
         self.assertEqual(len(merged.evaluations.list()), 2)
         self.assertEqual(len(merged.detectors.list()), 2)
         self.assertEqual(
-            len(merged.message_collections.list()), 2,
+            len(merged.message_collections.list()),
+            2,
         )
         self.assertEqual(
-            len(merged.model_evaluations.list_all()), 2,
+            len(merged.model_evaluations.list_all()),
+            2,
         )
 
     def test_merge_self_takes_precedence(self):
@@ -919,10 +916,12 @@ class TestJsonRepositorySaveRoundtrip(unittest.TestCase):
 
         reloaded = JsonRepository(self._path)
         self.assertEqual(
-            len(reloaded.models.list()), original_models,
+            len(reloaded.models.list()),
+            original_models,
         )
         self.assertEqual(
-            len(reloaded.evaluations.list()), original_evals,
+            len(reloaded.evaluations.list()),
+            original_evals,
         )
 
     def test_save_writes_valid_json(self):
@@ -986,7 +985,8 @@ class TestJsonRepositoryCsvFilenameResolution(unittest.TestCase):
     def test_absolute_csv_path_unchanged(self):
         mc = self.store.message_collections.get("mc-csv-abs")
         self.assertEqual(
-            mc.filename, "/absolute/path/prompts.csv",
+            mc.filename,
+            "/absolute/path/prompts.csv",
         )
 
     def test_non_csv_type_unaffected(self):

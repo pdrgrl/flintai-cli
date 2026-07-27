@@ -1,7 +1,6 @@
 from typing import Any
 
 import litellm
-
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse
@@ -18,15 +17,15 @@ class LiteLLMModel(Model):
     _temperature: float
 
     def __init__(
-        self, model: str, temperature: float = 0.0,
+        self,
+        model: str,
+        temperature: float = 0.0,
     ):
         self._model = model
         self._temperature = temperature
 
     async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
-        openai_messages = [
-            converter_openai.from_message(m) for m in messages
-        ]
+        openai_messages = [converter_openai.from_message(m) for m in messages]
         response = await litellm.acompletion(
             model=self._model,
             messages=openai_messages,

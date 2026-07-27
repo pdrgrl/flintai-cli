@@ -26,7 +26,6 @@ def _make_aiohttp_mocks(json_data: dict):
 
 
 class TestResolvePath(unittest.TestCase):
-
     def test_simple_key(self):
         self.assertEqual(
             _resolve_path({"output": "hi"}, "output"),
@@ -59,7 +58,6 @@ class TestResolvePath(unittest.TestCase):
 
 
 class TestGenericHttpModel(unittest.IsolatedAsyncioTestCase):
-
     @patch("flintai.eval.core.models.model_generic_http.aiohttp.ClientSession")
     async def test_generate_text(self, mock_session_cls):
         mock_session = _make_aiohttp_mocks({"output": "Hello!"})
@@ -75,7 +73,8 @@ class TestGenericHttpModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(resp.message)
         self.assertEqual(
-            resp.message.content.parts[0].text, "Hello!",
+            resp.message.content.parts[0].text,
+            "Hello!",
         )
 
     @patch("flintai.eval.core.models.model_generic_http.aiohttp.ClientSession")
@@ -94,7 +93,8 @@ class TestGenericHttpModel(unittest.IsolatedAsyncioTestCase):
         resp = await model.generate(msg)
 
         self.assertEqual(
-            resp.message.content.parts[0].text, "42",
+            resp.message.content.parts[0].text,
+            "42",
         )
         call_kwargs = mock_session.post.call_args
         payload = call_kwargs.kwargs["json"]
@@ -102,11 +102,11 @@ class TestGenericHttpModel(unittest.IsolatedAsyncioTestCase):
 
     @patch("flintai.eval.core.models.model_generic_http.aiohttp.ClientSession")
     async def test_nested_output_path(self, mock_session_cls):
-        mock_session = _make_aiohttp_mocks({
-            "choices": [
-                {"message": {"content": "deep"}}
-            ],
-        })
+        mock_session = _make_aiohttp_mocks(
+            {
+                "choices": [{"message": {"content": "deep"}}],
+            }
+        )
         mock_session_cls.return_value = mock_session
 
         model = GenericHttpModel(
@@ -119,7 +119,8 @@ class TestGenericHttpModel(unittest.IsolatedAsyncioTestCase):
         resp = await model.generate(msg)
 
         self.assertEqual(
-            resp.message.content.parts[0].text, "deep",
+            resp.message.content.parts[0].text,
+            "deep",
         )
 
     @patch("flintai.eval.core.models.model_generic_http.aiohttp.ClientSession")
@@ -137,7 +138,8 @@ class TestGenericHttpModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNone(resp.message)
         self.assertEqual(
-            resp.status, ResponseStatus.EMPTY_RESPONSE,
+            resp.status,
+            ResponseStatus.EMPTY_RESPONSE,
         )
 
     @patch("flintai.eval.core.models.model_generic_http.aiohttp.ClientSession")
@@ -174,12 +176,14 @@ class TestGenericHttpModel(unittest.IsolatedAsyncioTestCase):
             ),
             Message(
                 content=Content.text(
-                    Role.ASSISTANT, "Hi!",
+                    Role.ASSISTANT,
+                    "Hi!",
                 ),
             ),
             Message(
                 content=Content.text(
-                    Role.USER, "How are you?",
+                    Role.USER,
+                    "How are you?",
                 ),
             ),
         ]

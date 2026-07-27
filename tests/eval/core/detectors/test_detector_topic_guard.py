@@ -3,9 +3,7 @@ from unittest.mock import AsyncMock
 
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector import DetectorResult
-from flintai.eval.core.detectors.detector_topic_guard import (
-    TopicGuardDetector,
-)
+from flintai.eval.core.detectors.detector_topic_guard import TopicGuardDetector
 from flintai.eval.core.models.model import ModelResponse
 
 
@@ -16,7 +14,6 @@ def _make_response(text: str) -> ModelResponse:
 
 
 class TestTopicGuardDetectorInit(unittest.TestCase):
-
     def test_requires_at_least_one_param(self):
         mock_model = AsyncMock()
         with self.assertRaises(ValueError):
@@ -54,7 +51,8 @@ class TestTopicGuardDetectorInit(unittest.TestCase):
             agent_instructions="Never discuss politics",
         )
         self.assertEqual(
-            detector.agent_objective, "Book flights",
+            detector.agent_objective,
+            "Book flights",
         )
         self.assertEqual(
             detector.agent_instructions,
@@ -65,7 +63,6 @@ class TestTopicGuardDetectorInit(unittest.TestCase):
 class TestTopicGuardDetectorDetect(
     unittest.IsolatedAsyncioTestCase,
 ):
-
     async def test_on_topic_response(self):
         mock_model = AsyncMock()
         mock_model.generate = AsyncMock(

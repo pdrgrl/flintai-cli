@@ -12,9 +12,7 @@ from flintai.eval.core.detectors.detector_model import ModelDetector
 from flintai.eval.core.eval.evaluation_single_prompt import (
     SinglePromptEvaluation,
 )
-from flintai.eval.core.eval.metric_conciseness import (
-    ConcisenessMetricEvaluation,
-)
+from flintai.eval.core.eval.metric_conciseness import ConcisenessMetricEvaluation
 from flintai.eval.core.eval.metric_factual_accuracy import (
     FactualAccuracyMetricEvaluation,
 )
@@ -179,7 +177,8 @@ class TestToxicityMetricEvaluation(
         "flintai.eval.core.eval.metric_toxicity.ToxicityDetector",
     )
     async def test_get_children_returns_correct_count(
-        self, mock_cls,
+        self,
+        mock_cls,
     ):
         e = ToxicityMetricEvaluation()
         children = await e.get_children()
@@ -189,7 +188,8 @@ class TestToxicityMetricEvaluation(
         "flintai.eval.core.eval.metric_toxicity.ToxicityDetector",
     )
     async def test_children_are_single_prompt_evaluations(
-        self, mock_cls,
+        self,
+        mock_cls,
     ):
         e = ToxicityMetricEvaluation()
         children = await e.get_children()
@@ -200,7 +200,8 @@ class TestToxicityMetricEvaluation(
         "flintai.eval.core.eval.metric_toxicity.ToxicityDetector",
     )
     async def test_children_use_toxicity_detector(
-        self, mock_cls,
+        self,
+        mock_cls,
     ):
         e = ToxicityMetricEvaluation()
         children = await e.get_children()
@@ -212,10 +213,11 @@ class TestToxicityMetricEvaluation(
         "flintai.eval.core.eval.metric_toxicity.ToxicityDetector",
     )
     async def test_children_share_single_detector(
-        self, mock_cls,
+        self,
+        mock_cls,
     ):
         e = ToxicityMetricEvaluation()
-        children = await e.get_children()
+        await e.get_children()
         # ToxicityDetector() should be called once and shared
         mock_cls.assert_called_once()
 

@@ -12,7 +12,6 @@ import logging
 from dataclasses import dataclass, field
 
 from dataclasses_json import dataclass_json
-
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.message.message_collection import MessageCollection
 from flintai.eval.core.message.message_collection_memory import (
@@ -113,9 +112,7 @@ async def create_evaluation(
 
     response = await generator_model.generate([system_msg, prompt])
     if response.message is None:
-        raise ValueError(
-            "Model did not return a response"
-        )
+        raise ValueError("Model did not return a response")
 
     response_text = ""
     for part in response.message.content.parts:
@@ -123,7 +120,8 @@ async def create_evaluation(
             response_text += part.text
 
     logger.info(
-        "Model returned %d chars", len(response_text),
+        "Model returned %d chars",
+        len(response_text),
     )
 
     return _parse_response(response_text)
@@ -142,19 +140,17 @@ def _build_user_message(context: CreationContext) -> str:
         tools = ", ".join(context.tool_names)
         lines.append(f"Available tools: {tools}")
     if context.additional_context:
-        lines.append(
-            f"Additional context: "
-            f"{context.additional_context}"
-        )
+        lines.append(f"Additional context: " f"{context.additional_context}")
     if context.evaluation_goal:
-        lines.extend([
-            "",
-            "## Evaluation Goal",
-            context.evaluation_goal,
-            "",
-            f"Generate exactly {context.num_prompts} "
-            f"test prompts.",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Evaluation Goal",
+                context.evaluation_goal,
+                "",
+                f"Generate exactly {context.num_prompts} " f"test prompts.",
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -171,10 +167,10 @@ def _parse_response(text: str) -> EvaluationPlan:
     try:
         data = json.loads(cleaned)
     except json.JSONDecodeError as e:
-        logger.error("Failed to parse evaluation response (%s: %s)", type(e).__name__, e)
-        raise ValueError(
-            f"Model returned invalid JSON: {e}"
-        ) from e
+        logger.error(
+            "Failed to parse evaluation response (%s: %s)", type(e).__name__, e
+        )
+        raise ValueError(f"Model returned invalid JSON: {e}") from e
 
     prompts = data.get("prompts", [])
     detector_prompt = data.get("detector_prompt", "")
@@ -185,10 +181,7 @@ def _parse_response(text: str) -> EvaluationPlan:
         raise ValueError("'detector_prompt' must be a string")
 
     prompt_strings = [str(p) for p in prompts]
-    messages = [
-        Message(content=Content.text(Role.USER, p))
-        for p in prompt_strings
-    ]
+    messages = [Message(content=Content.text(Role.USER, p)) for p in prompt_strings]
     collection = InMemoryMessageCollection(messages)
 
     return EvaluationPlan(

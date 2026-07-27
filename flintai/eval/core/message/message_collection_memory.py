@@ -27,10 +27,8 @@ class InMemoryMessageCollection(MessageCollection):
         self._messages = list(messages)
 
     def from_strings(
-        self, prompts: list[str],
+        self,
+        prompts: list[str],
     ) -> "InMemoryMessageCollection":
-        messages = [
-            Message(content=Content.text(Role.USER, p))
-            for p in prompts
-        ]
+        messages = [Message(content=Content.text(Role.USER, p)) for p in prompts]
         return InMemoryMessageCollection(messages)

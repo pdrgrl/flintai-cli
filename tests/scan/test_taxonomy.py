@@ -7,7 +7,6 @@ import unittest
 from flintai.scan.taxonomy import (
     AGENT_TAXONOMY,
     BEYOND_ASI_SENTINEL,
-    COMPLIANCE_MAPPINGS,
     FLAT_TAXONOMY,
     get_compliance_mappings,
     get_finding_metadata,
@@ -33,7 +32,7 @@ class TestFlatTaxonomy(unittest.TestCase):
         self.assertGreater(len(FLAT_TAXONOMY), 0)
 
     def test_entries_have_required_keys(self):
-        for subcat, meta in FLAT_TAXONOMY.items():
+        for _subcat, meta in FLAT_TAXONOMY.items():
             self.assertIn("category", meta)
             self.assertIn("asi_code", meta)
 

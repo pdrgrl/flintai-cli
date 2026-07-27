@@ -1,28 +1,22 @@
 import asyncio
+import io
 import logging
 from dataclasses import dataclass
 from typing import Any
 
 from dataclasses_json import dataclass_json
-
-import io
-
 from garak import _config, _plugins
-from garak.attempt import Conversation, Message as GarakMessage
+from garak.attempt import Conversation
+from garak.attempt import Message as GarakMessage
 from garak.generators.base import Generator
-
-from flintai.eval.common.schema import (
-    Content,
-    Message,
-    PartType,
-    Role,
-    Session,
-)
+from flintai.eval.common.schema import Content, Message, PartType, Role, Session
 from flintai.eval.core.detectors.detector_garak import GarakDetector
 from flintai.eval.core.eval.evaluation import Evaluation, EvaluationStatus
 from flintai.eval.core.eval.evaluation_multi import MultiEvaluation
 from flintai.eval.core.eval.evaluation_single import SingleEvaluation
-from flintai.eval.core.eval.evaluation_single_prompt import SinglePromptEvaluation
+from flintai.eval.core.eval.evaluation_single_prompt import (
+    SinglePromptEvaluation,
+)
 from flintai.eval.core.models.model import Model, ResponseStatus
 from flintai.eval.core.models.model_sync_wrapper import SyncModelWrapper
 
@@ -190,7 +184,8 @@ class GarakMultiTurnEvaluation(SingleEvaluation):
             raise ValueError("probe_name is required")
 
         return await asyncio.to_thread(
-            self._execute_sync, model,
+            self._execute_sync,
+            model,
         )
 
     def _execute_sync(self, model: Model) -> float:
@@ -221,7 +216,9 @@ class GarakMultiTurnEvaluation(SingleEvaluation):
             else:
                 worst_hit = max(all_scores)
                 score = 1.0 - worst_hit
-            logger.debug("GarakMultiTurnEvaluation(%s): score=%.2f", self.probe_name, score)
+            logger.debug(
+                "GarakMultiTurnEvaluation(%s): score=%.2f", self.probe_name, score
+            )
             return score
         finally:
             sync_model.close()
@@ -262,7 +259,12 @@ class GarakProbeEvaluation(MultiEvaluation):
                 )
                 for p in probe.prompts
             ]
-            logger.debug("GarakProbeEvaluation(%s): %d children (%s)", self.probe_name, len(children), "static")
+            logger.debug(
+                "GarakProbeEvaluation(%s): %d children (%s)",
+                self.probe_name,
+                len(children),
+                "static",
+            )
             return children
 
         children = [
@@ -270,5 +272,10 @@ class GarakProbeEvaluation(MultiEvaluation):
                 probe_name=self.probe_name,
             ),
         ]
-        logger.debug("GarakProbeEvaluation(%s): %d children (%s)", self.probe_name, len(children), "multi-turn")
+        logger.debug(
+            "GarakProbeEvaluation(%s): %d children (%s)",
+            self.probe_name,
+            len(children),
+            "multi-turn",
+        )
         return children

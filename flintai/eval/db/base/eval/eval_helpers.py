@@ -22,28 +22,19 @@ def create_evaluation(
                 "MESSAGE_COLLECTION evaluations"
             )
         if db_evaluation.message_collection_id is None:
-            raise ValueError(
-                "message_collection_id must be set on "
-                "the DbEvaluation"
-            )
+            raise ValueError("message_collection_id must be set on " "the DbEvaluation")
         if detector_repo is None:
             raise ValueError(
-                "detector_repo is required for "
-                "MESSAGE_COLLECTION evaluations"
+                "detector_repo is required for " "MESSAGE_COLLECTION evaluations"
             )
         if db_evaluation.detector_id is None:
-            raise ValueError(
-                "detector_id must be set on "
-                "the DbEvaluation"
-            )
+            raise ValueError("detector_id must be set on " "the DbEvaluation")
         from flintai.eval.core.eval.evaluation_message_list import (
             MessageListEvaluation,
         )
 
-        message_collection = (
-            message_collection_repo.get_message_collection(
-                db_evaluation.message_collection_id
-            )
+        message_collection = message_collection_repo.get_message_collection(
+            db_evaluation.message_collection_id
         )
         messages = message_collection.load()
         detector = detector_repo.get_detector(
@@ -61,10 +52,7 @@ def create_evaluation(
         )
 
         if db_evaluation.probe_name is None:
-            raise ValueError(
-                "probe_name must be set on "
-                "the DbEvaluation"
-            )
+            raise ValueError("probe_name must be set on " "the DbEvaluation")
         return GarakProbeEvaluation(
             probe_name=db_evaluation.probe_name,
         )
@@ -75,10 +63,7 @@ def create_evaluation(
         )
 
         if db_evaluation.module_name is None:
-            raise ValueError(
-                "module_name must be set on "
-                "the DbEvaluation"
-            )
+            raise ValueError("module_name must be set on " "the DbEvaluation")
         return GarakModuleEvaluation(
             module_name=db_evaluation.module_name,
             probe_names=db_evaluation.probe_names,
@@ -100,10 +85,7 @@ def create_evaluation(
             judge_model=get_generator_model(),
         )
 
-    elif (
-        db_evaluation.type
-        == EvaluationType.METRIC_FACTUAL_ACCURACY
-    ):
+    elif db_evaluation.type == EvaluationType.METRIC_FACTUAL_ACCURACY:
         from flintai.eval.core.eval.metric_factual_accuracy import (
             FactualAccuracyMetricEvaluation,
         )
@@ -112,10 +94,7 @@ def create_evaluation(
             judge_model=get_generator_model(),
         )
 
-    elif (
-        db_evaluation.type
-        == EvaluationType.METRIC_INSTRUCTION_ADHERENCE
-    ):
+    elif db_evaluation.type == EvaluationType.METRIC_INSTRUCTION_ADHERENCE:
         from flintai.eval.core.eval.metric_instruction_adherence import (
             InstructionAdherenceMetricEvaluation,
         )
@@ -124,31 +103,20 @@ def create_evaluation(
             judge_model=get_generator_model(),
         )
 
-    elif (
-        db_evaluation.type
-        == EvaluationType.METRIC_TONE
-    ):
-        from flintai.eval.core.eval.metric_tone import (
-            ToneMetricEvaluation,
-        )
+    elif db_evaluation.type == EvaluationType.METRIC_TONE:
+        from flintai.eval.core.eval.metric_tone import ToneMetricEvaluation
 
         return ToneMetricEvaluation(
             judge_model=get_generator_model(),
         )
 
-    elif (
-        db_evaluation.type
-        == EvaluationType.ADVERSARIAL_PROBE
-    ):
+    elif db_evaluation.type == EvaluationType.ADVERSARIAL_PROBE:
         from flintai.eval.core.eval.evaluation_adversarial import (
             AdversarialEvaluation,
         )
 
         goals: list[str] = []
-        if (
-            db_evaluation.message_collection_id
-            and message_collection_repo
-        ):
+        if db_evaluation.message_collection_id and message_collection_repo:
             mc = message_collection_repo.get_message_collection(
                 db_evaluation.message_collection_id,
             )
@@ -176,13 +144,11 @@ def create_evaluation(
             )
         if detector_repo is None:
             raise ValueError(
-                "detector_repo is required for "
-                "ADVERSARIAL_PROBE evaluations"
+                "detector_repo is required for " "ADVERSARIAL_PROBE evaluations"
             )
         if not db_evaluation.detector_id:
             raise ValueError(
-                "detector_id must be set on "
-                "the DbEvaluation for adversarial probes"
+                "detector_id must be set on " "the DbEvaluation for adversarial probes"
             )
         detector = detector_repo.get_detector(
             db_evaluation.detector_id,
@@ -196,18 +162,12 @@ def create_evaluation(
             attacker_model=get_generator_model(),
         )
 
-    elif (
-        db_evaluation.type
-        == EvaluationType.TOPIC_GUARD
-    ):
+    elif db_evaluation.type == EvaluationType.TOPIC_GUARD:
         from flintai.eval.core.eval.evaluation_topic_guard import (
             TopicGuardEvaluation,
         )
 
-        if (
-            not db_evaluation.agent_objective
-            and not db_evaluation.agent_instructions
-        ):
+        if not db_evaluation.agent_objective and not db_evaluation.agent_instructions:
             raise ValueError(
                 "at least one of agent_objective or "
                 "agent_instructions must be set on "
@@ -222,6 +182,4 @@ def create_evaluation(
         )
 
     else:
-        raise ValueError(
-            f"unknown evaluation type: {db_evaluation.type}"
-        )
+        raise ValueError(f"unknown evaluation type: {db_evaluation.type}")

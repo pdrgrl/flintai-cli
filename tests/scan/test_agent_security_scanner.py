@@ -6,19 +6,12 @@ import dataclasses
 import unittest
 
 from flintai.scan.llm_provider import parse_model_string
-from flintai.scan.schema import (
-    AffectedComponent,
-    CvssScores,
-    Evidence,
-    Finding,
-)
-
+from flintai.scan.schema import AffectedComponent, CvssScores, Evidence, Finding
 
 # ── Model string parsing ────────────────────────────────────────────
 
 
 class TestModelStringParsing(unittest.TestCase):
-
     def test_provider_colon_model(self):
         self.assertEqual(parse_model_string("openai:gpt-5.4"), ("openai", "gpt-5.4"))
 
@@ -48,7 +41,6 @@ class TestModelStringParsing(unittest.TestCase):
 
 
 class TestUnifiedFindingSchema(unittest.TestCase):
-
     def test_finding_round_trip(self):
         finding = Finding(
             id="AGT-TEST0001",

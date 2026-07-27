@@ -6,9 +6,15 @@ import json
 from typing import Any
 
 from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
-
-from flintai.eval.common.schema import Content, Message, Part, PartType, Role, ToolCall, ToolResult
-
+from flintai.eval.common.schema import (
+    Content,
+    Message,
+    Part,
+    PartType,
+    Role,
+    ToolCall,
+    ToolResult,
+)
 
 # -- To internal --------------------------------------------------------------
 
@@ -60,12 +66,20 @@ def _response_to_content(msg: ChatCompletionMessage) -> Content:
         parts.append(Part.text_part(msg.content))
     if msg.tool_calls:
         for tc in msg.tool_calls:
-            args = json.loads(tc.function.arguments) if isinstance(tc.function.arguments, str) else tc.function.arguments
-            parts.append(Part.tool_call_part(ToolCall(
-                id=tc.id,
-                name=tc.function.name,
-                arguments=args,
-            )))
+            args = (
+                json.loads(tc.function.arguments)
+                if isinstance(tc.function.arguments, str)
+                else tc.function.arguments
+            )
+            parts.append(
+                Part.tool_call_part(
+                    ToolCall(
+                        id=tc.id,
+                        name=tc.function.name,
+                        arguments=args,
+                    )
+                )
+            )
     if not parts:
         parts.append(Part.text_part(""))
     return Content(role=Role.ASSISTANT, parts=parts)
@@ -78,10 +92,14 @@ def _param_to_content(msg: dict[str, Any]) -> Content:
     parts: list[Part] = []
 
     if role_str == "tool":
-        parts.append(Part.tool_result_part(ToolResult(
-            tool_call_id=msg["tool_call_id"],
-            content=msg.get("content", ""),
-        )))
+        parts.append(
+            Part.tool_result_part(
+                ToolResult(
+                    tool_call_id=msg["tool_call_id"],
+                    content=msg.get("content", ""),
+                )
+            )
+        )
         return Content(role=Role.USER, parts=parts)
 
     content = msg.get("content")
@@ -99,11 +117,15 @@ def _param_to_content(msg: dict[str, Any]) -> Content:
             args = func["arguments"]
             if isinstance(args, str):
                 args = json.loads(args)
-            parts.append(Part.tool_call_part(ToolCall(
-                id=tc["id"],
-                name=func["name"],
-                arguments=args,
-            )))
+            parts.append(
+                Part.tool_call_part(
+                    ToolCall(
+                        id=tc["id"],
+                        name=func["name"],
+                        arguments=args,
+                    )
+                )
+            )
 
     if not parts:
         parts.append(Part.text_part(""))
@@ -126,12 +148,16 @@ def _content_to_user(content: Content) -> dict[str, Any] | list[dict[str, Any]]:
         messages = []
         for p in tool_results:
             tr = p.tool_result
-            result_content = tr.content if isinstance(tr.content, str) else json.dumps(tr.content)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tr.tool_call_id,
-                "content": result_content,
-            })
+            result_content = (
+                tr.content if isinstance(tr.content, str) else json.dumps(tr.content)
+            )
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tr.tool_call_id,
+                    "content": result_content,
+                }
+            )
         return messages if len(messages) > 1 else messages[0]
 
     text = _collect_text(content)
@@ -143,23 +169,29 @@ def _content_to_assistant_or_tool(content: Content) -> dict[str, Any]:
     tool_call_parts = [p for p in content.parts if p.part_type == PartType.TOOL_CALL]
 
     msg: dict[str, Any] = {"role": "assistant"}
-    msg["content"] = " ".join(p.text for p in text_parts if p.text) if text_parts else None
+    msg["content"] = (
+        " ".join(p.text for p in text_parts if p.text) if text_parts else None
+    )
 
     if tool_call_parts:
         msg["tool_calls"] = []
         for p in tool_call_parts:
             tc = p.tool_call
-            msg["tool_calls"].append({
-                "id": tc.id,
-                "type": "function",
-                "function": {
-                    "name": tc.name,
-                    "arguments": json.dumps(tc.arguments),
-                },
-            })
+            msg["tool_calls"].append(
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.name,
+                        "arguments": json.dumps(tc.arguments),
+                    },
+                }
+            )
 
     return msg
 
 
 def _collect_text(content: Content) -> str:
-    return " ".join(p.text for p in content.parts if p.part_type == PartType.TEXT and p.text)
+    return " ".join(
+        p.text for p in content.parts if p.part_type == PartType.TEXT and p.text
+    )

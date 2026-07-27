@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from google.genai import types as genai_types
-
 from flintai.eval.common.schema import (
     Content,
     Message,
@@ -15,7 +14,6 @@ from flintai.eval.common.schema import (
     ToolCall,
     ToolResult,
 )
-
 
 _ROLE_MAP = {"user": Role.USER, "model": Role.ASSISTANT}
 _ROLE_MAP_REVERSE = {Role.USER: "user", Role.ASSISTANT: "model"}
@@ -69,10 +67,7 @@ def _content_obj_to_internal(
     content: genai_types.Content,
 ) -> Content:
     role = _ROLE_MAP.get(content.role, Role.USER)
-    parts = [
-        _genai_part_to_internal(p)
-        for p in (content.parts or [])
-    ]
+    parts = [_genai_part_to_internal(p) for p in (content.parts or [])]
     if not parts:
         parts = [Part.text_part("")]
     return Content(role=role, parts=parts)
@@ -100,17 +95,21 @@ def _genai_part_to_internal(part: genai_types.Part) -> Part:
         return Part.text_part(part.text)
     if part.function_call is not None:
         fc = part.function_call
-        return Part.tool_call_part(ToolCall(
-            id=fc.id or "",
-            name=fc.name or "",
-            arguments=dict(fc.args) if fc.args else {},
-        ))
+        return Part.tool_call_part(
+            ToolCall(
+                id=fc.id or "",
+                name=fc.name or "",
+                arguments=dict(fc.args) if fc.args else {},
+            )
+        )
     if part.function_response is not None:
         fr = part.function_response
-        return Part.tool_result_part(ToolResult(
-            tool_call_id=fr.id or "",
-            content=dict(fr.response) if fr.response else "",
-        ))
+        return Part.tool_result_part(
+            ToolResult(
+                tool_call_id=fr.id or "",
+                content=dict(fr.response) if fr.response else "",
+            )
+        )
     return Part.text_part("")
 
 
@@ -121,17 +120,21 @@ def _genai_part_dict_to_internal(d: dict[str, Any]) -> Part:
         return Part.text_part(d["text"])
     if "function_call" in d:
         fc = d["function_call"]
-        return Part.tool_call_part(ToolCall(
-            id=fc.get("id", ""),
-            name=fc.get("name", ""),
-            arguments=fc.get("args", {}),
-        ))
+        return Part.tool_call_part(
+            ToolCall(
+                id=fc.get("id", ""),
+                name=fc.get("name", ""),
+                arguments=fc.get("args", {}),
+            )
+        )
     if "function_response" in d:
         fr = d["function_response"]
-        return Part.tool_result_part(ToolResult(
-            tool_call_id=fr.get("id", ""),
-            content=fr.get("response", ""),
-        ))
+        return Part.tool_result_part(
+            ToolResult(
+                tool_call_id=fr.get("id", ""),
+                content=fr.get("response", ""),
+            )
+        )
     return Part.text_part("")
 
 
@@ -155,9 +158,7 @@ def _part_to_genai(part: Part) -> dict[str, Any]:
     if part.part_type == PartType.TOOL_RESULT:
         tr = part.tool_result
         response = (
-            tr.content
-            if isinstance(tr.content, dict)
-            else {"result": tr.content}
+            tr.content if isinstance(tr.content, dict) else {"result": tr.content}
         )
         return {
             "function_response": {

@@ -7,8 +7,8 @@ padding with unnecessary caveats, disclaimers, or filler.
 
 
 from dataclasses import dataclass
-from dataclasses_json import dataclass_json
 
+from dataclasses_json import dataclass_json
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector_model import ModelDetector
 from flintai.eval.core.eval.evaluation import Evaluation
@@ -17,7 +17,6 @@ from flintai.eval.core.eval.evaluation_single_prompt import (
     SinglePromptEvaluation,
 )
 from flintai.eval.core.models.model import Model
-
 
 _PROMPTS = [
     "What is the capital of France?",
@@ -151,31 +150,33 @@ question is concise and appropriate, not a failure.
 Output ONLY the numeric score, nothing else."""
 
 
-
 @dataclass_json
 @dataclass
 class ConcisenessMetricEvaluation(MultiEvaluation):
     """Measures response conciseness on factual questions."""
+
     _judge_model: Model | None = None
 
     def __init__(self, judge_model: Model | None = None):
         super().__init__()
         if judge_model is None:
-            from flintai.eval.core.models.generator_model import get_generator_model
+            from flintai.eval.core.models.generator_model import (
+                get_generator_model,
+            )
+
             judge_model = get_generator_model()
         self._judge_model = judge_model
 
     async def get_children(self) -> list[Evaluation]:
         detector = ModelDetector(
-            self._judge_model, _DETECTOR_PROMPT,
+            self._judge_model,
+            _DETECTOR_PROMPT,
         )
-        messages = [
-            Message(content=Content.text(Role.USER, p))
-            for p in _PROMPTS
-        ]
+        messages = [Message(content=Content.text(Role.USER, p)) for p in _PROMPTS]
         return [
             SinglePromptEvaluation(
-                prompt=msg, detector=detector,
+                prompt=msg,
+                detector=detector,
             )
             for msg in messages
         ]

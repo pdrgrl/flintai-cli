@@ -3,12 +3,11 @@ from unittest.mock import MagicMock
 
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.eval.evaluation_message_list import MessageListEvaluation
-from flintai.eval.db.base.eval.eval_types import DbEvaluation, EvaluationType
 from flintai.eval.db.base.eval.eval_helpers import create_evaluation
+from flintai.eval.db.base.eval.eval_types import DbEvaluation, EvaluationType
 
 
 class TestCreateEvaluation(unittest.TestCase):
-
     def test_message_collection_creates_evaluation(self):
         db_eval = DbEvaluation(
             type=EvaluationType.MESSAGE_COLLECTION,
@@ -47,7 +46,8 @@ class TestCreateEvaluation(unittest.TestCase):
     def test_message_collection_requires_mc_repo(self):
         db_eval = DbEvaluation(
             type=EvaluationType.MESSAGE_COLLECTION,
-            name="e", message_collection_id="mc-1",
+            name="e",
+            message_collection_id="mc-1",
             detector_id="det-1",
         )
         with self.assertRaises(ValueError):
@@ -56,7 +56,8 @@ class TestCreateEvaluation(unittest.TestCase):
     def test_message_collection_requires_mc_id(self):
         db_eval = DbEvaluation(
             type=EvaluationType.MESSAGE_COLLECTION,
-            name="e", detector_id="det-1",
+            name="e",
+            detector_id="det-1",
         )
         with self.assertRaises(ValueError):
             create_evaluation(
@@ -67,7 +68,8 @@ class TestCreateEvaluation(unittest.TestCase):
     def test_message_collection_requires_detector_repo(self):
         db_eval = DbEvaluation(
             type=EvaluationType.MESSAGE_COLLECTION,
-            name="e", message_collection_id="mc-1",
+            name="e",
+            message_collection_id="mc-1",
             detector_id="det-1",
         )
         with self.assertRaises(ValueError):
@@ -79,7 +81,8 @@ class TestCreateEvaluation(unittest.TestCase):
     def test_message_collection_requires_detector_id(self):
         db_eval = DbEvaluation(
             type=EvaluationType.MESSAGE_COLLECTION,
-            name="e", message_collection_id="mc-1",
+            name="e",
+            message_collection_id="mc-1",
         )
         with self.assertRaises(ValueError):
             create_evaluation(
@@ -99,8 +102,7 @@ class TestCreateEvaluation(unittest.TestCase):
         )
 
         mock_messages = [
-            Message(content=Content.text(Role.USER, f"msg-{i}"))
-            for i in range(20)
+            Message(content=Content.text(Role.USER, f"msg-{i}")) for i in range(20)
         ]
         mock_mc_repo = MagicMock()
         mock_mc = MagicMock()
@@ -147,11 +149,11 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertIsNone(result.num_prompts)
 
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_garak_probe"
-        ".GarakProbeEvaluation",
+        "flintai.eval.core.eval.evaluation_garak_probe" ".GarakProbeEvaluation",
     )
     def test_garak_probe_creates_evaluation(
-        self, MockGarakProbe,
+        self,
+        MockGarakProbe,
     ):
         db_eval = DbEvaluation(
             type=EvaluationType.GARAK_PROBE,
@@ -177,7 +179,8 @@ class TestCreateEvaluation(unittest.TestCase):
         ".GarakModuleEvaluation",
     )
     def test_garak_module_creates_evaluation(
-        self, MockGarakModule,
+        self,
+        MockGarakModule,
     ):
         db_eval = DbEvaluation(
             type=EvaluationType.GARAK_MODULE,
@@ -201,11 +204,11 @@ class TestCreateEvaluation(unittest.TestCase):
             create_evaluation(db_eval)
 
     @unittest.mock.patch(
-        "flintai.eval.core.eval.metric_toxicity"
-        ".ToxicityMetricEvaluation",
+        "flintai.eval.core.eval.metric_toxicity" ".ToxicityMetricEvaluation",
     )
     def test_metric_toxicity_creates_evaluation(
-        self, MockToxicity,
+        self,
+        MockToxicity,
     ):
         db_eval = DbEvaluation(
             type=EvaluationType.METRIC_TOXICITY,
@@ -216,20 +219,20 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockToxicity.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers"
-        ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
     )
     @unittest.mock.patch(
         "flintai.eval.core.eval.metric_conciseness"
         ".ConcisenessMetricEvaluation",
     )
     def test_metric_conciseness_creates_evaluation(
-        self, MockConciseness,
-        mock_get_model_helpers, mock_get_model,
+        self,
+        MockConciseness,
+        mock_get_model_helpers,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -245,20 +248,20 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockConciseness.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers"
-        ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
     )
     @unittest.mock.patch(
         "flintai.eval.core.eval.metric_factual_accuracy"
         ".FactualAccuracyMetricEvaluation",
     )
     def test_metric_factual_accuracy_creates_evaluation(
-        self, MockFactual,
-        mock_get_model_helpers, mock_get_model,
+        self,
+        MockFactual,
+        mock_get_model_helpers,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -274,20 +277,20 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockFactual.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers"
-        ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
     )
     @unittest.mock.patch(
         "flintai.eval.core.eval.metric_instruction_adherence"
         ".InstructionAdherenceMetricEvaluation",
     )
     def test_metric_instruction_adherence_creates_evaluation(
-        self, MockAdherence,
-        mock_get_model_helpers, mock_get_model,
+        self,
+        MockAdherence,
+        mock_get_model_helpers,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -303,20 +306,19 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockAdherence.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers"
-        ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.metric_tone"
-        ".ToneMetricEvaluation",
+        "flintai.eval.core.eval.metric_tone" ".ToneMetricEvaluation",
     )
     def test_metric_tone_creates_evaluation(
-        self, MockTone,
-        mock_get_model_helpers, mock_get_model,
+        self,
+        MockTone,
+        mock_get_model_helpers,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -332,20 +334,19 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockTone.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers"
-        ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_adversarial"
-        ".AdversarialEvaluation",
+        "flintai.eval.core.eval.evaluation_adversarial" ".AdversarialEvaluation",
     )
     def test_adversarial_probe_creates_evaluation(
-        self, MockAdversarial,
-        mock_get_model_helpers, mock_get_model,
+        self,
+        MockAdversarial,
+        mock_get_model_helpers,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -365,7 +366,8 @@ class TestCreateEvaluation(unittest.TestCase):
             max_turns=4,
         )
         result = create_evaluation(
-            db_eval, detector_repo=mock_det_repo,
+            db_eval,
+            detector_repo=mock_det_repo,
         )
         MockAdversarial.assert_called_once_with(
             goals=["Extract system prompt"],
@@ -379,20 +381,19 @@ class TestCreateEvaluation(unittest.TestCase):
         mock_det_repo.get_detector.assert_called_once_with("det-1")
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers"
-        ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_adversarial"
-        ".AdversarialEvaluation",
+        "flintai.eval.core.eval.evaluation_adversarial" ".AdversarialEvaluation",
     )
     def test_adversarial_probe_defaults(
-        self, MockAdversarial,
-        mock_get_model_helpers, mock_get_model,
+        self,
+        MockAdversarial,
+        mock_get_model_helpers,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -409,8 +410,9 @@ class TestCreateEvaluation(unittest.TestCase):
             attack_techniques=["Use direct requests"],
             detector_id="det-1",
         )
-        result = create_evaluation(
-            db_eval, detector_repo=mock_det_repo,
+        create_evaluation(
+            db_eval,
+            detector_repo=mock_det_repo,
         )
         MockAdversarial.assert_called_once_with(
             goals=["Extract system prompt"],
@@ -422,20 +424,19 @@ class TestCreateEvaluation(unittest.TestCase):
         )
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers"
-        ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_adversarial"
-        ".AdversarialEvaluation",
+        "flintai.eval.core.eval.evaluation_adversarial" ".AdversarialEvaluation",
     )
     def test_adversarial_probe_with_message_collection(
-        self, MockAdversarial,
-        mock_get_model_helpers, mock_get_model,
+        self,
+        MockAdversarial,
+        mock_get_model_helpers,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -448,9 +449,7 @@ class TestCreateEvaluation(unittest.TestCase):
         mock_mc_repo = MagicMock()
         mock_mc = MagicMock()
         mock_mc.load.return_value = mock_messages
-        mock_mc_repo.get_message_collection.return_value = (
-            mock_mc
-        )
+        mock_mc_repo.get_message_collection.return_value = mock_mc
 
         mock_det_repo = MagicMock()
         mock_detector = MagicMock()
@@ -465,7 +464,7 @@ class TestCreateEvaluation(unittest.TestCase):
             num_prompts=3,
             max_turns=4,
         )
-        result = create_evaluation(
+        create_evaluation(
             db_eval,
             message_collection_repo=mock_mc_repo,
             detector_repo=mock_det_repo,
@@ -496,7 +495,8 @@ class TestCreateEvaluation(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             create_evaluation(
-                db_eval, detector_repo=mock_det_repo,
+                db_eval,
+                detector_repo=mock_det_repo,
             )
 
     def test_adversarial_probe_requires_attack_techniques(self):
@@ -513,7 +513,8 @@ class TestCreateEvaluation(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             create_evaluation(
-                db_eval, detector_repo=mock_det_repo,
+                db_eval,
+                detector_repo=mock_det_repo,
             )
 
     def test_adversarial_probe_requires_detector_repo(self):
@@ -536,19 +537,20 @@ class TestCreateEvaluation(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             create_evaluation(
-                db_eval, detector_repo=MagicMock(),
+                db_eval,
+                detector_repo=MagicMock(),
             )
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers"
-        ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
     )
     def test_topic_guard_creates_evaluation(
-        self, mock_get_model_helpers, mock_get_model,
+        self,
+        mock_get_model_helpers,
+        mock_get_model,
     ):
         from flintai.eval.core.eval.evaluation_topic_guard import (
             TopicGuardEvaluation,
@@ -568,7 +570,8 @@ class TestCreateEvaluation(unittest.TestCase):
         result = create_evaluation(db_eval)
         self.assertIsInstance(result, TopicGuardEvaluation)
         self.assertEqual(
-            result.agent_objective, "Book flights",
+            result.agent_objective,
+            "Book flights",
         )
         self.assertEqual(
             result.agent_instructions,
@@ -599,10 +602,12 @@ class TestCreateEvaluation(unittest.TestCase):
         data = db_eval.to_dict()
         restored = DbEvaluation.from_dict(data)
         self.assertEqual(
-            restored.type, EvaluationType.TOPIC_GUARD,
+            restored.type,
+            EvaluationType.TOPIC_GUARD,
         )
         self.assertEqual(
-            restored.agent_objective, "Book flights",
+            restored.agent_objective,
+            "Book flights",
         )
         self.assertEqual(
             restored.agent_instructions,

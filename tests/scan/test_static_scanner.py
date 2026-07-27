@@ -3,7 +3,6 @@ Tests for static_scanner.py — static analysis tool runners.
 """
 
 import json
-import os
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
@@ -23,8 +22,12 @@ from flintai.scan.static_scanner import (
 class TestStaticFinding(unittest.TestCase):
     def test_creation(self):
         f = StaticFinding(
-            tool="bandit", rule_id="B102", severity="high",
-            message="exec used", filepath="agent.py", line=10,
+            tool="bandit",
+            rule_id="B102",
+            severity="high",
+            message="exec used",
+            filepath="agent.py",
+            line=10,
         )
         self.assertEqual(f.tool, "bandit")
         self.assertEqual(f.rule_id, "B102")
@@ -32,8 +35,11 @@ class TestStaticFinding(unittest.TestCase):
 
     def test_defaults(self):
         f = StaticFinding(
-            tool="test", rule_id="T1", severity="low",
-            message="msg", filepath="f.py",
+            tool="test",
+            rule_id="T1",
+            severity="low",
+            message="msg",
+            filepath="f.py",
         )
         self.assertEqual(f.line, 0)
         self.assertEqual(f.evidence, "")
@@ -54,19 +60,21 @@ class TestRunBandit(unittest.TestCase):
     @patch("flintai.scan.static_scanner.subprocess.run")
     def test_parses_json_output(self, mock_run):
         mock_run.return_value = MagicMock(
-            stdout=json.dumps({
-                "results": [
-                    {
-                        "test_id": "B102",
-                        "issue_severity": "HIGH",
-                        "issue_text": "exec() used",
-                        "filename": "/tmp/scan/agent.py",
-                        "line_number": 10,
-                        "code": "exec(user_input)",
-                        "issue_cwe": {"id": "CWE-78"},
-                    }
-                ]
-            }),
+            stdout=json.dumps(
+                {
+                    "results": [
+                        {
+                            "test_id": "B102",
+                            "issue_severity": "HIGH",
+                            "issue_text": "exec() used",
+                            "filename": "/tmp/scan/agent.py",
+                            "line_number": 10,
+                            "code": "exec(user_input)",
+                            "issue_cwe": {"id": "CWE-78"},
+                        }
+                    ]
+                }
+            ),
             returncode=1,
         )
         findings = run_bandit("/tmp/scan")
@@ -95,23 +103,28 @@ class TestRunOpengrep(unittest.TestCase):
         self.assertEqual(findings, [])
 
     @patch("flintai.scan.static_scanner.subprocess.run")
-    @patch("flintai.scan.static_scanner.find_opengrep_binary", return_value="/usr/bin/opengrep")
+    @patch(
+        "flintai.scan.static_scanner.find_opengrep_binary",
+        return_value="/usr/bin/opengrep",
+    )
     def test_parses_json_output(self, mock_find, mock_run):
         mock_run.return_value = MagicMock(
-            stdout=json.dumps({
-                "results": [
-                    {
-                        "check_id": "eval-call",
-                        "extra": {
-                            "severity": "ERROR",
-                            "message": "eval() call",
-                            "lines": "eval(x)",
-                        },
-                        "path": "agent.py",
-                        "start": {"line": 5},
-                    }
-                ]
-            }),
+            stdout=json.dumps(
+                {
+                    "results": [
+                        {
+                            "check_id": "eval-call",
+                            "extra": {
+                                "severity": "ERROR",
+                                "message": "eval() call",
+                                "lines": "eval(x)",
+                            },
+                            "path": "agent.py",
+                            "start": {"line": 5},
+                        }
+                    ]
+                }
+            ),
             returncode=0,
         )
         findings = run_opengrep("/tmp/scan", "/tmp/rules.yaml")
@@ -119,7 +132,10 @@ class TestRunOpengrep(unittest.TestCase):
         self.assertEqual(findings[0].tool, "opengrep")
 
     @patch("flintai.scan.static_scanner.subprocess.run")
-    @patch("flintai.scan.static_scanner.find_opengrep_binary", return_value="/usr/bin/opengrep")
+    @patch(
+        "flintai.scan.static_scanner.find_opengrep_binary",
+        return_value="/usr/bin/opengrep",
+    )
     def test_handles_empty_output(self, mock_find, mock_run):
         mock_run.return_value = MagicMock(stdout="", returncode=0)
         findings = run_opengrep("/tmp", "/tmp/rules.yaml")
@@ -130,16 +146,18 @@ class TestRunDetectSecrets(unittest.TestCase):
     @patch("flintai.scan.static_scanner.subprocess.run")
     def test_parses_output(self, mock_run):
         mock_run.return_value = MagicMock(
-            stdout=json.dumps({
-                "results": {
-                    "agent.py": [
-                        {
-                            "type": "Hex High Entropy String",
-                            "line_number": 3,
-                        }
-                    ]
+            stdout=json.dumps(
+                {
+                    "results": {
+                        "agent.py": [
+                            {
+                                "type": "Hex High Entropy String",
+                                "line_number": 3,
+                            }
+                        ]
+                    }
                 }
-            }),
+            ),
             returncode=0,
         )
         findings = run_detect_secrets("/tmp/scan")

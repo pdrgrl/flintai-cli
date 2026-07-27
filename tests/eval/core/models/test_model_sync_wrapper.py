@@ -7,7 +7,6 @@ from flintai.eval.core.models.model_sync_wrapper import SyncModelWrapper
 
 
 class TestSyncModelWrapper(unittest.TestCase):
-
     def test_generate_bridges_async_to_sync(self):
         expected_response = ModelResponse(
             message=Message(content=Content.text(Role.ASSISTANT, "Hello!")),
@@ -62,6 +61,20 @@ class TestSyncModelWrapper(unittest.TestCase):
 
         wrapper.close()
         self.assertTrue(loop.is_closed())
+
+    def test_del_closes_loop(self):
+        mock_model = MagicMock()
+        wrapper = SyncModelWrapper(mock_model)
+        loop = wrapper._loop
+        self.assertFalse(loop.is_closed())
+        wrapper.__del__()
+        self.assertTrue(loop.is_closed())
+
+    def test_del_after_close_is_safe(self):
+        mock_model = MagicMock()
+        wrapper = SyncModelWrapper(mock_model)
+        wrapper.close()
+        wrapper.__del__()
 
     def test_generate_after_close_raises(self):
         expected_response = ModelResponse(

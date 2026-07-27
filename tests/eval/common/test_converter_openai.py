@@ -6,13 +6,18 @@ from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
     Function,
 )
-
 from flintai.eval.common import converter_openai as openai_converter
-from flintai.eval.common.schema import Content, Part, PartType, Role, ToolCall, ToolResult
+from flintai.eval.common.schema import (
+    Content,
+    Part,
+    PartType,
+    Role,
+    ToolCall,
+    ToolResult,
+)
 
 
 class TestOpenAIConverter(unittest.TestCase):
-
     # -- to_content -----------------------------------------------------------
 
     def test_user_text_param(self):
@@ -58,7 +63,8 @@ class TestOpenAIConverter(unittest.TestCase):
         self.assertEqual(content.parts[0].part_type, PartType.TOOL_CALL)
         self.assertEqual(content.parts[0].tool_call.name, "get_weather")
         self.assertEqual(
-            content.parts[0].tool_call.arguments, {"city": "Paris"},
+            content.parts[0].tool_call.arguments,
+            {"city": "Paris"},
         )
 
     def test_tool_result_param(self):
@@ -71,10 +77,12 @@ class TestOpenAIConverter(unittest.TestCase):
         self.assertEqual(content.role, Role.USER)
         self.assertEqual(content.parts[0].part_type, PartType.TOOL_RESULT)
         self.assertEqual(
-            content.parts[0].tool_result.tool_call_id, "call_1",
+            content.parts[0].tool_result.tool_call_id,
+            "call_1",
         )
         self.assertEqual(
-            content.parts[0].tool_result.content, "22°C and sunny",
+            content.parts[0].tool_result.content,
+            "22°C and sunny",
         )
 
     def test_assistant_text_and_tool_calls(self):
@@ -200,7 +208,8 @@ class TestOpenAIConverter(unittest.TestCase):
         self.assertEqual(content.parts[1].part_type, PartType.TOOL_CALL)
         self.assertEqual(content.parts[1].tool_call.name, "lookup")
         self.assertEqual(
-            content.parts[1].tool_call.arguments, {"key": "val"},
+            content.parts[1].tool_call.arguments,
+            {"key": "val"},
         )
 
     # -- to_content: empty dict content --------------------------------------
@@ -224,6 +233,7 @@ class TestOpenAIConverter(unittest.TestCase):
 
     def test_from_message_obj(self):
         from flintai.eval.common.schema import Message
+
         msg = Message(content=Content.text(Role.USER, "hello"))
         result = openai_converter.from_message_obj(msg)
         self.assertEqual(result["role"], "user")

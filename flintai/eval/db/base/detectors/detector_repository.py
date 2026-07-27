@@ -48,7 +48,8 @@ class DetectorRepository(ABC):
 
     @abstractmethod
     def create(
-        self, config: DbDetector,
+        self,
+        config: DbDetector,
     ) -> DbDetector:
         """Persist a new detector configuration.
 
@@ -59,7 +60,8 @@ class DetectorRepository(ABC):
 
     @abstractmethod
     def update(
-        self, config: DbDetector,
+        self,
+        config: DbDetector,
     ) -> DbDetector:
         """Replace an existing detector configuration.
 
@@ -74,7 +76,10 @@ class DetectorRepository(ABC):
 
         Raises KeyError if the detector does not exist.
         """
-        from flintai.eval.db.base.detectors.detector_helpers import create_detector
+        from flintai.eval.db.base.detectors.detector_helpers import (
+            create_detector,
+        )
+
         return create_detector(self.get(id))
 
     @abstractmethod

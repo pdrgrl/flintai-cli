@@ -10,15 +10,9 @@ import os
 import tempfile
 import unittest
 
-from flintai.scan.trace_logger import (
-    CallContext,
-    TraceLogger,
-    estimate_tokens,
-    now_iso,
-)
+from flintai.scan.trace_logger import CallContext, TraceLogger, estimate_tokens, now_iso
 from flintai.scan.trace_logger_file import FileTraceLogger
 from flintai.scan.trace_logger_log import LogTraceLogger
-
 
 # ── Utilities ───────────────────────────────────────────────────────
 
@@ -109,13 +103,16 @@ class TestFileTraceLogger(unittest.TestCase):
             logger.start(provider_model="test-model")
 
             with logger.record_call(
-                "read_source", {"path": "f.py"}, iteration=1,
+                "read_source",
+                {"path": "f.py"},
+                iteration=1,
             ) as ctx:
                 ctx.set_result("file content here")
 
             logger.set_iteration(1)
             logger.finish(
-                findings_count=3, exit_reason="completed",
+                findings_count=3,
+                exit_reason="completed",
             )
 
             trace_path = output + ".trace.jsonl"
@@ -128,7 +125,8 @@ class TestFileTraceLogger(unittest.TestCase):
 
             start_event = json.loads(lines[0])
             self.assertEqual(
-                start_event["event"], "session_start",
+                start_event["event"],
+                "session_start",
             )
             self.assertEqual(start_event["model"], "test-model")
 
@@ -140,23 +138,28 @@ class TestFileTraceLogger(unittest.TestCase):
 
             end_event = json.loads(lines[2])
             self.assertEqual(
-                end_event["event"], "session_end",
+                end_event["event"],
+                "session_end",
             )
             self.assertEqual(end_event["findings_count"], 3)
             self.assertEqual(
-                end_event["exit_reason"], "completed",
+                end_event["exit_reason"],
+                "completed",
             )
 
     def test_record_call_with_error(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             output = os.path.join(tmpdir, "report.json")
             logger = FileTraceLogger(
-                session_id="err-test", output_path=output,
+                session_id="err-test",
+                output_path=output,
             )
             logger.start(provider_model="test")
 
             with logger.record_call(
-                "bad_tool", {}, iteration=0,
+                "bad_tool",
+                {},
+                iteration=0,
             ) as ctx:
                 ctx.set_error("tool failed")
 
@@ -178,7 +181,9 @@ class TestFileTraceLogger(unittest.TestCase):
         logger = FileTraceLogger(session_id="no-output")
         logger.start(provider_model="test")
         with logger.record_call(
-            "tool", {}, iteration=0,
+            "tool",
+            {},
+            iteration=0,
         ) as ctx:
             ctx.set_result("ok")
         logger.finish(findings_count=0)
@@ -195,7 +200,9 @@ class TestLogTraceLogger(unittest.TestCase):
         logger.start(provider_model="test-model")
 
         with logger.record_call(
-            "read_source", {"path": "f.py"}, iteration=1,
+            "read_source",
+            {"path": "f.py"},
+            iteration=1,
         ) as ctx:
             ctx.set_result("content")
 
@@ -216,7 +223,9 @@ class TestLogTraceLogger(unittest.TestCase):
         logger.start(provider_model="test")
 
         with logger.record_call(
-            "bad_tool", {}, iteration=0,
+            "bad_tool",
+            {},
+            iteration=0,
         ) as ctx:
             ctx.set_error("failed")
 

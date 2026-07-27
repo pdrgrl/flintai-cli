@@ -1,7 +1,6 @@
 from typing import Any
 
-from openai import AsyncOpenAI, APIError, BadRequestError
-
+from openai import APIError, AsyncOpenAI, BadRequestError
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
@@ -13,7 +12,9 @@ class OpenAIModel(Model):
     _temperature: float
 
     def __init__(
-        self, client: AsyncOpenAI, model: str,
+        self,
+        client: AsyncOpenAI,
+        model: str,
         temperature: float = 0.0,
     ):
         self._client = client
@@ -21,9 +22,7 @@ class OpenAIModel(Model):
         self._temperature = temperature
 
     async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
-        openai_messages = [
-            converter_openai.from_message(m) for m in messages
-        ]
+        openai_messages = [converter_openai.from_message(m) for m in messages]
         try:
             response = await self._client.chat.completions.create(
                 model=self._model,
@@ -31,7 +30,7 @@ class OpenAIModel(Model):
                 temperature=kwargs.pop("temperature", self._temperature),
                 **kwargs,
             )
-        except Exception as e:
+        except APIError as e:
             return ModelResponse(
                 None,
                 _classify_block_reason(e),
@@ -46,8 +45,12 @@ def _classify_block_reason(api_error: APIError) -> ResponseStatus:
 
     # Check prompt-level blocking
     if isinstance(api_error, BadRequestError):
-        code = api_error.body.get('code', '')
-        if code == 'cyber_policy':
+        code = (
+            api_error.body.get("code", "") if isinstance(api_error.body, dict) else ""
+        )
+        if code == "cyber_policy":
             return ResponseStatus.BLOCKED_PROHIBITED
+        if code in ["invalid_prompt", "bio_policy"]:
+            return ResponseStatus.BLOCKED_SAFETY
 
     return ResponseStatus.ERROR

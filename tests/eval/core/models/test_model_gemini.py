@@ -2,8 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from google.genai import types as genai_types
-
-from flintai.eval.common.schema import Content, Message, PartType, Role
+from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model import ResponseStatus
 from flintai.eval.core.models.model_gemini import GeminiModel
 
@@ -37,7 +36,6 @@ def _make_blocked_response_empty_content():
 
 
 class TestGeminiModel(unittest.IsolatedAsyncioTestCase):
-
     async def test_generate_text(self):
         mock_client = MagicMock()
         mock_client.aio.models.generate_content = AsyncMock(
@@ -52,7 +50,8 @@ class TestGeminiModel(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resp.status, ResponseStatus.OK)
         self.assertEqual(resp.message.content.role, Role.ASSISTANT)
         self.assertEqual(
-            resp.message.content.parts[0].text, "Hello!",
+            resp.message.content.parts[0].text,
+            "Hello!",
         )
 
     async def test_blocked_response_returns_none_message(self):
@@ -114,7 +113,8 @@ class TestGeminiModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNone(resp.message)
         self.assertEqual(
-            resp.status, ResponseStatus.BLOCKED_RECITATION,
+            resp.status,
+            ResponseStatus.BLOCKED_RECITATION,
         )
 
 

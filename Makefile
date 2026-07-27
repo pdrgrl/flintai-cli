@@ -98,4 +98,3 @@ lock-deps:
 	@echo "=== Locking dependencies ==="
 	pip-compile --strip-extras --output-file=requirements.lock pyproject.toml
 	@echo "Locked dependencies written to requirements.lock"
-

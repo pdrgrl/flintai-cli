@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from flintai.eval.core.detectors.detector import Detector
-from flintai.eval.db.base.detectors.detector_types import DbDetector, DetectorType
+from flintai.eval.db.base.detectors.detector_types import (
+    DbDetector,
+    DetectorType,
+)
 
 
 def create_detector(
@@ -10,23 +13,14 @@ def create_detector(
     """Create a Detector instance from a DbDetector."""
     if db_detector.type == DetectorType.GARAK:
         if not db_detector.detector_name:
-            raise ValueError(
-                "detector_name is required for "
-                "GARAK detectors"
-            )
-        from flintai.eval.core.detectors.detector_garak import (
-            GarakDetector,
-        )
+            raise ValueError("detector_name is required for " "GARAK detectors")
+        from flintai.eval.core.detectors.detector_garak import GarakDetector
 
         return GarakDetector(db_detector.detector_name)
 
     elif db_detector.type == DetectorType.MODEL:
-        from flintai.eval.core.detectors.detector_model import (
-            ModelDetector,
-        )
-        from flintai.eval.core.models.generator_model import (
-            get_generator_model,
-        )
+        from flintai.eval.core.detectors.detector_model import ModelDetector
+        from flintai.eval.core.models.generator_model import get_generator_model
 
         model = get_generator_model()
         kwargs = {}
@@ -38,9 +32,7 @@ def create_detector(
         from flintai.eval.core.detectors.detector_model_adversarial import (
             AdversarialModelDetector,
         )
-        from flintai.eval.core.models.generator_model import (
-            get_generator_model,
-        )
+        from flintai.eval.core.models.generator_model import get_generator_model
 
         model = get_generator_model()
         kwargs = {}
@@ -50,16 +42,12 @@ def create_detector(
         return AdversarialModelDetector(model=model, **kwargs)
 
     elif db_detector.type == DetectorType.PII:
-        from flintai.eval.core.detectors.detector_pii import (
-            PIIDetector,
-        )
+        from flintai.eval.core.detectors.detector_pii import PIIDetector
 
         return PIIDetector()
 
     elif db_detector.type == DetectorType.SECRET:
-        from flintai.eval.core.detectors.detector_secret import (
-            SecretDetector,
-        )
+        from flintai.eval.core.detectors.detector_secret import SecretDetector
 
         return SecretDetector()
 
@@ -67,14 +55,9 @@ def create_detector(
         from flintai.eval.core.detectors.detector_topic_guard import (
             TopicGuardDetector,
         )
-        from flintai.eval.core.models.generator_model import (
-            get_generator_model,
-        )
+        from flintai.eval.core.models.generator_model import get_generator_model
 
-        if (
-            not db_detector.agent_objective
-            and not db_detector.agent_instructions
-        ):
+        if not db_detector.agent_objective and not db_detector.agent_instructions:
             raise ValueError(
                 "at least one of agent_objective or "
                 "agent_instructions is required for "
@@ -88,6 +71,4 @@ def create_detector(
         )
 
     else:
-        raise ValueError(
-            f"unknown detector type: {db_detector.type}"
-        )
+        raise ValueError(f"unknown detector type: {db_detector.type}")

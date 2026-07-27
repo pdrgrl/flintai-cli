@@ -41,6 +41,4 @@ class CsvMessageCollection(MessageCollection):
         return len(self._ensure_loaded())
 
     def save(self, messages: list[Message]) -> None:
-        raise NotImplementedError(
-            "CsvMessageCollection is read-only"
-        )
+        raise NotImplementedError("CsvMessageCollection is read-only")

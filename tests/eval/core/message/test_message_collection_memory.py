@@ -7,7 +7,6 @@ from flintai.eval.core.message.message_collection_memory import (
 
 
 class TestInMemoryMessageCollection(unittest.TestCase):
-
     def test_load_returns_messages(self):
         messages = [
             Message(content=Content.text(Role.USER, "hello")),
@@ -19,7 +18,8 @@ class TestInMemoryMessageCollection(unittest.TestCase):
 
         self.assertEqual(len(loaded), 2)
         self.assertEqual(
-            loaded[0].content.parts[0].text, "hello",
+            loaded[0].content.parts[0].text,
+            "hello",
         )
 
     def test_save_replaces_messages(self):
@@ -34,7 +34,8 @@ class TestInMemoryMessageCollection(unittest.TestCase):
         loaded = collection.load()
         self.assertEqual(len(loaded), 1)
         self.assertEqual(
-            loaded[0].content.parts[0].text, "saved",
+            loaded[0].content.parts[0].text,
+            "saved",
         )
 
     def test_from_strings(self):
@@ -46,7 +47,8 @@ class TestInMemoryMessageCollection(unittest.TestCase):
         loaded = result.load()
         self.assertEqual(len(loaded), 2)
         self.assertEqual(
-            loaded[0].content.parts[0].text, "prompt 1",
+            loaded[0].content.parts[0].text,
+            "prompt 1",
         )
         self.assertEqual(loaded[0].content.role, Role.USER)
 
@@ -62,7 +64,8 @@ class TestInMemoryMessageCollection(unittest.TestCase):
 
         self.assertEqual(result.id, target_id)
         self.assertEqual(
-            result.content.parts[0].text, "world",
+            result.content.parts[0].text,
+            "world",
         )
 
     def test_get_raises_for_missing_id(self):

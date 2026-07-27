@@ -38,7 +38,6 @@ Example server::
 from typing import Any
 
 import aiohttp
-
 from flintai.eval.common.schema import Content, Message, Part, Role
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
 
@@ -55,17 +54,15 @@ class AnthropicAgentModel(Model):
         self._endpoint = endpoint
 
     async def _generate(
-        self, messages: list[Message], **kwargs: Any,
+        self,
+        messages: list[Message],
+        **kwargs: Any,
     ) -> ModelResponse:
         if len(messages) > 1:
             raise ValueError(
-                "AnthropicAgentModel does not support "
-                "multiple messages"
+                "AnthropicAgentModel does not support " "multiple messages"
             )
-        text_parts = [
-            p.text for p in messages[0].content.parts
-            if p.text
-        ]
+        text_parts = [p.text for p in messages[0].content.parts if p.text]
         prompt_text = " ".join(text_parts)
 
         async with aiohttp.ClientSession() as session:
