@@ -5,7 +5,9 @@ from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector import DetectorResult
 from flintai.eval.core.eval.evaluation import EvaluationStatus
 from flintai.eval.core.eval.evaluation_message_list import MessageListEvaluation
-from flintai.eval.core.eval.evaluation_single_prompt import SinglePromptEvaluation
+from flintai.eval.core.eval.evaluation_single_prompt import (
+    SinglePromptEvaluation,
+)
 from flintai.eval.core.models.model import ModelResponse, ResponseStatus
 
 

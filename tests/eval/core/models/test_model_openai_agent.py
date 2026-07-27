@@ -22,7 +22,6 @@ def _make_aiohttp_mocks(json_data: dict):
 
 
 class TestOpenAIAgentModel(unittest.IsolatedAsyncioTestCase):
-
     @patch("flintai.eval.core.models.model_openai_agent.aiohttp.ClientSession")
     async def test_generate_text(self, mock_session_cls):
         mock_session = _make_aiohttp_mocks({"output": "Hello!"})
@@ -36,10 +35,12 @@ class TestOpenAIAgentModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(resp.message)
         self.assertEqual(
-            resp.message.content.role, Role.ASSISTANT,
+            resp.message.content.role,
+            Role.ASSISTANT,
         )
         self.assertEqual(
-            resp.message.content.parts[0].text, "Hello!",
+            resp.message.content.parts[0].text,
+            "Hello!",
         )
 
     @patch("flintai.eval.core.models.model_openai_agent.aiohttp.ClientSession")

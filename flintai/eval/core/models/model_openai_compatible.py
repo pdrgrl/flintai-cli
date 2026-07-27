@@ -8,7 +8,6 @@ implements the ``/v1/chat/completions`` API.
 from typing import Any
 
 from openai import AsyncOpenAI
-
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse
@@ -36,17 +35,17 @@ class OpenAICompatibleModel(Model):
         self._temperature = temperature
 
     async def _generate(
-        self, messages: list[Message], **kwargs: Any,
+        self,
+        messages: list[Message],
+        **kwargs: Any,
     ) -> ModelResponse:
-        openai_messages = [
-            converter_openai.from_message(m)
-            for m in messages
-        ]
+        openai_messages = [converter_openai.from_message(m) for m in messages]
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=openai_messages,
             temperature=kwargs.pop(
-                "temperature", self._temperature,
+                "temperature",
+                self._temperature,
             ),
             **kwargs,
         )

@@ -10,7 +10,6 @@ from flintai.eval.core.eval.evaluation import (
     EvaluationSummary,
 )
 
-
 # -- Formatting -----------------------------------------------------------
 
 
@@ -126,7 +125,9 @@ class ConsolePollingObserver:
             line = format_summary(summary)
             print(
                 f"\r{line}",
-                end="", flush=True, file=self._file,
+                end="",
+                flush=True,
+                file=self._file,
             )
 
         self._poller.start(evaluation, _print)

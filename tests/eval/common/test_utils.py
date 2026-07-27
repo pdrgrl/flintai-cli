@@ -5,7 +5,6 @@ from flintai.eval.common.utils import resolve_env, resolve_env_dict
 
 
 class TestResolveEnv(unittest.TestCase):
-
     def test_none_returns_none(self):
         self.assertIsNone(resolve_env(None))
 
@@ -18,7 +17,8 @@ class TestResolveEnv(unittest.TestCase):
     @patch.dict("os.environ", {"MY_KEY": "resolved-value"})
     def test_full_variable_replacement(self):
         self.assertEqual(
-            resolve_env("${MY_KEY}"), "resolved-value",
+            resolve_env("${MY_KEY}"),
+            "resolved-value",
         )
 
     @patch.dict("os.environ", {"TOKEN": "abc123"})
@@ -44,7 +44,9 @@ class TestResolveEnv(unittest.TestCase):
             resolve_env("${MISSING_VAR}")
 
     @patch.dict(
-        "os.environ", {"FIRST": "one"}, clear=True,
+        "os.environ",
+        {"FIRST": "one"},
+        clear=True,
     )
     def test_missing_second_variable_raises(self):
         with self.assertRaises(ValueError, msg="SECOND"):
@@ -52,17 +54,21 @@ class TestResolveEnv(unittest.TestCase):
 
 
 class TestResolveEnvDict(unittest.TestCase):
-
     @patch.dict("os.environ", {"TOKEN": "secret"})
     def test_resolves_values(self):
-        result = resolve_env_dict({
-            "Authorization": "Bearer ${TOKEN}",
-            "Accept": "application/json",
-        })
-        self.assertEqual(result, {
-            "Authorization": "Bearer secret",
-            "Accept": "application/json",
-        })
+        result = resolve_env_dict(
+            {
+                "Authorization": "Bearer ${TOKEN}",
+                "Accept": "application/json",
+            }
+        )
+        self.assertEqual(
+            result,
+            {
+                "Authorization": "Bearer secret",
+                "Accept": "application/json",
+            },
+        )
 
     def test_empty_dict(self):
         self.assertEqual(resolve_env_dict({}), {})

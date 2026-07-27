@@ -1,7 +1,7 @@
 from typing import Any
 
-from google.genai import Client, types as genai_types
-
+from google.genai import Client
+from google.genai import types as genai_types
 from flintai.eval.common import converter_genai
 from flintai.eval.common.schema import Message, Role
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
@@ -13,7 +13,9 @@ class GeminiModel(Model):
     _temperature: float
 
     def __init__(
-        self, client: Client, model: str,
+        self,
+        client: Client,
+        model: str,
         temperature: float = 0.0,
     ):
         self._client = client
@@ -44,10 +46,7 @@ class GeminiModel(Model):
             config.temperature = self._temperature
         if system_parts:
             system_instruction = genai_types.Content(
-                parts=[
-                    genai_types.Part(**p)
-                    for p in system_parts
-                ],
+                parts=[genai_types.Part(**p) for p in system_parts],
             )
             config.system_instruction = system_instruction
 
@@ -72,7 +71,8 @@ class GeminiModel(Model):
             )
             return ModelResponse(message)
         return ModelResponse(
-            None, _classify_block_reason(response),
+            None,
+            _classify_block_reason(response),
         )
 
 
@@ -80,7 +80,9 @@ def _classify_block_reason(response) -> ResponseStatus:
     """Determine why a Gemini response was blocked."""
     # Check prompt-level blocking
     reason = getattr(
-        response, "prompt_feedback", None,
+        response,
+        "prompt_feedback",
+        None,
     )
     if reason is not None:
         block_reason = getattr(reason, "block_reason", None)

@@ -1,19 +1,19 @@
 import unittest
 
-from anthropic.types import (
-    Message as AnthropicMessage,
-    TextBlock,
-    ThinkingBlock,
-    ToolUseBlock,
-    Usage,
-)
-
+from anthropic.types import Message as AnthropicMessage
+from anthropic.types import TextBlock, ThinkingBlock, ToolUseBlock, Usage
 from flintai.eval.common import converter_anthropic as anthropic_converter
-from flintai.eval.common.schema import Content, Part, PartType, Role, ToolCall, ToolResult
+from flintai.eval.common.schema import (
+    Content,
+    Part,
+    PartType,
+    Role,
+    ToolCall,
+    ToolResult,
+)
 
 
 class TestAnthropicConverter(unittest.TestCase):
-
     # -- to_content -----------------------------------------------------------
 
     def test_user_text_param(self):
@@ -70,7 +70,8 @@ class TestAnthropicConverter(unittest.TestCase):
         self.assertEqual(content.parts[1].part_type, PartType.TOOL_CALL)
         self.assertEqual(content.parts[1].tool_call.name, "get_weather")
         self.assertEqual(
-            content.parts[1].tool_call.arguments, {"city": "Paris"},
+            content.parts[1].tool_call.arguments,
+            {"city": "Paris"},
         )
 
     def test_thinking_response(self):
@@ -111,7 +112,8 @@ class TestAnthropicConverter(unittest.TestCase):
         content = anthropic_converter.to_content(msg)
         self.assertEqual(content.parts[0].part_type, PartType.TOOL_RESULT)
         self.assertEqual(
-            content.parts[0].tool_result.tool_call_id, "tu_1",
+            content.parts[0].tool_result.tool_call_id,
+            "tu_1",
         )
 
     def test_tool_result_with_error(self):

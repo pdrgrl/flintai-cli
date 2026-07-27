@@ -60,7 +60,8 @@ class EvaluationRepository(ABC):
 
     @abstractmethod
     def create(
-        self, config: DbEvaluation,
+        self,
+        config: DbEvaluation,
     ) -> DbEvaluation:
         """Persist a new evaluation configuration.
 
@@ -71,7 +72,8 @@ class EvaluationRepository(ABC):
 
     @abstractmethod
     def update(
-        self, config: DbEvaluation,
+        self,
+        config: DbEvaluation,
     ) -> DbEvaluation:
         """Replace an existing evaluation configuration.
 
@@ -95,6 +97,7 @@ class EvaluationRepository(ABC):
         Raises KeyError if the evaluation does not exist.
         """
         from flintai.eval.db.base.eval.eval_helpers import create_evaluation
+
         return create_evaluation(
             self.get(id),
             message_collection_repo=message_collection_repo,

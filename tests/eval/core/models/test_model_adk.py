@@ -26,21 +26,22 @@ def _make_aiohttp_session_with_calls(call_responses: list[dict]):
 
 
 class TestADKModel(unittest.IsolatedAsyncioTestCase):
-
     @patch("flintai.eval.core.models.model_adk.aiohttp.ClientSession")
     async def test_generate_text(self, mock_session_cls):
-        mock_session = _make_aiohttp_session_with_calls([
-            {"id": "session-1"},
+        mock_session = _make_aiohttp_session_with_calls(
             [
-                {
-                    "author": "my_agent",
-                    "content": {
-                        "role": "model",
-                        "parts": [{"text": "Hello!"}],
+                {"id": "session-1"},
+                [
+                    {
+                        "author": "my_agent",
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": "Hello!"}],
+                        },
                     },
-                },
-            ],
-        ])
+                ],
+            ]
+        )
         mock_session_cls.return_value = mock_session
 
         model = ADKModel(
@@ -52,18 +53,22 @@ class TestADKModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(resp.message)
         self.assertEqual(
-            resp.message.content.role, Role.ASSISTANT,
+            resp.message.content.role,
+            Role.ASSISTANT,
         )
         self.assertEqual(
-            resp.message.content.parts[0].text, "Hello!",
+            resp.message.content.parts[0].text,
+            "Hello!",
         )
 
     @patch("flintai.eval.core.models.model_adk.aiohttp.ClientSession")
     async def test_generate_empty_response(self, mock_session_cls):
-        mock_session = _make_aiohttp_session_with_calls([
-            {"id": "session-1"},
-            [],
-        ])
+        mock_session = _make_aiohttp_session_with_calls(
+            [
+                {"id": "session-1"},
+                [],
+            ]
+        )
         mock_session_cls.return_value = mock_session
 
         model = ADKModel(
@@ -77,30 +82,34 @@ class TestADKModel(unittest.IsolatedAsyncioTestCase):
 
     @patch("flintai.eval.core.models.model_adk.aiohttp.ClientSession")
     async def test_new_session_per_call(self, mock_session_cls):
-        mock_session1 = _make_aiohttp_session_with_calls([
-            {"id": "session-1"},
+        mock_session1 = _make_aiohttp_session_with_calls(
             [
-                {
-                    "author": "my_agent",
-                    "content": {
-                        "role": "model",
-                        "parts": [{"text": "First"}],
+                {"id": "session-1"},
+                [
+                    {
+                        "author": "my_agent",
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": "First"}],
+                        },
                     },
-                },
-            ],
-        ])
-        mock_session2 = _make_aiohttp_session_with_calls([
-            {"id": "session-2"},
+                ],
+            ]
+        )
+        mock_session2 = _make_aiohttp_session_with_calls(
             [
-                {
-                    "author": "my_agent",
-                    "content": {
-                        "role": "model",
-                        "parts": [{"text": "Second"}],
+                {"id": "session-2"},
+                [
+                    {
+                        "author": "my_agent",
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": "Second"}],
+                        },
                     },
-                },
-            ],
-        ])
+                ],
+            ]
+        )
         mock_session_cls.side_effect = [mock_session1, mock_session2]
 
         model = ADKModel(
@@ -116,18 +125,20 @@ class TestADKModel(unittest.IsolatedAsyncioTestCase):
 
     @patch("flintai.eval.core.models.model_adk.aiohttp.ClientSession")
     async def test_run_url(self, mock_session_cls):
-        mock_session = _make_aiohttp_session_with_calls([
-            {"id": "session-1"},
+        mock_session = _make_aiohttp_session_with_calls(
             [
-                {
-                    "author": "test_app",
-                    "content": {
-                        "role": "model",
-                        "parts": [{"text": "ok"}],
+                {"id": "session-1"},
+                [
+                    {
+                        "author": "test_app",
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": "ok"}],
+                        },
                     },
-                },
-            ],
-        ])
+                ],
+            ]
+        )
         mock_session_cls.return_value = mock_session
 
         model = ADKModel(
@@ -140,7 +151,8 @@ class TestADKModel(unittest.IsolatedAsyncioTestCase):
         # Second POST call is the /run call
         run_call = mock_session.post.call_args_list[1]
         self.assertEqual(
-            run_call.args[0], "http://myhost:9000/run",
+            run_call.args[0],
+            "http://myhost:9000/run",
         )
         payload = run_call.kwargs["json"]
         self.assertEqual(payload["appName"], "test_app")

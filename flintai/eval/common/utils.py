@@ -11,10 +11,7 @@ def setup_logging(level: int = logging.INFO) -> None:
     """Configure logging with a standard format."""
     logging.basicConfig(
         level=level,
-        format=(
-            "%(asctime)s %(levelname)s "
-            "%(name)s: %(message)s"
-        ),
+        format=("%(asctime)s %(levelname)s " "%(name)s: %(message)s"),
     )
 
 
@@ -43,14 +40,14 @@ def resolve_env(value: str | None) -> str | None:
     """
     if value is None:
         return None
+
     def _replace(match: re.Match[str]) -> str:
         var = match.group(1)
         resolved = os.environ.get(var)
         if resolved is None:
-            raise ValueError(
-                f"Environment variable {var!r} is not set"
-            )
+            raise ValueError(f"Environment variable {var!r} is not set")
         return resolved
+
     return _ENV_PATTERN.sub(_replace, value)
 
 
@@ -64,11 +61,7 @@ def resolve_env_dict(
 def strip_nulls(obj: object) -> object:
     """Recursively remove None-valued keys from dicts."""
     if isinstance(obj, dict):
-        return {
-            k: strip_nulls(v)
-            for k, v in obj.items()
-            if v is not None
-        }
+        return {k: strip_nulls(v) for k, v in obj.items() if v is not None}
     if isinstance(obj, list):
         return [strip_nulls(item) for item in obj]
     return obj

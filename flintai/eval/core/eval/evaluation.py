@@ -6,9 +6,6 @@ from enum import Enum
 from typing import Callable
 
 from dataclasses_json import dataclass_json
-
-from flintai.eval.common.schema import Content, Message, Role, Session
-from flintai.eval.common.schema import PartType
 from flintai.eval.common.schema import Session
 from flintai.eval.core.models.model import Model
 
@@ -47,7 +44,7 @@ class EvaluationSummary:
     @property
     def progress(self) -> float:
         if self.total_evaluations == 0:
-            return 100.0
+            return 1.0
         return (
             self.finished_evaluations + self.error_evaluations
         ) / self.total_evaluations
@@ -67,12 +64,16 @@ class EvaluationResult:
 @dataclass_json
 @dataclass
 class Evaluation(ABC):
+    status: EvaluationStatus = EvaluationStatus.WAITING
+    error_message: str | None = None
     observers: list[EvaluationObserver] = field(
         default_factory=list,
         repr=False,
     )
 
     def __init__(self):
+        self.status = EvaluationStatus.WAITING
+        self.error_message = None
         self.observers = []
 
     def add_observer(self, observer: EvaluationObserver):

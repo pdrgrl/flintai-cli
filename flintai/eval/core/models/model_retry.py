@@ -3,8 +3,8 @@ import logging
 import random
 from typing import Any
 
-from flintai.eval.common.schema import Content, Message, Role
-from flintai.eval.core.models.model import Model, ModelContent, ModelResponse
+from flintai.eval.common.schema import Message
+from flintai.eval.core.models.model import Model, ModelResponse
 
 logger = logging.getLogger(__name__)
 
@@ -41,19 +41,6 @@ class ExponentialRetryModel(Model):
         self._max_retries = max_retries
         self._base_delay = base_delay
 
-    async def generate(
-        self, contents: ModelContent, **kwargs: Any,
-    ) -> ModelResponse:
-        if isinstance(contents, str):
-            messages = [Message(
-                content=Content.text(Role.USER, contents),
-            )]
-        elif isinstance(contents, Message):
-            messages = [contents]
-        else:
-            messages = contents
-        return await self._generate(messages, **kwargs)
-
     async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
         last_exc: Exception | None = None
         for attempt in range(self._max_retries + 1):
@@ -63,13 +50,16 @@ class ExponentialRetryModel(Model):
                 if not _is_transient(exc) or attempt == self._max_retries:
                     raise
                 last_exc = exc
-                base = self._base_delay * (2 ** attempt)
+                base = self._base_delay * (2**attempt)
                 jitter = random.uniform(0, base)
                 delay = base + jitter
                 logger.warning(
                     "Transient error (attempt %d/%d), retrying in %.1fs (%s: %s)",
-                    attempt + 1, self._max_retries, delay,
-                    type(exc).__name__, exc,
+                    attempt + 1,
+                    self._max_retries,
+                    delay,
+                    type(exc).__name__,
+                    exc,
                 )
                 await asyncio.sleep(delay)
         raise last_exc  # unreachable, but keeps type checker happy
@@ -97,19 +87,6 @@ class FibonacciRetryModel(Model):
         self._max_retries = max_retries
         self._max_delay = max_delay
 
-    async def generate(
-        self, contents: ModelContent, **kwargs: Any,
-    ) -> ModelResponse:
-        if isinstance(contents, str):
-            messages = [Message(
-                content=Content.text(Role.USER, contents),
-            )]
-        elif isinstance(contents, Message):
-            messages = [contents]
-        else:
-            messages = contents
-        return await self._generate(messages, **kwargs)
-
     async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
         last_exc: Exception | None = None
         delays = _fibonacci_delays(self._max_delay)
@@ -124,8 +101,11 @@ class FibonacciRetryModel(Model):
                 delay = random.uniform(0, base)
                 logger.warning(
                     "Transient error (attempt %d/%d), retrying in %.1fs (%s: %s)",
-                    attempt + 1, self._max_retries, delay,
-                    type(exc).__name__, exc,
+                    attempt + 1,
+                    self._max_retries,
+                    delay,
+                    type(exc).__name__,
+                    exc,
                 )
                 await asyncio.sleep(delay)
         raise last_exc  # unreachable, but keeps type checker happy

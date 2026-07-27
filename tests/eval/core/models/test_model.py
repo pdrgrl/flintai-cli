@@ -1,11 +1,12 @@
 import asyncio
 import unittest
 
-from flintai.eval.common.schema import Content, Message, Role
+from flintai.eval.common.schema import Content, Message, Part, PartType, Role
 from flintai.eval.core.models.model import (
     Model,
     ModelResponse,
     ResponseStatus,
+    flatten_messages,
 )
 
 
@@ -27,7 +28,6 @@ class StubModel(Model):
 
 
 class TestModelGenerate(unittest.TestCase):
-
     def test_generate_with_string_input(self):
         expected = ModelResponse(
             message=Message(
@@ -38,7 +38,8 @@ class TestModelGenerate(unittest.TestCase):
         result = asyncio.run(model.generate("hello"))
         self.assertEqual(result.status, ResponseStatus.OK)
         self.assertEqual(
-            result.message.content.parts[0].text, "reply",
+            result.message.content.parts[0].text,
+            "reply",
         )
 
     def test_generate_with_message_input(self):
@@ -86,6 +87,36 @@ class TestModelGenerate(unittest.TestCase):
         model = StubModel(response=response)
         result = asyncio.run(model.generate("test"))
         self.assertIsNone(result.message)
+
+
+class TestFlattenMessages(unittest.TestCase):
+    def test_single_message(self):
+        msgs = [Message(content=Content.text(Role.USER, "hello world"))]
+        self.assertEqual(flatten_messages(msgs), "hello world")
+
+    def test_multiple_messages(self):
+        msgs = [
+            Message(content=Content.text(Role.USER, "Hello")),
+            Message(content=Content.text(Role.ASSISTANT, "Hi!")),
+            Message(content=Content.text(Role.USER, "How are you?")),
+        ]
+        result = flatten_messages(msgs)
+        self.assertIn("USER: Hello", result)
+        self.assertIn("ASSISTANT: Hi!", result)
+        self.assertIn("USER: How are you?", result)
+
+    def test_single_message_multiple_parts(self):
+        msg = Message(
+            content=Content(
+                role=Role.USER,
+                parts=[
+                    Part(part_type=PartType.TEXT, text="part one"),
+                    Part(part_type=PartType.TEXT, text="part two"),
+                ],
+            ),
+        )
+        result = flatten_messages([msg])
+        self.assertEqual(result, "part one part two")
 
 
 if __name__ == "__main__":

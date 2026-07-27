@@ -12,7 +12,6 @@ from typing import Any
 
 import aiohttp
 import requests
-
 from flintai.eval.common.schema import Content, Message, Part, Role
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
 
@@ -43,34 +42,30 @@ class ADKModel(Model):
         self._immediate_result = immediate_result
 
     async def _create_session(
-        self, session: aiohttp.ClientSession,
+        self,
+        session: aiohttp.ClientSession,
     ) -> str:
         """Create a new session for this request."""
-        url = (
-            f"{self._host}/apps/{self._app_name}"
-            f"/users/{self._user_id}/sessions"
-        )
+        url = f"{self._host}/apps/{self._app_name}/users/{self._user_id}/sessions"
         async with session.post(url, json={}) as resp:
             resp.raise_for_status()
             data = await resp.json()
             return data["id"]
 
     async def _generate(
-        self, messages: list[Message], **_kwargs: Any,
+        self,
+        messages: list[Message],
+        **_kwargs: Any,
     ) -> ModelResponse:
         if len(messages) > 1:
             raise ValueError(
-                "ADKModel does not support multiple "
-                "messages; use session-based history"
+                "ADKModel does not support multiple messages; use session-based history"
             )
 
         async with aiohttp.ClientSession() as session:
             session_id = await self._create_session(session)
 
-            text_parts = [
-                p.text for p in messages[0].content.parts
-                if p.text
-            ]
+            text_parts = [p.text for p in messages[0].content.parts if p.text]
             prompt_text = " ".join(text_parts)
 
             payload = {
@@ -110,7 +105,8 @@ class ADKModel(Model):
         return ModelResponse(message=message)
 
     def _extract_final(
-        self, events: list[dict],
+        self,
+        events: list[dict],
     ) -> str | None:
         """Extract the last text response, skipping tool
         call/response events."""
@@ -120,19 +116,20 @@ class ADKModel(Model):
                 continue
             parts = content.get("parts", [])
             # Skip events that are tool calls or responses
-            if any("functionCall" in p or "functionResponse" in p
-                   for p in parts if isinstance(p, dict)):
+            if any(
+                "functionCall" in p or "functionResponse" in p
+                for p in parts
+                if isinstance(p, dict)
+            ):
                 continue
-            texts = [
-                p["text"] for p in parts
-                if isinstance(p, dict) and "text" in p
-            ]
+            texts = [p["text"] for p in parts if isinstance(p, dict) and "text" in p]
             if texts:
                 return " ".join(texts)
         return None
 
     def _extract_first(
-        self, events: list[dict],
+        self,
+        events: list[dict],
     ) -> str | None:
         """Extract the first event's text content."""
         for event in events:
@@ -140,10 +137,7 @@ class ADKModel(Model):
             if content is None:
                 continue
             parts = content.get("parts", [])
-            texts = [
-                p["text"] for p in parts
-                if isinstance(p, dict) and "text" in p
-            ]
+            texts = [p["text"] for p in parts if isinstance(p, dict) and "text" in p]
             if texts:
                 return " ".join(texts)
         return None

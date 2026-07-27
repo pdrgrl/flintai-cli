@@ -1,15 +1,17 @@
 import asyncio
 import unittest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
-from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.eval.evaluation import (
     Evaluation,
     EvaluationResult,
     EvaluationStatus,
     EvaluationSummary,
 )
-from flintai.eval.core.eval.evaluation_multi import MAX_CONSECUTIVE_FAILURES, MultiEvaluation
+from flintai.eval.core.eval.evaluation_multi import (
+    MAX_CONSECUTIVE_FAILURES,
+    MultiEvaluation,
+)
 from flintai.eval.core.models.model import Model
 
 
@@ -77,8 +79,7 @@ class GracefulChild(Evaluation):
 
     def __init__(self, should_fail: bool = False):
         super().__init__()
-        self.status: EvaluationStatus = EvaluationStatus.INITIALIZED
-        self.error_message: str | None = None
+        self.status = EvaluationStatus.INITIALIZED
         self._should_fail = should_fail
 
     async def init(self):
@@ -108,7 +109,6 @@ class GracefulChild(Evaluation):
 
 
 class TestMultiEvaluation(unittest.TestCase):
-
     def test_get_summary_aggregates_children(self):
         child1 = FakeChild(
             summary=EvaluationSummary(
@@ -151,10 +151,12 @@ class TestMultiEvaluation(unittest.TestCase):
 
     def test_get_results_collects_child_results(self):
         result1 = EvaluationResult(
-            score=0.9, status=EvaluationStatus.FINISHED,
+            score=0.9,
+            status=EvaluationStatus.FINISHED,
         )
         result2 = EvaluationResult(
-            score=0.5, status=EvaluationStatus.FINISHED,
+            score=0.5,
+            status=EvaluationStatus.FINISHED,
         )
         child1 = FakeChild(results=[result1])
         child2 = FakeChild(results=[result2])
@@ -236,7 +238,6 @@ class TestMultiEvaluation(unittest.TestCase):
 
 
 class TestCircuitBreaker(unittest.TestCase):
-
     def test_aborts_after_consecutive_failures(self):
         num_children = MAX_CONSECUTIVE_FAILURES + 10
         children = [GracefulChild(should_fail=True) for _ in range(num_children)]
@@ -248,13 +249,16 @@ class TestCircuitBreaker(unittest.TestCase):
 
         self.assertEqual(multi.status, EvaluationStatus.ERROR)
         aborted = [
-            c for c in children
+            c
+            for c in children
             if c.error_message == "Aborted: too many consecutive failures"
         ]
         self.assertGreater(len(aborted), 0)
 
     def test_aborts_regardless_of_concurrency(self):
-        children = [GracefulChild(should_fail=True) for _ in range(MAX_CONSECUTIVE_FAILURES + 5)]
+        children = [
+            GracefulChild(should_fail=True) for _ in range(MAX_CONSECUTIVE_FAILURES + 5)
+        ]
         multi = StubMultiEvaluation(children=children)
         asyncio.run(multi.init())
         model = MagicMock(spec=Model)
@@ -263,7 +267,8 @@ class TestCircuitBreaker(unittest.TestCase):
 
         self.assertEqual(multi.status, EvaluationStatus.ERROR)
         aborted = [
-            c for c in children
+            c
+            for c in children
             if c.error_message == "Aborted: too many consecutive failures"
         ]
         self.assertGreater(len(aborted), 0)
@@ -279,7 +284,8 @@ class TestCircuitBreaker(unittest.TestCase):
         asyncio.run(multi.run(model, concurrency=1))
 
         aborted = [
-            c for c in children
+            c
+            for c in children
             if c.error_message == "Aborted: too many consecutive failures"
         ]
         self.assertEqual(len(aborted), 0)

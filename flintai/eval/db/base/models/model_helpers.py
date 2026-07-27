@@ -20,10 +20,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
 
     if db_model.type == ModelType.ANTHROPIC:
         from anthropic import AsyncAnthropic
-
-        from flintai.eval.core.models.model_anthropic import (
-            AnthropicModel,
-        )
+        from flintai.eval.core.models.model_anthropic import AnthropicModel
 
         client_kwargs = {}
         if key:
@@ -37,7 +34,6 @@ def _create_inner_model(db_model: DbModel) -> Model:
 
     elif db_model.type == ModelType.OPENAI:
         from openai import AsyncOpenAI
-
         from flintai.eval.core.models.model_openai import OpenAIModel
 
         client_kwargs = {}
@@ -52,7 +48,6 @@ def _create_inner_model(db_model: DbModel) -> Model:
 
     elif db_model.type == ModelType.GEMINI:
         from google.genai import Client
-
         from flintai.eval.core.models.model_gemini import GeminiModel
 
         client_kwargs = {}
@@ -66,9 +61,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
         )
 
     elif db_model.type == ModelType.LITELLM:
-        from flintai.eval.core.models.model_litellm import (
-            LiteLLMModel,
-        )
+        from flintai.eval.core.models.model_litellm import LiteLLMModel
 
         return LiteLLMModel(
             db_model.model_name,
@@ -76,9 +69,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
         )
 
     elif db_model.type == ModelType.HUGGINGFACE:
-        from flintai.eval.core.models.model_huggingface import (
-            HuggingFaceModel,
-        )
+        from flintai.eval.core.models.model_huggingface import HuggingFaceModel
 
         return HuggingFaceModel(
             db_model.model_name,
@@ -87,9 +78,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
         )
 
     elif db_model.type == ModelType.OLLAMA:
-        from flintai.eval.core.models.model_ollama import (
-            OllamaModel,
-        )
+        from flintai.eval.core.models.model_ollama import OllamaModel
 
         return OllamaModel(
             db_model.model_name,
@@ -107,9 +96,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
         )
 
     elif db_model.type == ModelType.OPENAI_AGENT:
-        from flintai.eval.core.models.model_openai_agent import (
-            OpenAIAgentModel,
-        )
+        from flintai.eval.core.models.model_openai_agent import OpenAIAgentModel
 
         return OpenAIAgentModel(
             host=db_model.host or "http://localhost:8000",
@@ -140,9 +127,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
         )
 
     elif db_model.type == ModelType.GENERIC_HTTP:
-        from flintai.eval.core.models.model_generic_http import (
-            GenericHttpModel,
-        )
+        from flintai.eval.core.models.model_generic_http import GenericHttpModel
 
         url = db_model.host or "http://localhost:8000"
         if db_model.endpoint:
@@ -156,9 +141,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
         )
 
     elif db_model.type == ModelType.LANGSERVE:
-        from flintai.eval.core.models.model_langserve import (
-            LangServeModel,
-        )
+        from flintai.eval.core.models.model_langserve import LangServeModel
 
         return LangServeModel(
             base_url=db_model.host or "http://localhost:8000",
@@ -167,6 +150,4 @@ def _create_inner_model(db_model: DbModel) -> Model:
         )
 
     else:
-        raise ValueError(
-            f"unknown model type: {db_model.type}"
-        )
+        raise ValueError(f"unknown model type: {db_model.type}")

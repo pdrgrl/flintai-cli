@@ -3,7 +3,6 @@ from datetime import datetime
 from enum import Enum
 
 from dataclasses_json import dataclass_json
-
 from flintai.eval.common.reference import Reference
 from flintai.eval.common.utils import datetime_config, generate_id, now_utc
 from flintai.eval.core.eval.evaluation import EvaluationSummary
@@ -47,9 +46,7 @@ class SortDirection(str, Enum):
 @dataclass_json
 @dataclass
 class ModelEvaluationRunSortOrder:
-    field: ModelEvaluationRunSortField = (
-        ModelEvaluationRunSortField.CREATED
-    )
+    field: ModelEvaluationRunSortField = ModelEvaluationRunSortField.CREATED
     direction: SortDirection = SortDirection.DESC
 
 

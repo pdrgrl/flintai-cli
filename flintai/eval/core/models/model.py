@@ -1,10 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any
+from typing import Any, Union
 
-from flintai.eval.common.schema import PartType
-from flintai.eval.common.schema import Content, Message, Role
+from flintai.eval.common.schema import Content, Message, PartType, Role
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,7 @@ class ResponseStatus(str, Enum):
     ERROR = "error"
 
 
-ModelContent = str | Message | list[Message]
+ModelContent = Union[str, Message, list[Message]]
 
 
 class ModelResponse:
@@ -82,23 +81,27 @@ class Model(ABC):
         except Exception as e:
             logger.error(
                 "%s: prompt=%d chars (%s: %s)",
-                model_name, prompt_len, type(e).__name__, e,
+                model_name,
+                prompt_len,
+                type(e).__name__,
+                e,
             )
             raise
 
-        response_len = (
-            len(_message_text(response.message))
-            if response.message else 0
-        )
+        response_len = len(_message_text(response.message)) if response.message else 0
         if response.status != ResponseStatus.OK:
             logger.warning(
                 "%s: prompt=%d chars, status=%s",
-                model_name, prompt_len, response.status.value,
+                model_name,
+                prompt_len,
+                response.status.value,
             )
         else:
             logger.debug(
                 "%s: prompt=%d chars, response=%d chars",
-                model_name, prompt_len, response_len,
+                model_name,
+                prompt_len,
+                response_len,
             )
 
         return response
@@ -115,20 +118,30 @@ class Model(ABC):
 # -- Helper functions -----------------------------------------------
 
 
+def flatten_messages(messages: list[Message]) -> str:
+    if len(messages) == 1:
+        parts = [p.text for p in messages[0].content.parts if p.text]
+        return " ".join(parts)
+
+    lines: list[str] = []
+    for msg in messages:
+        role = msg.content.role.value.upper()
+        text = " ".join(p.text for p in msg.content.parts if p.text)
+        lines.append(f"{role}: {text}")
+    return "\n\n".join(lines)
+
+
 def extract_text_from_message(message: Message) -> str:
-    return "".join(
-        part.text for part in message.content.parts
-        if part.text is not None
-    )
+    return "".join(part.text for part in message.content.parts if part.text is not None)
 
 
 def extract_final_text(message: Message) -> str:
     """Extract only the final text output, excluding
     thinking, tool calls, and tool results."""
     text_parts = [
-        part.text for part in message.content.parts
-        if part.text is not None
-        and part.part_type == PartType.TEXT
+        part.text
+        for part in message.content.parts
+        if part.text is not None and part.part_type == PartType.TEXT
     ]
     if text_parts:
         return "".join(text_parts)

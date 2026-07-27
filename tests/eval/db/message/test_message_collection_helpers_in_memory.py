@@ -13,7 +13,6 @@ from flintai.eval.db.base.message.message_collection_types import (
 
 
 class TestCreateInMemoryWithPrompts(unittest.TestCase):
-
     def test_creates_from_strings(self):
         db = DbMessageCollection(
             type=MessageCollectionType.IN_MEMORY,
@@ -26,12 +25,12 @@ class TestCreateInMemoryWithPrompts(unittest.TestCase):
         loaded = result.load()
         self.assertEqual(len(loaded), 2)
         self.assertEqual(
-            loaded[0].content.parts[0].text, "hello",
+            loaded[0].content.parts[0].text,
+            "hello",
         )
 
 
 class TestCreateInMemoryWithMessages(unittest.TestCase):
-
     def test_creates_from_message_dicts(self):
         msg_dict = {
             "id": "m1",
@@ -55,7 +54,6 @@ class TestCreateInMemoryWithMessages(unittest.TestCase):
 
 
 class TestCreateInMemoryEmpty(unittest.TestCase):
-
     def test_creates_empty_collection(self):
         db = DbMessageCollection(
             type=MessageCollectionType.IN_MEMORY,

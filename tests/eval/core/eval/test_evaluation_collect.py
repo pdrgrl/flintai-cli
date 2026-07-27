@@ -14,11 +14,9 @@ from flintai.eval.core.models.model import Model
 
 @dataclass
 class LeafEvaluation(Evaluation):
-    status: EvaluationStatus = EvaluationStatus.WAITING
     target_score: float = 1.0
     should_fail: bool = False
     score: float = 0.0
-    error_message: str | None = None
 
     async def init(self):
         self.status = EvaluationStatus.INITIALIZED
@@ -30,16 +28,20 @@ class LeafEvaluation(Evaluation):
             finished_evaluations=1 if self.status == EvaluationStatus.FINISHED else 0,
             error_evaluations=1 if self.status == EvaluationStatus.ERROR else 0,
             max_score=1.0,
-            achieved_score=self.score if self.status == EvaluationStatus.FINISHED else 0.0,
+            achieved_score=self.score
+            if self.status == EvaluationStatus.FINISHED
+            else 0.0,
             error_messages=[self.error_message] if self.error_message else [],
         )
 
     def get_results(self) -> list[EvaluationResult]:
-        return [EvaluationResult(
-            score=self.score,
-            status=self.status,
-            error_message=self.error_message,
-        )]
+        return [
+            EvaluationResult(
+                score=self.score,
+                status=self.status,
+                error_message=self.error_message,
+            )
+        ]
 
     async def run(self, model: Model, concurrency: int = 50) -> None:
         self.status = EvaluationStatus.RUNNING

@@ -85,7 +85,8 @@ async def run_model_evaluation(
 
     logger.info(
         "Run %s started for model evaluation %s",
-        run.id, model_evaluation_id,
+        run.id,
+        model_evaluation_id,
     )
 
     def _on_progress(e: Evaluation) -> None:
@@ -99,7 +100,8 @@ async def run_model_evaluation(
         run_repo.update(run)
         logger.info(
             "Run %s: %s (%.0f%%)",
-            run.id, summary.status.value,
+            run.id,
+            summary.status.value,
             summary.progress * 100,
         )
 
@@ -131,7 +133,8 @@ async def run_model_evaluation(
         result_repo.create_batch(db_results)
         logger.info(
             "Run %s: stored %d results",
-            run.id, len(db_results),
+            run.id,
+            len(db_results),
         )
 
     logger.info("Run %s finished", run.id)

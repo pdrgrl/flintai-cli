@@ -1,10 +1,9 @@
 import asyncio
 from typing import Any
 
-from transformers import Pipeline, pipeline
-
 from flintai.eval.common.schema import Content, Message, PartType, Role
 from flintai.eval.core.models.model import Model, ModelResponse
+from transformers import Pipeline, pipeline
 
 
 class HuggingFaceModel(Model):
@@ -18,13 +17,15 @@ class HuggingFaceModel(Model):
     _temperature: float
 
     def __init__(
-        self, model: str | Pipeline,
+        self,
+        model: str | Pipeline,
         temperature: float = 0.0,
         **pipeline_kwargs: Any,
     ):
         if isinstance(model, str):
             self._pipeline = pipeline(
-                "text-generation", model=model,
+                "text-generation",
+                model=model,
                 **pipeline_kwargs,
             )
         else:
@@ -33,15 +34,14 @@ class HuggingFaceModel(Model):
 
     async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
         return await asyncio.to_thread(
-            self._generate_sync, messages, **kwargs,
+            self._generate_sync,
+            messages,
+            **kwargs,
         )
 
     def _generate_sync(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
         if len(messages) > 1:
-            raise ValueError(
-                "HuggingFaceModel does not support "
-                "multiple messages"
-            )
+            raise ValueError("HuggingFaceModel does not support multiple messages")
         prompt = _collect_text(messages[0].content)
         kwargs.setdefault("max_new_tokens", 256)
         kwargs.setdefault("return_full_text", False)
@@ -56,6 +56,5 @@ class HuggingFaceModel(Model):
 
 def _collect_text(content: Content) -> str:
     return " ".join(
-        p.text for p in content.parts
-        if p.part_type == PartType.TEXT and p.text
+        p.text for p in content.parts if p.part_type == PartType.TEXT and p.text
     )

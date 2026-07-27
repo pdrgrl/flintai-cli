@@ -2,8 +2,8 @@
 Minimal stub for inventory schema types used by the scan module.
 """
 
-from enum import Enum
 from dataclasses import dataclass, field
+from enum import Enum
 
 
 @dataclass

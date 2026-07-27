@@ -47,8 +47,7 @@ def _create_generator_model() -> Model:
 
     if ":" not in spec:
         raise ValueError(
-            f"Invalid GENERATOR_MODEL format: {spec!r}. "
-            "Expected type:model_name"
+            f"Invalid GENERATOR_MODEL format: {spec!r}. " "Expected type:model_name"
         )
 
     model_type, model_name = spec.split(":", 1)
@@ -61,24 +60,29 @@ def _create_inner(model_type: str, model_name: str) -> Model:
     if model_type == "gemini":
         from google.genai import Client
         from flintai.eval.core.models.model_gemini import GeminiModel
+
         return GeminiModel(Client(), model_name)
 
     elif model_type == "openai":
         from openai import AsyncOpenAI
         from flintai.eval.core.models.model_openai import OpenAIModel
+
         return OpenAIModel(AsyncOpenAI(), model_name)
 
     elif model_type == "anthropic":
         from anthropic import AsyncAnthropic
         from flintai.eval.core.models.model_anthropic import AnthropicModel
+
         return AnthropicModel(AsyncAnthropic(), model_name)
 
     elif model_type == "litellm":
         from flintai.eval.core.models.model_litellm import LiteLLMModel
+
         return LiteLLMModel(model_name)
 
     elif model_type == "ollama":
         from flintai.eval.core.models.model_ollama import OllamaModel
+
         return OllamaModel(model_name)
 
     else:

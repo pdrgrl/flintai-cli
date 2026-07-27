@@ -6,20 +6,12 @@ _dicts_to_findings, finding evidence, and llm_provider.
 """
 
 import dataclasses
-import os
 import re
-import tempfile
 import unittest
 import uuid
 from unittest.mock import MagicMock, patch
 
-from flintai.scan.schema import (
-    AffectedComponent,
-    CvssScores,
-    Evidence,
-    Finding,
-)
-
+from flintai.scan.schema import AffectedComponent, CvssScores, Evidence, Finding
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -536,9 +528,7 @@ class TestRunOpenGrepSkipsWhenMissing(unittest.TestCase):
     def test_returns_empty_when_binary_not_found(self):
         from flintai.scan import static_scanner
 
-        with patch.object(
-            static_scanner, "find_opengrep_binary", return_value=None
-        ):
+        with patch.object(static_scanner, "find_opengrep_binary", return_value=None):
             findings = static_scanner.run_opengrep(
                 "/nonexistent", "/nonexistent/rules.yaml"
             )

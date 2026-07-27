@@ -11,12 +11,7 @@ from datetime import datetime
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-
 from flintai.cli.console import CLI_WIDTH, console
-from flintai.cli.utils import get_flintai_config_path
-from flintai.eval.core.eval.evaluation import EvaluationStatus
-from flintai.eval.db.base.eval.model_eval_types import DbModelEvaluation
-from flintai.eval.db.json.repository_json import JsonRepository
 from flintai.cli.rich_observer import create_progress
 from flintai.cli.runner import (
     MAX_CONSECUTIVE_RUN_FAILURES,
@@ -26,6 +21,10 @@ from flintai.cli.runner import (
     run_cli_evaluation,
     write_output,
 )
+from flintai.cli.utils import get_flintai_config_path
+from flintai.eval.core.eval.evaluation import EvaluationStatus
+from flintai.eval.db.base.eval.model_eval_types import DbModelEvaluation
+from flintai.eval.db.json.repository_json import JsonRepository
 
 _DEFAULT_CONFIG = str(get_flintai_config_path())
 
@@ -35,19 +34,19 @@ _config_parent = argparse.ArgumentParser(add_help=False)
 _config_parent.add_argument(
     "--config",
     default=_DEFAULT_CONFIG,
-    help="Path to JSON config file "
-         f"(default: {_DEFAULT_CONFIG})",
+    help="Path to JSON config file " f"(default: {_DEFAULT_CONFIG})",
 )
 _config_parent.add_argument(
     "--log",
-    help="Log file path "
-         f"(default: {_DEFAULT_LOG})",
+    help="Log file path " f"(default: {_DEFAULT_LOG})",
 )
 
 
 _tag_parent = argparse.ArgumentParser(add_help=False)
 _tag_parent.add_argument(
-    "--tag", action="append", default=[],
+    "--tag",
+    action="append",
+    default=[],
     metavar="KEY=VALUE",
     help="Filter by tag (repeatable)",
 )
@@ -58,8 +57,7 @@ def _parse_tags(raw: list[str]) -> dict[str, str]:
     for item in raw:
         if "=" not in item:
             console.print(
-                f"[red]Invalid tag format: {item!r} "
-                f"(expected KEY=VALUE)[/red]",
+                f"[red]Invalid tag format: {item!r} " f"(expected KEY=VALUE)[/red]",
             )
             sys.exit(1)
         k, v = item.split("=", 1)
@@ -71,15 +69,13 @@ def _matches_tags(
     entity_tags: dict[str, str],
     filter_tags: dict[str, str],
 ) -> bool:
-    return all(
-        entity_tags.get(k) == v
-        for k, v in filter_tags.items()
-    )
+    return all(entity_tags.get(k) == v for k, v in filter_tags.items())
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
     eval_parser = subparsers.add_parser(
-        "eval", help="Evaluation commands",
+        "eval",
+        help="Evaluation commands",
     )
     eval_sub = eval_parser.add_subparsers(dest="eval_cmd")
     eval_sub.required = True
@@ -92,11 +88,13 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 
 # -- models -------------------------------------------------------
 
+
 def _register_models(
     subparsers: argparse._SubParsersAction,
 ) -> None:
     models_parser = subparsers.add_parser(
-        "models", help="Model commands",
+        "models",
+        help="Model commands",
     )
     models_sub = models_parser.add_subparsers(
         dest="models_cmd",
@@ -104,19 +102,22 @@ def _register_models(
     models_sub.required = True
 
     models_sub.add_parser(
-        "list", help="List all models",
+        "list",
+        help="List all models",
         parents=[_config_parent, _tag_parent],
     )
 
     show_parser = models_sub.add_parser(
-        "show", help="Show model details",
+        "show",
+        help="Show model details",
         parents=[_config_parent],
     )
     show_parser.add_argument("id", help="Model ID")
 
 
 def handle_models(
-    args: argparse.Namespace, store: JsonRepository,
+    args: argparse.Namespace,
+    store: JsonRepository,
 ) -> None:
     if args.models_cmd == "list":
         _models_list(store, _parse_tags(args.tag))
@@ -130,10 +131,7 @@ def _models_list(
 ) -> None:
     models = store.models.list()
     if filter_tags:
-        models = [
-            m for m in models
-            if _matches_tags(m.tags, filter_tags)
-        ]
+        models = [m for m in models if _matches_tags(m.tags, filter_tags)]
     if not models:
         console.print("[dim]No models configured.[/dim]")
         return
@@ -172,7 +170,8 @@ def _models_show(store: JsonRepository, model_id: str) -> None:
     console.print(Panel(detail, title=f"[bold]{model.name}[/bold]", expand=False))
 
     me_view = store.model_evaluations.list_by_model(
-        model.id, limit=100,
+        model.id,
+        limit=100,
     )
     if me_view.items:
         table = Table(
@@ -180,7 +179,9 @@ def _models_show(store: JsonRepository, model_id: str) -> None:
             width=CLI_WIDTH,
         )
         table.add_column("ID", style="dim", ratio=2, overflow="ellipsis", no_wrap=True)
-        table.add_column("Name", style="bold", ratio=3, overflow="ellipsis", no_wrap=True)
+        table.add_column(
+            "Name", style="bold", ratio=3, overflow="ellipsis", no_wrap=True
+        )
         table.add_column("Evaluation", ratio=3, overflow="ellipsis", no_wrap=True)
         for item in me_view.items:
             eval_name = item.evaluation_ref.name if item.evaluation_ref else "?"
@@ -193,11 +194,13 @@ def _models_show(store: JsonRepository, model_id: str) -> None:
 
 # -- evaluations ---------------------------------------------------
 
+
 def _register_evaluations(
     subparsers: argparse._SubParsersAction,
 ) -> None:
     evals_parser = subparsers.add_parser(
-        "evaluations", help="Evaluation commands",
+        "evaluations",
+        help="Evaluation commands",
     )
     evals_sub = evals_parser.add_subparsers(
         dest="evals_cmd",
@@ -205,19 +208,22 @@ def _register_evaluations(
     evals_sub.required = True
 
     evals_sub.add_parser(
-        "list", help="List all evaluations",
+        "list",
+        help="List all evaluations",
         parents=[_config_parent, _tag_parent],
     )
 
     show_parser = evals_sub.add_parser(
-        "show", help="Show evaluation details",
+        "show",
+        help="Show evaluation details",
         parents=[_config_parent],
     )
     show_parser.add_argument("id", help="Evaluation ID")
 
 
 def handle_evaluations(
-    args: argparse.Namespace, store: JsonRepository,
+    args: argparse.Namespace,
+    store: JsonRepository,
 ) -> None:
     if args.evals_cmd == "list":
         _evaluations_list(store, _parse_tags(args.tag))
@@ -231,10 +237,7 @@ def _evaluations_list(
 ) -> None:
     evaluations = store.evaluations.list()
     if filter_tags:
-        evaluations = [
-            e for e in evaluations
-            if _matches_tags(e.tags, filter_tags)
-        ]
+        evaluations = [e for e in evaluations if _matches_tags(e.tags, filter_tags)]
     if not evaluations:
         console.print("[dim]No evaluations configured.[/dim]")
         return
@@ -248,7 +251,8 @@ def _evaluations_list(
 
 
 def _evaluations_show(
-    store: JsonRepository, eval_id: str,
+    store: JsonRepository,
+    eval_id: str,
 ) -> None:
     eval_id = _resolve_id(
         eval_id,
@@ -276,7 +280,8 @@ def _evaluations_show(
     console.print(Panel(detail, title=f"[bold]{evaluation.name}[/bold]", expand=False))
 
     me_view = store.model_evaluations.list_by_evaluation(
-        evaluation.id, limit=100,
+        evaluation.id,
+        limit=100,
     )
     if me_view.items:
         table = Table(
@@ -284,7 +289,9 @@ def _evaluations_show(
             width=CLI_WIDTH,
         )
         table.add_column("ID", style="dim", ratio=2, overflow="ellipsis", no_wrap=True)
-        table.add_column("Name", style="bold", ratio=3, overflow="ellipsis", no_wrap=True)
+        table.add_column(
+            "Name", style="bold", ratio=3, overflow="ellipsis", no_wrap=True
+        )
         table.add_column("Model", ratio=3, overflow="ellipsis", no_wrap=True)
         for item in me_view.items:
             model_name = item.model_ref.name if item.model_ref else "?"
@@ -301,12 +308,16 @@ _model_selector_parent = argparse.ArgumentParser(
     add_help=False,
 )
 _model_selector_parent.add_argument(
-    "--model", action="append", default=[],
+    "--model",
+    action="append",
+    default=[],
     metavar="ID",
     help="Model ID (repeatable)",
 )
 _model_selector_parent.add_argument(
-    "--model-tag", action="append", default=[],
+    "--model-tag",
+    action="append",
+    default=[],
     metavar="KEY=VALUE",
     help="Match models by tag (repeatable)",
 )
@@ -315,12 +326,16 @@ _eval_selector_parent = argparse.ArgumentParser(
     add_help=False,
 )
 _eval_selector_parent.add_argument(
-    "--eval", action="append", default=[],
+    "--eval",
+    action="append",
+    default=[],
     metavar="ID",
     help="Evaluation ID (repeatable)",
 )
 _eval_selector_parent.add_argument(
-    "--eval-tag", action="append", default=[],
+    "--eval-tag",
+    action="append",
+    default=[],
     metavar="KEY=VALUE",
     help="Match evaluations by tag (repeatable)",
 )
@@ -391,10 +406,7 @@ def _model_evaluations_list(
 ) -> None:
     items = store.model_evaluations.list_all()
     if filter_tags:
-        items = [
-            me for me in items
-            if _matches_tags(me.tags, filter_tags)
-        ]
+        items = [me for me in items if _matches_tags(me.tags, filter_tags)]
     if models:
         model_ids = {m.id for m in models}
         items = [me for me in items if me.model_id in model_ids]
@@ -407,7 +419,8 @@ def _model_evaluations_list(
 
     table = Table(
         title="Model-Evaluation Assignments",
-        show_lines=False, width=CLI_WIDTH,
+        show_lines=False,
+        width=CLI_WIDTH,
     )
     table.add_column("ID", style="dim", ratio=2, overflow="ellipsis", no_wrap=True)
     table.add_column("Name", style="bold", ratio=2, overflow="ellipsis", no_wrap=True)
@@ -458,7 +471,8 @@ def _resolve_models(
 
     for mid in model_ids:
         resolved = _resolve_id(
-            mid, [m.id for m in store.models.list()],
+            mid,
+            [m.id for m in store.models.list()],
         )
         try:
             m = store.models.get(resolved)
@@ -473,10 +487,7 @@ def _resolve_models(
 
     if model_tags:
         for m in store.models.list():
-            if (
-                m.id not in seen_ids
-                and _matches_tags(m.tags, model_tags)
-            ):
+            if m.id not in seen_ids and _matches_tags(m.tags, model_tags):
                 models.append(m)
                 seen_ids.add(m.id)
 
@@ -498,7 +509,8 @@ def _resolve_evaluations(
 
     for eid in eval_ids:
         resolved = _resolve_id(
-            eid, [e.id for e in store.evaluations.list()],
+            eid,
+            [e.id for e in store.evaluations.list()],
         )
         try:
             e = store.evaluations.get(resolved)
@@ -513,10 +525,7 @@ def _resolve_evaluations(
 
     if eval_tags:
         for e in store.evaluations.list():
-            if (
-                e.id not in seen_ids
-                and _matches_tags(e.tags, eval_tags)
-            ):
+            if e.id not in seen_ids and _matches_tags(e.tags, eval_tags):
                 evaluations.append(e)
                 seen_ids.add(e.id)
 
@@ -533,14 +542,12 @@ def _model_evaluations_attach(
 
     if not models:
         console.print(
-            "[red]No models matched. Specify --model "
-            "or --model-tag.[/red]",
+            "[red]No models matched. Specify --model " "or --model-tag.[/red]",
         )
         return
     if not evaluations:
         console.print(
-            "[red]No evaluations matched. Specify --eval "
-            "or --eval-tag.[/red]",
+            "[red]No evaluations matched. Specify --eval " "or --eval-tag.[/red]",
         )
         return
 
@@ -563,7 +570,8 @@ def _model_evaluations_attach(
         user_store.save()
         table = Table(
             title=f"Attached ({len(added)} new)",
-            show_lines=False, width=CLI_WIDTH,
+            show_lines=False,
+            width=CLI_WIDTH,
         )
         table.add_column("Model", ratio=2)
         table.add_column("Evaluation", ratio=3)
@@ -592,15 +600,12 @@ def _model_evaluations_detach(
 
     if not models and not evaluations:
         console.print(
-            "[red]Specify at least --model/--model-tag "
-            "or --eval/--eval-tag.[/red]",
+            "[red]Specify at least --model/--model-tag " "or --eval/--eval-tag.[/red]",
         )
         return
 
     model_ids = {m.id for m in models} if models else None
-    eval_ids = (
-        {e.id for e in evaluations} if evaluations else None
-    )
+    eval_ids = {e.id for e in evaluations} if evaluations else None
 
     removed: list[DbModelEvaluation] = []
 
@@ -609,7 +614,8 @@ def _model_evaluations_detach(
             for eid in eval_ids:
                 removed.extend(
                     user_store.model_evaluations.remove(
-                        model_id=mid, evaluation_id=eid,
+                        model_id=mid,
+                        evaluation_id=eid,
                     ),
                 )
     elif model_ids:
@@ -631,7 +637,8 @@ def _model_evaluations_detach(
         user_store.save()
         table = Table(
             title=f"Detached ({len(removed)} removed)",
-            show_lines=False, width=CLI_WIDTH,
+            show_lines=False,
+            width=CLI_WIDTH,
         )
         table.add_column("Model", ratio=2)
         table.add_column("Evaluation", ratio=3)
@@ -646,7 +653,9 @@ def _model_evaluations_detach(
 
 
 def _name_for(
-    store: JsonRepository, kind: str, id: str,
+    store: JsonRepository,
+    kind: str,
+    id: str,
 ) -> str:
     try:
         if kind == "model":
@@ -658,11 +667,13 @@ def _name_for(
 
 # -- run -----------------------------------------------------------
 
+
 def _register_run(
     subparsers: argparse._SubParsersAction,
 ) -> None:
     run_parser = subparsers.add_parser(
-        "run", help="Run evaluations",
+        "run",
+        help="Run evaluations",
         parents=[_config_parent],
     )
     run_parser.add_argument(
@@ -675,48 +686,58 @@ def _register_run(
         help="Run all evaluations for this model ID",
     )
     run_parser.add_argument(
-        "--output", "-o",
-        help="Output file path "
-             "(default: eval_<timestamp>.<format>)",
+        "--output",
+        "-o",
+        help="Output file path " "(default: eval_<timestamp>.<format>)",
     )
     run_parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["json", "sarif"],
         default="json",
         help="Output format (default: json)",
     )
     run_parser.add_argument(
-        "--concurrency", "-c",
-        type=int, default=20,
+        "--concurrency",
+        "-c",
+        type=int,
+        default=20,
         help="Max concurrent tasks (default: 20)",
     )
     run_parser.add_argument(
-        "--model-tag", action="append", default=[],
+        "--model-tag",
+        action="append",
+        default=[],
         metavar="KEY=VALUE",
         help="Filter by model tag (repeatable)",
     )
     run_parser.add_argument(
-        "--eval-tag", action="append", default=[],
+        "--eval-tag",
+        action="append",
+        default=[],
         metavar="KEY=VALUE",
         help="Filter by evaluation tag (repeatable)",
     )
 
 
 async def handle_run(
-    args: argparse.Namespace, store: JsonRepository,
+    args: argparse.Namespace,
+    store: JsonRepository,
 ) -> str | None:
     model_tag_filter = _parse_tags(args.model_tag)
     eval_tag_filter = _parse_tags(args.eval_tag)
 
     model_evaluations = _resolve_run_targets(
-        store, args, model_tag_filter, eval_tag_filter,
+        store,
+        args,
+        model_tag_filter,
+        eval_tag_filter,
     )
     if not model_evaluations:
         return None
 
     eval_names = [
-        store.evaluations.get(me.evaluation_id).name
-        for me in model_evaluations
+        store.evaluations.get(me.evaluation_id).name for me in model_evaluations
     ]
     desc_width = min(max((len(n) for n in eval_names), default=20), 40)
 
@@ -728,7 +749,9 @@ async def handle_run(
         progress.start()
         for me in model_evaluations:
             result = await run_cli_evaluation(
-                me, store, args.concurrency,
+                me,
+                store,
+                args.concurrency,
                 progress=progress,
                 desc_width=desc_width,
             )
@@ -755,9 +778,7 @@ async def handle_run(
     fmt = getattr(args, "format", "json") or "json"
     ext = fmt if fmt != "json" else "json"
     output_path = args.output or (
-        f"eval_"
-        f"{datetime.now().strftime('%Y%m%dT%H%M%S')}"
-        f".{ext}"
+        f"eval_" f"{datetime.now().strftime('%Y%m%dT%H%M%S')}" f".{ext}"
     )
     write_output(results, args.config, output_path, fmt=fmt)
     return output_path
@@ -806,26 +827,26 @@ def _resolve_run_targets(
 
     if not args.model_evaluation_id and not args.model:
         console.print(
-            "[red]Error: specify a model-evaluation ID "
-            "or --model <model-id>.[/red]",
+            "[red]Error: specify a model-evaluation ID " "or --model <model-id>.[/red]",
         )
         return []
 
     if args.model_evaluation_id:
         me_id = _resolve_id(
             args.model_evaluation_id,
-            [me.id for me in
-             store.model_evaluations.list_all()],
+            [me.id for me in store.model_evaluations.list_all()],
         )
         try:
             me = store.model_evaluations.get(me_id)
             items = _filter_by_tags(
-                [me], store, model_tags, eval_tags,
+                [me],
+                store,
+                model_tags,
+                eval_tags,
             )
             if not items:
                 console.print(
-                    "[yellow]Model-evaluation filtered "
-                    "out by tag filters.[/yellow]",
+                    "[yellow]Model-evaluation filtered " "out by tag filters.[/yellow]",
                 )
             return items
         except KeyError:
@@ -848,7 +869,8 @@ def _resolve_run_targets(
         return []
 
     if model_tags and not _matches_tags(
-        model.tags, model_tags,
+        model.tags,
+        model_tags,
     ):
         console.print(
             f"[yellow]Model {model_id!r} does not match "
@@ -857,12 +879,16 @@ def _resolve_run_targets(
         return []
 
     me_view = store.model_evaluations.list_by_model(
-        model_id, limit=1000,
+        model_id,
+        limit=1000,
     )
     items = [item.config for item in me_view.items]
     if eval_tags:
         items = _filter_by_tags(
-            items, store, {}, eval_tags,
+            items,
+            store,
+            {},
+            eval_tags,
         )
     if not items:
         console.print(
@@ -874,15 +900,14 @@ def _resolve_run_targets(
 
 # -- formatting helpers -------------------------------------------
 
+
 def _resolve_id(
-    prefix: str, all_ids: list[str],
+    prefix: str,
+    all_ids: list[str],
 ) -> str:
     if prefix in all_ids:
         return prefix
-    matches = [
-        full_id for full_id in all_ids
-        if full_id.startswith(prefix)
-    ]
+    matches = [full_id for full_id in all_ids if full_id.startswith(prefix)]
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
@@ -894,6 +919,4 @@ def _resolve_id(
 
 
 def _fmt_tags(tags: dict[str, str]) -> str:
-    return ", ".join(
-        f"{k}={v}" for k, v in tags.items()
-    )
+    return ", ".join(f"{k}={v}" for k, v in tags.items())

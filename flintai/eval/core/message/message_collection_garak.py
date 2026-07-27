@@ -1,6 +1,6 @@
 from garak import _plugins
-from garak.attempt import Conversation, Message as GarakMessage
-
+from garak.attempt import Conversation
+from garak.attempt import Message as GarakMessage
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.message.message_collection import MessageCollection
 
@@ -28,10 +28,7 @@ class GarakMessageCollection(MessageCollection):
     def _ensure_loaded(self) -> list[Message]:
         if self._messages is None:
             probe = _plugins.load_plugin(self._probe_name)
-            self._messages = [
-                _garak_prompt_to_message(p)
-                for p in probe.prompts
-            ]
+            self._messages = [_garak_prompt_to_message(p) for p in probe.prompts]
         return self._messages
 
     def get(self, id: str) -> Message:
@@ -47,6 +44,4 @@ class GarakMessageCollection(MessageCollection):
         return len(self._ensure_loaded())
 
     def save(self, messages: list[Message]) -> None:
-        raise NotImplementedError(
-            "GarakMessageCollection is read-only"
-        )
+        raise NotImplementedError("GarakMessageCollection is read-only")

@@ -230,7 +230,10 @@ def convert_static_findings(static_findings: list["StaticFinding"]) -> list[Find
                     cvss_scores=CvssScores(base_score=cvss_score, vector=cvss_vector),
                     title=meta.get("title", sf.rule_id),
                     description=sf.message,
-                    impact=f"Exploitable via {sf.tool} finding in {sf.filepath}:{sf.line}",
+                    impact=meta.get(
+                        "description",
+                        f"Security issue detected in {sf.filepath}:{sf.line}",
+                    ),
                     likelihood=_derive_likelihood(confidence, severity),
                     remediation=meta.get(
                         "remediation",
@@ -798,5 +801,4 @@ def run_core(
     )
 
     return report
-
 

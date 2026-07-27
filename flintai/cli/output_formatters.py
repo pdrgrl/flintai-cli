@@ -104,7 +104,9 @@ class SarifScanOutputFormatter(ScanOutputFormatter):
             for comp in finding.affected_components or []:
                 loc: dict[str, Any] = {
                     "physicalLocation": {
-                        "artifactLocation": {"uri": self._normalize_uri(comp.path or comp.name)},
+                        "artifactLocation": {
+                            "uri": self._normalize_uri(comp.path or comp.name)
+                        },
                     },
                 }
                 locations.append(loc)
@@ -137,8 +139,12 @@ class SarifScanOutputFormatter(ScanOutputFormatter):
                 if ev.line:
                     rel["physicalLocation"]["region"] = {"startLine": ev.line}
                 if ev.code_snippet:
-                    rel["physicalLocation"]["region"] = rel["physicalLocation"].get("region", {})
-                    rel["physicalLocation"]["region"]["snippet"] = {"text": ev.code_snippet}
+                    rel["physicalLocation"]["region"] = rel["physicalLocation"].get(
+                        "region", {}
+                    )
+                    rel["physicalLocation"]["region"]["snippet"] = {
+                        "text": ev.code_snippet
+                    }
                 if ev.context:
                     rel["message"] = {"text": ev.context}
                 related_locations.append(rel)
@@ -153,7 +159,9 @@ class SarifScanOutputFormatter(ScanOutputFormatter):
                 "ruleId": rule_id,
                 "ruleIndex": rule_index[rule_id],
                 "level": self._severity_to_level(finding.ai_spm_severity),
-                "message": {"text": self._normalize_text_paths(" ".join(message_parts))},
+                "message": {
+                    "text": self._normalize_text_paths(" ".join(message_parts))
+                },
             }
 
             if finding.id:
@@ -203,7 +211,11 @@ class SarifScanOutputFormatter(ScanOutputFormatter):
         seen_uris: set[str] = set()
         for r in results:
             for loc in r.get("locations", []):
-                uri = loc.get("physicalLocation", {}).get("artifactLocation", {}).get("uri", "")
+                uri = (
+                    loc.get("physicalLocation", {})
+                    .get("artifactLocation", {})
+                    .get("uri", "")
+                )
                 if uri and uri not in seen_uris:
                     seen_uris.add(uri)
                     artifacts.append({"location": {"uri": uri}})
@@ -219,7 +231,10 @@ class SarifScanOutputFormatter(ScanOutputFormatter):
             run["properties"] = run_props
 
         return {
-            "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+            "$schema": (
+                "https://docs.oasis-open.org/sarif/sarif/v2.1.0"
+                "/errata01/os/schemas/sarif-schema-2.1.0.json"
+            ),
             "version": "2.1.0",
             "runs": [run],
         }
@@ -278,18 +293,24 @@ class SarifEvalOutputFormatter(EvalOutputFormatter):
 
             if eval_name not in rule_index:
                 rule_index[eval_name] = len(rules)
-                rules.append({
-                    "id": eval_name,
-                    "shortDescription": {"text": eval_name},
-                    "properties": {"tags": ["ai-red-teaming", eval_type]},
-                })
+                rules.append(
+                    {
+                        "id": eval_name,
+                        "shortDescription": {"text": eval_name},
+                        "properties": {"tags": ["ai-red-teaming", eval_type]},
+                    }
+                )
 
             achieved = 0.0
             max_score = 0.0
             total = 0
             summary_props: dict[str, Any] = {}
             if run.summary:
-                s = run.summary if isinstance(run.summary, dict) else run.summary.to_dict()
+                s = (
+                    run.summary
+                    if isinstance(run.summary, dict)
+                    else run.summary.to_dict()
+                )
                 achieved = s.get("achieved_score", 0.0)
                 max_score = s.get("max_score", 0.0)
                 total = s.get("total_evaluations", 0)
@@ -302,53 +323,66 @@ class SarifEvalOutputFormatter(EvalOutputFormatter):
 
             if achieved > 0:
                 avg_score = achieved / total if total > 0 else 0.0
-                results.append({
-                    "ruleId": eval_name,
-                    "ruleIndex": rule_index[eval_name],
-                    "level": self._score_to_level(avg_score),
-                    "message": {
-                        "text": (
-                            f"Model '{model_name}' scored {achieved:.1f}/{max_score:.1f} "
-                            f"({avg_score:.0%}) on evaluation '{eval_name}' "
-                            f"across {total} prompts."
-                        ),
-                    },
-                    "locations": [{
-                        "logicalLocations": [{
-                            "name": model_name,
-                            "kind": "module",
-                            "fullyQualifiedName": run.model.get("id", model_name),
-                        }],
-                    }],
-                    "properties": {
-                        "modelEvaluationId": run.model_evaluation_id,
-                        "modelEvaluationName": run.model_evaluation_name,
-                        "achievedScore": achieved,
-                        "maxScore": max_score,
-                        "averageScore": round(avg_score, 4),
-                        "totalPrompts": total,
-                        **summary_props,
-                    },
-                })
+                results.append(
+                    {
+                        "ruleId": eval_name,
+                        "ruleIndex": rule_index[eval_name],
+                        "level": self._score_to_level(avg_score),
+                        "message": {
+                            "text": (
+                                f"Model '{model_name}' scored {achieved:.1f}/{max_score:.1f} "
+                                f"({avg_score:.0%}) on evaluation '{eval_name}' "
+                                f"across {total} prompts."
+                            ),
+                        },
+                        "locations": [
+                            {
+                                "logicalLocations": [
+                                    {
+                                        "name": model_name,
+                                        "kind": "module",
+                                        "fullyQualifiedName": run.model.get(
+                                            "id", model_name
+                                        ),
+                                    }
+                                ],
+                            }
+                        ],
+                        "properties": {
+                            "modelEvaluationId": run.model_evaluation_id,
+                            "modelEvaluationName": run.model_evaluation_name,
+                            "achievedScore": achieved,
+                            "maxScore": max_score,
+                            "averageScore": round(avg_score, 4),
+                            "totalPrompts": total,
+                            **summary_props,
+                        },
+                    }
+                )
 
         return {
-            "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+            "$schema": (
+                "https://docs.oasis-open.org/sarif/sarif/v2.1.0"
+                "/errata01/os/schemas/sarif-schema-2.1.0.json"
+            ),
             "version": "2.1.0",
-            "runs": [{
-                "tool": {
-                    "driver": {
-                        "name": "flintai-eval",
-                        "version": VERSION,
-                        "informationUri": "https://github.com/sandbox-quantum/flintai-cli",
-                        "rules": rules,
+            "runs": [
+                {
+                    "tool": {
+                        "driver": {
+                            "name": "flintai-eval",
+                            "version": VERSION,
+                            "informationUri": "https://github.com/sandbox-quantum/flintai-cli",
+                            "rules": rules,
+                        },
                     },
-                },
-                "invocations": [{"executionSuccessful": True}],
-                "results": results,
-                "properties": {
-                    "configFile": config_path,
-                },
-            }],
+                    "invocations": [{"executionSuccessful": True}],
+                    "results": results,
+                    "properties": {
+                        "configFile": config_path,
+                    },
+                }
+            ],
         }
 
 

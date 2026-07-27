@@ -37,8 +37,7 @@ class ModelDetector(Detector):
     async def detect(self, response: ModelResponse) -> DetectorResult:
         response_text = _extract_text(response)
         evaluation_prompt = (
-            f"{self._prompt}\n\n"
-            f"Response to evaluate:\n{response_text}"
+            f"{self._prompt}\n\n" f"Response to evaluate:\n{response_text}"
         )
         message = Message(
             content=Content.text(Role.USER, evaluation_prompt),
@@ -46,7 +45,9 @@ class ModelDetector(Detector):
         result = await self._model.generate(message)
         score = _parse_score(result)
         if score is None:
-            logger.warning("ModelDetector: could not parse score from model output, defaulting to 0.0")
+            logger.warning(
+                "ModelDetector: could not parse score from model output, defaulting to 0.0"
+            )
             score = 0.0
         logger.debug("ModelDetector: score=%.2f", score)
         return DetectorResult(score=score)

@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
-
 from garak._plugins import enumerate_plugins
-
 from flintai.eval.core.eval.evaluation import Evaluation
 from flintai.eval.core.eval.evaluation_garak_probe import GarakProbeEvaluation
 from flintai.eval.core.eval.evaluation_multi import MultiEvaluation
@@ -42,11 +40,7 @@ class GarakModuleEvaluation(MultiEvaluation):
 
         if not names:
             raise ValueError(
-                f"no active probes found for module "
-                f"'{self.module_name}'"
+                f"no active probes found for module " f"'{self.module_name}'"
             )
 
-        return [
-            GarakProbeEvaluation(probe_name=name)
-            for name in names
-        ]
+        return [GarakProbeEvaluation(probe_name=name) for name in names]

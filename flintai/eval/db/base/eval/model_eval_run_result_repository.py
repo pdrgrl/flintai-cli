@@ -17,14 +17,16 @@ class ModelEvaluationRunResultRepository(ABC):
 
     @abstractmethod
     def create_batch(
-        self, results: list[DbModelEvaluationRunResult],
+        self,
+        results: list[DbModelEvaluationRunResult],
     ) -> None:
         """Persist a batch of results for a run."""
         pass
 
     @abstractmethod
     def get_by_run_id(
-        self, run_id: str,
+        self,
+        run_id: str,
     ) -> list[DbModelEvaluationRunResult]:
         """Return all results for a given run."""
         pass

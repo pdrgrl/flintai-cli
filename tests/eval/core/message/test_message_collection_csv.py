@@ -4,13 +4,10 @@ import tempfile
 import unittest
 
 from flintai.eval.common.schema import Role
-from flintai.eval.core.message.message_collection_csv import (
-    CsvMessageCollection,
-)
+from flintai.eval.core.message.message_collection_csv import CsvMessageCollection
 
 
 class TestCsvMessageCollection(unittest.TestCase):
-
     def _write_csv(
         self,
         rows: list[list[str]],
@@ -45,10 +42,12 @@ class TestCsvMessageCollection(unittest.TestCase):
 
         self.assertEqual(len(loaded), 2)
         self.assertEqual(
-            loaded[0].content.parts[0].text, "hello",
+            loaded[0].content.parts[0].text,
+            "hello",
         )
         self.assertEqual(
-            loaded[1].content.parts[0].text, "world",
+            loaded[1].content.parts[0].text,
+            "world",
         )
 
     def test_messages_have_user_role(self):
@@ -73,7 +72,8 @@ class TestCsvMessageCollection(unittest.TestCase):
 
         self.assertEqual(len(loaded), 1)
         self.assertEqual(
-            loaded[0].content.parts[0].text, "hello",
+            loaded[0].content.parts[0].text,
+            "hello",
         )
 
     def test_size(self):
@@ -97,7 +97,8 @@ class TestCsvMessageCollection(unittest.TestCase):
         found = collection.get(msg_id)
 
         self.assertEqual(
-            found.content.parts[0].text, "hello",
+            found.content.parts[0].text,
+            "hello",
         )
 
     def test_get_missing_id_raises(self):
@@ -116,16 +117,15 @@ class TestCsvMessageCollection(unittest.TestCase):
             header=["other_column"],
         )
         collection = CsvMessageCollection(
-            path, column="prompt",
+            path,
+            column="prompt",
         )
 
         with self.assertRaises(ValueError):
             collection.load()
 
     def test_missing_file_raises(self):
-        collection = CsvMessageCollection(
-            "/nonexistent/path.csv", "prompt"
-        )
+        collection = CsvMessageCollection("/nonexistent/path.csv", "prompt")
 
         with self.assertRaises(FileNotFoundError):
             collection.load()
@@ -167,7 +167,8 @@ class TestCsvMessageCollection(unittest.TestCase):
             'She said, "hello"',
         )
         self.assertEqual(
-            loaded[1].content.parts[0].text, "a, b, c",
+            loaded[1].content.parts[0].text,
+            "a, b, c",
         )
 
 

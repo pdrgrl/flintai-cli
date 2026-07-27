@@ -33,5 +33,3 @@ _CI_ENV_VARS = (
 
 def is_ci() -> bool:
     return any(os.environ.get(v) for v in _CI_ENV_VARS)
-
-

@@ -8,7 +8,6 @@ import asyncio
 import logging
 from typing import Any
 
-from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelContent, ModelResponse
 
 logger = logging.getLogger(__name__)
@@ -33,3 +32,7 @@ class SyncModelWrapper:
 
     def close(self):
         self._loop.close()
+
+    def __del__(self):
+        if not self._loop.is_closed():
+            self._loop.close()

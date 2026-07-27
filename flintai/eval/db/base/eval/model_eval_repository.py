@@ -45,7 +45,8 @@ class ModelEvaluationRepository(ABC):
 
     @abstractmethod
     def create(
-        self, config: DbModelEvaluation,
+        self,
+        config: DbModelEvaluation,
     ) -> DbModelEvaluation:
         """Persist a new model-evaluation assignment.
 

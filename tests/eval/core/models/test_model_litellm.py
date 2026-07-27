@@ -1,10 +1,9 @@
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from openai.types.chat import ChatCompletionMessage
 from openai.types.chat.chat_completion import ChatCompletion, Choice
-
-from flintai.eval.common.schema import Content, Message, PartType, Role
+from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model_litellm import LiteLLMModel
 
 
@@ -25,7 +24,6 @@ def _make_completion(text: str) -> ChatCompletion:
 
 
 class TestLiteLLMModel(unittest.IsolatedAsyncioTestCase):
-
     @patch("flintai.eval.core.models.model_litellm.litellm")
     async def test_generate_text(self, mock_litellm):
         mock_litellm.acompletion = AsyncMock(return_value=_make_completion("Hello!"))
@@ -59,7 +57,9 @@ class TestLiteLLMModel(unittest.IsolatedAsyncioTestCase):
         await model.generate(msg)
 
         call_kwargs = mock_litellm.acompletion.call_args
-        self.assertEqual(call_kwargs.kwargs["model"], "anthropic/claude-sonnet-4-6-20250514")
+        self.assertEqual(
+            call_kwargs.kwargs["model"], "anthropic/claude-sonnet-4-6-20250514"
+        )
 
 
 if __name__ == "__main__":

@@ -2,11 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from openai.types.chat import ChatCompletionMessage
-from openai.types.chat.chat_completion import (
-    ChatCompletion,
-    Choice,
-)
-
+from openai.types.chat.chat_completion import ChatCompletion, Choice
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model_openai_compatible import (
     OpenAICompatibleModel,
@@ -24,7 +20,8 @@ def _make_completion(text: str) -> ChatCompletion:
                 index=0,
                 finish_reason="stop",
                 message=ChatCompletionMessage(
-                    role="assistant", content=text,
+                    role="assistant",
+                    content=text,
                 ),
             ),
         ],
@@ -32,7 +29,6 @@ def _make_completion(text: str) -> ChatCompletion:
 
 
 class TestOpenAICompatibleModel(unittest.IsolatedAsyncioTestCase):
-
     async def test_generate_text(self):
         model = OpenAICompatibleModel(
             base_url="http://localhost:8000/v1",
@@ -50,10 +46,12 @@ class TestOpenAICompatibleModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(resp.message)
         self.assertEqual(
-            resp.message.content.role, Role.ASSISTANT,
+            resp.message.content.role,
+            Role.ASSISTANT,
         )
         self.assertEqual(
-            resp.message.content.parts[0].text, "Hello!",
+            resp.message.content.parts[0].text,
+            "Hello!",
         )
 
     async def test_passes_model_name(self):
@@ -71,9 +69,7 @@ class TestOpenAICompatibleModel(unittest.IsolatedAsyncioTestCase):
         )
         await model.generate(msg)
 
-        call_kwargs = (
-            model._client.chat.completions.create.call_args
-        )
+        call_kwargs = model._client.chat.completions.create.call_args
         self.assertEqual(
             call_kwargs.kwargs["model"],
             "meta-llama/Llama-3-8B",
@@ -95,28 +91,30 @@ class TestOpenAICompatibleModel(unittest.IsolatedAsyncioTestCase):
             ),
             Message(
                 content=Content.text(
-                    Role.ASSISTANT, "Hi!",
+                    Role.ASSISTANT,
+                    "Hi!",
                 ),
             ),
             Message(
                 content=Content.text(
-                    Role.USER, "How are you?",
+                    Role.USER,
+                    "How are you?",
                 ),
             ),
         ]
         resp = await model.generate(msgs)
 
         self.assertIsNotNone(resp.message)
-        call_kwargs = (
-            model._client.chat.completions.create.call_args
-        )
+        call_kwargs = model._client.chat.completions.create.call_args
         sent_messages = call_kwargs.kwargs["messages"]
         self.assertEqual(len(sent_messages), 3)
         self.assertEqual(
-            sent_messages[0]["role"], "user",
+            sent_messages[0]["role"],
+            "user",
         )
         self.assertEqual(
-            sent_messages[1]["role"], "assistant",
+            sent_messages[1]["role"],
+            "assistant",
         )
 
     async def test_temperature_default(self):
@@ -135,11 +133,10 @@ class TestOpenAICompatibleModel(unittest.IsolatedAsyncioTestCase):
         )
         await model.generate(msg)
 
-        call_kwargs = (
-            model._client.chat.completions.create.call_args
-        )
+        call_kwargs = model._client.chat.completions.create.call_args
         self.assertEqual(
-            call_kwargs.kwargs["temperature"], 0.5,
+            call_kwargs.kwargs["temperature"],
+            0.5,
         )
 
 

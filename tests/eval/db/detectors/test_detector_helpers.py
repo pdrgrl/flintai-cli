@@ -18,7 +18,6 @@ def _db_detector(**overrides) -> DbDetector:
 
 
 class TestCreateDetectorGarak(unittest.TestCase):
-
     @patch(
         "flintai.eval.core.detectors.detector_garak.GarakDetector",
     )
@@ -43,16 +42,16 @@ class TestCreateDetectorGarak(unittest.TestCase):
 
 
 class TestCreateDetectorModel(unittest.TestCase):
-
     @patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @patch(
         "flintai.eval.core.detectors.detector_model.ModelDetector",
     )
     def test_model_creates_detector(
-        self, MockDetector, mock_get_model,
+        self,
+        MockDetector,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -63,14 +62,15 @@ class TestCreateDetectorModel(unittest.TestCase):
         self.assertEqual(result, MockDetector.return_value)
 
     @patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @patch(
         "flintai.eval.core.detectors.detector_model.ModelDetector",
     )
     def test_model_with_prompt(
-        self, MockDetector, mock_get_model,
+        self,
+        MockDetector,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -85,14 +85,15 @@ class TestCreateDetectorModel(unittest.TestCase):
         )
 
     @patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @patch(
         "flintai.eval.core.detectors.detector_model.ModelDetector",
     )
     def test_model_without_prompt(
-        self, MockDetector, mock_get_model,
+        self,
+        MockDetector,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -104,9 +105,7 @@ class TestCreateDetectorModel(unittest.TestCase):
         MockDetector.assert_called_once_with(model=mock_model)
 
 
-
 class TestCreateDetectorPII(unittest.TestCase):
-
     @patch(
         "flintai.eval.core.detectors.detector_pii.PIIDetector",
     )
@@ -118,7 +117,6 @@ class TestCreateDetectorPII(unittest.TestCase):
 
 
 class TestCreateDetectorSecret(unittest.TestCase):
-
     @patch(
         "flintai.eval.core.detectors.detector_secret.SecretDetector",
     )
@@ -130,17 +128,16 @@ class TestCreateDetectorSecret(unittest.TestCase):
 
 
 class TestCreateDetectorTopicGuard(unittest.TestCase):
-
     @patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @patch(
-        "flintai.eval.core.detectors.detector_topic_guard"
-        ".TopicGuardDetector",
+        "flintai.eval.core.detectors.detector_topic_guard" ".TopicGuardDetector",
     )
     def test_topic_guard_creates_detector(
-        self, MockTG, mock_get_model,
+        self,
+        MockTG,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -158,15 +155,15 @@ class TestCreateDetectorTopicGuard(unittest.TestCase):
         self.assertEqual(result, MockTG.return_value)
 
     @patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @patch(
-        "flintai.eval.core.detectors.detector_topic_guard"
-        ".TopicGuardDetector",
+        "flintai.eval.core.detectors.detector_topic_guard" ".TopicGuardDetector",
     )
     def test_topic_guard_with_only_objective(
-        self, MockTG, mock_get_model,
+        self,
+        MockTG,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -182,15 +179,15 @@ class TestCreateDetectorTopicGuard(unittest.TestCase):
         )
 
     @patch(
-        "flintai.eval.core.models.generator_model"
-        ".get_generator_model",
+        "flintai.eval.core.models.generator_model" ".get_generator_model",
     )
     @patch(
-        "flintai.eval.core.detectors.detector_topic_guard"
-        ".TopicGuardDetector",
+        "flintai.eval.core.detectors.detector_topic_guard" ".TopicGuardDetector",
     )
     def test_topic_guard_with_only_instructions(
-        self, MockTG, mock_get_model,
+        self,
+        MockTG,
+        mock_get_model,
     ):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
@@ -214,7 +211,6 @@ class TestCreateDetectorTopicGuard(unittest.TestCase):
 
 
 class TestCreateDetectorUnknown(unittest.TestCase):
-
     def test_unknown_type_raises(self):
         db = _db_detector()
         db.type = "unknown_type"

@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 
 from flintai.eval.common.schema import Message, Session
-from flintai.eval.core.detectors.detector import Detector, DetectorResult
+from flintai.eval.core.detectors.detector import Detector
 from flintai.eval.core.eval.evaluation import EvaluationStatus
 from flintai.eval.core.eval.evaluation_single import SingleEvaluation
 from flintai.eval.core.models.model import Model, ResponseStatus
@@ -48,11 +48,15 @@ class SinglePromptEvaluation(SingleEvaluation):
         self.session = Session(messages=messages)
 
         if response.status in _BLOCKED_STATUSES:
-            logger.debug("SinglePromptEvaluation: response blocked (%s)", response.status.value)
+            logger.debug(
+                "SinglePromptEvaluation: response blocked (%s)", response.status.value
+            )
             return 1.0
         if response.message:
             detector_result = await self.detector.detect(response)
-            logger.debug("SinglePromptEvaluation: detector score=%.2f", detector_result.score)
+            logger.debug(
+                "SinglePromptEvaluation: detector score=%.2f", detector_result.score
+            )
             return detector_result.score
 
         raise ValueError("Model did not return a message or an error status")

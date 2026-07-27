@@ -13,16 +13,10 @@ def _build_prompt(
     sections: list[str] = []
 
     if agent_objective:
-        sections.append(
-            f"The agent's stated objective is:\n"
-            f"{agent_objective}"
-        )
+        sections.append(f"The agent's stated objective is:\n" f"{agent_objective}")
 
     if agent_instructions:
-        sections.append(
-            f"The agent's instructions are:\n"
-            f"{agent_instructions}"
-        )
+        sections.append(f"The agent's instructions are:\n" f"{agent_instructions}")
 
     context = "\n\n".join(sections)
 
@@ -61,8 +55,7 @@ class TopicGuardDetector(ModelDetector):
     ) -> None:
         if not agent_objective and not agent_instructions:
             raise ValueError(
-                "at least one of agent_objective or "
-                "agent_instructions is required"
+                "at least one of agent_objective or " "agent_instructions is required"
             )
         self.agent_objective = agent_objective
         self.agent_instructions = agent_instructions

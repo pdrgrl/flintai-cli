@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 
 from dataclasses_json import dataclass_json
-
 from flintai.eval.common.schema import Session
 from flintai.eval.common.utils import generate_id
 from flintai.eval.core.eval.evaluation import EvaluationStatus

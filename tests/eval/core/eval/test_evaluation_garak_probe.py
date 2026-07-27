@@ -6,8 +6,6 @@ from flintai.eval.core.detectors.detector import DetectorResult
 from flintai.eval.core.eval.evaluation import EvaluationStatus
 from flintai.eval.core.eval.evaluation_garak_probe import (
     GarakMultiTurnEvaluation,
-)
-from flintai.eval.core.eval.evaluation_garak_probe import (
     GarakProbeEvaluation,
 )
 from flintai.eval.core.eval.evaluation_single_prompt import (
@@ -21,7 +19,9 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
     async def test_static_probe_creates_children(self, mock_plugins):
         probe = MagicMock()
         probe.prompts = [
-            "prompt one", "prompt two", "prompt three",
+            "prompt one",
+            "prompt two",
+            "prompt three",
         ]
         probe.primary_detector = "always.Pass"
         mock_plugins.load_plugin.return_value = probe
@@ -54,7 +54,8 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
         )
         model.generate = AsyncMock(
             return_value=ModelResponse(
-                message=response_msg, status=ResponseStatus.OK,
+                message=response_msg,
+                status=ResponseStatus.OK,
             ),
         )
 
@@ -68,12 +69,14 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(e.status, EvaluationStatus.FINISHED)
         self.assertAlmostEqual(
-            e.get_summary().achieved_score, 0.9,
+            e.get_summary().achieved_score,
+            0.9,
         )
 
     @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
     async def test_multiturn_probe_creates_single_child(
-        self, mock_plugins,
+        self,
+        mock_plugins,
     ):
         probe = MagicMock(spec=["primary_detector", "goal"])
         mock_plugins.load_plugin.return_value = probe
@@ -86,15 +89,18 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(e.status, EvaluationStatus.INITIALIZED)
         self.assertEqual(len(e.children), 1)
         self.assertIsInstance(
-            e.children[0], GarakMultiTurnEvaluation,
+            e.children[0],
+            GarakMultiTurnEvaluation,
         )
         self.assertEqual(
-            e.children[0].probe_name, "probes.atkgen.Tox",
+            e.children[0].probe_name,
+            "probes.atkgen.Tox",
         )
 
     @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
     async def test_empty_prompts_treated_as_multiturn(
-        self, mock_plugins,
+        self,
+        mock_plugins,
     ):
         probe = MagicMock()
         probe.prompts = []
@@ -107,7 +113,8 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(len(e.children), 1)
         self.assertIsInstance(
-            e.children[0], GarakMultiTurnEvaluation,
+            e.children[0],
+            GarakMultiTurnEvaluation,
         )
 
     def test_init_without_probe_name_errors(self):

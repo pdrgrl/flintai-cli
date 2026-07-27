@@ -1,15 +1,14 @@
 import ast
-import os
 import logging
-
+import os
 from dataclasses import dataclass
 from enum import Enum
 
 logger = logging.getLogger(__name__)
 
 REQUIREMENTS_FILE = "requirements.txt"
-PYTHON_EXTENSIONS = (".py")
-PYTHON_IGNORES = ("__init__.py")
+PYTHON_EXTENSIONS = ".py"
+PYTHON_IGNORES = "__init__.py"
 
 # Import module root -> Framework name
 FRAMEWORK_ROOTS: dict[str, str] = {
@@ -54,7 +53,9 @@ def find_relevant_files(root_path: str) -> list[RelevantFile]:
                 relevant_files.append(
                     RelevantFile(path=abs_path, type=FileType.REQUIREMENTS)
                 )
-            elif abs_path.endswith(PYTHON_EXTENSIONS) and not abs_path.endswith(PYTHON_IGNORES):
+            elif abs_path.endswith(PYTHON_EXTENSIONS) and not abs_path.endswith(
+                PYTHON_IGNORES
+            ):
                 match = _detect_framework_in_file(abs_path)
                 if match:
                     logger.info("File in scope: %s", abs_path)
@@ -128,7 +129,8 @@ def _detect_framework_in_file(file_path: str) -> RelevantFile | None:
                     return RelevantFile(
                         path=file_path,
                         type=FileType.PYTHON,
-                        evidence=ast.get_source_segment(content, node) or f"import {alias.name}",
+                        evidence=ast.get_source_segment(content, node)
+                        or f"import {alias.name}",
                         framework=framework,
                     )
         elif isinstance(node, ast.ImportFrom):
@@ -138,7 +140,8 @@ def _detect_framework_in_file(file_path: str) -> RelevantFile | None:
                     return RelevantFile(
                         path=file_path,
                         type=FileType.PYTHON,
-                        evidence=ast.get_source_segment(content, node) or f"from {node.module} import ...",
+                        evidence=ast.get_source_segment(content, node)
+                        or f"from {node.module} import ...",
                         framework=framework,
                     )
 

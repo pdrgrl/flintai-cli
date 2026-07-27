@@ -4,17 +4,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from anthropic.types import (
-    Message as AnthropicMessage,
-    MessageParam,
-    TextBlock,
-    ThinkingBlock,
-    ToolResultBlockParam,
-    ToolUseBlock,
+from anthropic.types import Message as AnthropicMessage
+from anthropic.types import MessageParam, TextBlock, ThinkingBlock, ToolUseBlock
+from flintai.eval.common.schema import (
+    Content,
+    Message,
+    Part,
+    PartType,
+    Role,
+    ToolCall,
+    ToolResult,
 )
-
-from flintai.eval.common.schema import Content, Message, Part, PartType, Role, ToolCall, ToolResult
-
 
 # -- To internal --------------------------------------------------------------
 
@@ -70,11 +70,15 @@ def _response_to_content(msg: AnthropicMessage) -> Content:
         if isinstance(block, TextBlock):
             parts.append(Part.text_part(block.text))
         elif isinstance(block, ToolUseBlock):
-            parts.append(Part.tool_call_part(ToolCall(
-                id=block.id,
-                name=block.name,
-                arguments=block.input if isinstance(block.input, dict) else {},
-            )))
+            parts.append(
+                Part.tool_call_part(
+                    ToolCall(
+                        id=block.id,
+                        name=block.name,
+                        arguments=block.input if isinstance(block.input, dict) else {},
+                    )
+                )
+            )
         elif isinstance(block, ThinkingBlock):
             parts.append(Part.thinking_part(block.thinking))
 
@@ -99,22 +103,32 @@ def _param_to_content(msg: dict[str, Any]) -> Content:
             elif block_type == "thinking":
                 parts.append(Part.thinking_part(block["thinking"]))
             elif block_type == "tool_use":
-                parts.append(Part.tool_call_part(ToolCall(
-                    id=block["id"],
-                    name=block["name"],
-                    arguments=block.get("input", {}),
-                )))
+                parts.append(
+                    Part.tool_call_part(
+                        ToolCall(
+                            id=block["id"],
+                            name=block["name"],
+                            arguments=block.get("input", {}),
+                        )
+                    )
+                )
             elif block_type == "tool_result":
                 result_content = block.get("content", "")
                 if isinstance(result_content, list):
                     # Extract text from content blocks
-                    texts = [b["text"] for b in result_content if b.get("type") == "text"]
+                    texts = [
+                        b["text"] for b in result_content if b.get("type") == "text"
+                    ]
                     result_content = " ".join(texts) if texts else ""
-                parts.append(Part.tool_result_part(ToolResult(
-                    tool_call_id=block["tool_use_id"],
-                    content=result_content,
-                    is_error=block.get("is_error", False),
-                )))
+                parts.append(
+                    Part.tool_result_part(
+                        ToolResult(
+                            tool_call_id=block["tool_use_id"],
+                            content=result_content,
+                            is_error=block.get("is_error", False),
+                        )
+                    )
+                )
 
     if not parts:
         parts.append(Part.text_part(""))
@@ -134,18 +148,24 @@ def _parts_to_blocks(parts: list[Part]) -> list[dict[str, Any]]:
             blocks.append({"type": "thinking", "thinking": p.text or ""})
         elif p.part_type == PartType.TOOL_CALL:
             tc = p.tool_call
-            blocks.append({
-                "type": "tool_use",
-                "id": tc.id,
-                "name": tc.name,
-                "input": tc.arguments,
-            })
+            blocks.append(
+                {
+                    "type": "tool_use",
+                    "id": tc.id,
+                    "name": tc.name,
+                    "input": tc.arguments,
+                }
+            )
         elif p.part_type == PartType.TOOL_RESULT:
             tr = p.tool_result
-            blocks.append({
-                "type": "tool_result",
-                "tool_use_id": tr.tool_call_id,
-                "content": tr.content if isinstance(tr.content, str) else str(tr.content),
-                "is_error": tr.is_error,
-            })
+            blocks.append(
+                {
+                    "type": "tool_result",
+                    "tool_use_id": tr.tool_call_id,
+                    "content": tr.content
+                    if isinstance(tr.content, str)
+                    else str(tr.content),
+                    "is_error": tr.is_error,
+                }
+            )
     return blocks

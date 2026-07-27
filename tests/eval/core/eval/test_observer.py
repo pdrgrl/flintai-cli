@@ -1,5 +1,4 @@
 import io
-import threading
 import time
 import unittest
 from unittest.mock import MagicMock
@@ -142,7 +141,8 @@ class TestPollingObserver(unittest.TestCase):
 
         self.assertGreaterEqual(len(summaries), 2)
         self.assertEqual(
-            summaries[-1].status, EvaluationStatus.FINISHED,
+            summaries[-1].status,
+            EvaluationStatus.FINISHED,
         )
 
     def test_stop_halts_polling(self):

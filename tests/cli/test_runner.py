@@ -1,11 +1,5 @@
-from flintai.cli.runner import (
-    CliRunResult,
-    _aggregate_summary,
-)
-from flintai.eval.core.eval.evaluation import (
-    EvaluationStatus,
-    EvaluationSummary,
-)
+from flintai.cli.runner import CliRunResult, _aggregate_summary
+from flintai.eval.core.eval.evaluation import EvaluationStatus, EvaluationSummary
 
 
 def _make_run(
@@ -42,11 +36,13 @@ class TestAggregateScoreExcludesErrors:
     def test_errored_evaluation_excluded_from_score(self):
         runs = [
             _make_run(_make_summary(achieved=4.0, max_score=5.0)),
-            _make_run(_make_summary(
-                status=EvaluationStatus.ERROR,
-                achieved=0.0,
-                max_score=5.0,
-            )),
+            _make_run(
+                _make_summary(
+                    status=EvaluationStatus.ERROR,
+                    achieved=0.0,
+                    max_score=5.0,
+                )
+            ),
         ]
         overall = _aggregate_summary(runs)
         assert overall.score == 4.0 / 5.0
@@ -61,11 +57,13 @@ class TestAggregateScoreExcludesErrors:
 
     def test_all_errored_no_score(self):
         runs = [
-            _make_run(_make_summary(
-                status=EvaluationStatus.ERROR,
-                max_score=5.0,
-                achieved=0.0,
-            )),
+            _make_run(
+                _make_summary(
+                    status=EvaluationStatus.ERROR,
+                    max_score=5.0,
+                    achieved=0.0,
+                )
+            ),
         ]
         overall = _aggregate_summary(runs)
         assert overall.score is None

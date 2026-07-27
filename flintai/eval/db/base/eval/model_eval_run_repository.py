@@ -19,7 +19,8 @@ class ModelEvaluationRunRepository(ABC):
 
     @abstractmethod
     def create(
-        self, run: DbModelEvaluationRun,
+        self,
+        run: DbModelEvaluationRun,
     ) -> DbModelEvaluationRun:
         """Persist a new run."""
         pass
@@ -34,7 +35,8 @@ class ModelEvaluationRunRepository(ABC):
 
     @abstractmethod
     def update(
-        self, run: DbModelEvaluationRun,
+        self,
+        run: DbModelEvaluationRun,
     ) -> DbModelEvaluationRun:
         """Update the summary and finished timestamp of a run.
 

@@ -62,7 +62,9 @@ class TestReadSource(unittest.TestCase):
     def test_fetch_file_with_line_range(self):
         content = "\n".join(f"line {i}" for i in range(1, 21))
         d = _make_dispatcher(files={"big.py": content})
-        result = d.read_source(resource_type="file", path="big.py", start_line=5, end_line=10)
+        result = d.read_source(
+            resource_type="file", path="big.py", start_line=5, end_line=10
+        )
         self.assertIn("line 5", result)
         self.assertIn("line 10", result)
         self.assertNotIn("line 1 ", result)
@@ -179,10 +181,12 @@ class TestAnalyzeCode(unittest.TestCase):
         self.assertIn("ERROR", result)
 
     def test_imports_resolution(self):
-        d = _make_dispatcher(files={
-            "crew.py": "import os\nimport openai\nfrom utils import helper",
-            "utils.py": "def helper(): pass",
-        })
+        d = _make_dispatcher(
+            files={
+                "crew.py": "import os\nimport openai\nfrom utils import helper",
+                "utils.py": "def helper(): pass",
+            }
+        )
         result = d.analyze_code(mode="imports", file_path="crew.py")
         self.assertIn("openai", result)
         self.assertIn("utils", result)
@@ -207,8 +211,12 @@ class TestAnalyzeCode(unittest.TestCase):
 class TestGetFindings(unittest.TestCase):
     def test_cached_findings(self):
         sf = StaticFinding(
-            tool="bandit", rule_id="B102", severity="high",
-            message="exec used", filepath="agent.py", line=10,
+            tool="bandit",
+            rule_id="B102",
+            severity="high",
+            message="exec used",
+            filepath="agent.py",
+            line=10,
             evidence="exec(x)",
         )
         d = _make_dispatcher(findings=[sf])
@@ -244,10 +252,16 @@ class TestReportFinding(unittest.TestCase):
     def test_truncates_evidence(self):
         d = _make_dispatcher()
         d.report_finding(
-            category="test", subcategory="test", title="t",
-            description="d", impact="i", remediation="r",
-            affected_component="c", evidence="x" * 500,
-            confidence="low", hallucination_flag=False,
+            category="test",
+            subcategory="test",
+            title="t",
+            description="d",
+            impact="i",
+            remediation="r",
+            affected_component="c",
+            evidence="x" * 500,
+            confidence="low",
+            hallucination_flag=False,
         )
         self.assertLessEqual(len(d.session_findings[0]["evidence"]), 200)
 
@@ -310,17 +324,19 @@ class TestRunTargetedBandit(unittest.TestCase):
     @patch("flintai.scan.tool_dispatcher.subprocess.run")
     def test_bandit_success(self, mock_run):
         mock_run.return_value = MagicMock(
-            stdout=json.dumps({
-                "results": [
-                    {
-                        "issue_severity": "HIGH",
-                        "line_number": 5,
-                        "test_id": "B102",
-                        "issue_text": "exec() used",
-                        "code": "exec(x)",
-                    }
-                ]
-            }),
+            stdout=json.dumps(
+                {
+                    "results": [
+                        {
+                            "issue_severity": "HIGH",
+                            "line_number": 5,
+                            "test_id": "B102",
+                            "issue_text": "exec() used",
+                            "code": "exec(x)",
+                        }
+                    ]
+                }
+            ),
             returncode=1,
         )
         d = _make_dispatcher(files={"agent.py": "exec(x)\n"})
@@ -344,6 +360,7 @@ class TestRunTargetedBandit(unittest.TestCase):
     @patch("flintai.scan.tool_dispatcher.subprocess.run")
     def test_bandit_timeout(self, mock_run):
         import subprocess
+
         mock_run.side_effect = subprocess.TimeoutExpired("bandit", 30)
         d = _make_dispatcher(files={"a.py": "x = 1\n"})
         result = d.get_findings(file_path="a.py", mode="fresh")
@@ -370,6 +387,7 @@ class TestGetAdkTools(unittest.TestCase):
 
     def test_returns_wrapped_tools_with_tracer(self):
         from flintai.scan.trace_logger_log import LogTraceLogger
+
         d = _make_dispatcher()
         tracer = LogTraceLogger()
         tracer._iterations = 0

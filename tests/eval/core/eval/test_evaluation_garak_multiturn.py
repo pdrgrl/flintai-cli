@@ -1,13 +1,9 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from garak.attempt import (
-    Attempt,
-    Conversation,
-    Turn,
-    Message as GarakMessage,
-)
-
+from garak.attempt import Attempt, Conversation
+from garak.attempt import Message as GarakMessage
+from garak.attempt import Turn
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.eval.evaluation import EvaluationStatus
 from flintai.eval.core.eval.evaluation_garak_probe import (
@@ -29,12 +25,14 @@ class TestGarakGeneratorAdapter(unittest.TestCase):
         )
 
         adapter = GarakGeneratorAdapter(sync_model)
-        conversation = Conversation([
-            Turn(
-                role="user",
-                content=GarakMessage(text="hello"),
-            ),
-        ])
+        conversation = Conversation(
+            [
+                Turn(
+                    role="user",
+                    content=GarakMessage(text="hello"),
+                ),
+            ]
+        )
         results = adapter._call_model(conversation)
 
         self.assertEqual(len(results), 1)
@@ -50,12 +48,14 @@ class TestGarakGeneratorAdapter(unittest.TestCase):
         )
 
         adapter = GarakGeneratorAdapter(sync_model)
-        conversation = Conversation([
-            Turn(
-                role="user",
-                content=GarakMessage(text="bad prompt"),
-            ),
-        ])
+        conversation = Conversation(
+            [
+                Turn(
+                    role="user",
+                    content=GarakMessage(text="bad prompt"),
+                ),
+            ]
+        )
         results = adapter._call_model(conversation)
 
         self.assertEqual(results, [None])
@@ -71,17 +71,19 @@ class TestGarakGeneratorAdapter(unittest.TestCase):
         )
 
         adapter = GarakGeneratorAdapter(sync_model)
-        conversation = Conversation([
-            Turn(role="user", content=GarakMessage(text="hi")),
-            Turn(
-                role="assistant",
-                content=GarakMessage(text="hello"),
-            ),
-            Turn(
-                role="user",
-                content=GarakMessage(text="follow up"),
-            ),
-        ])
+        conversation = Conversation(
+            [
+                Turn(role="user", content=GarakMessage(text="hi")),
+                Turn(
+                    role="assistant",
+                    content=GarakMessage(text="hello"),
+                ),
+                Turn(
+                    role="user",
+                    content=GarakMessage(text="follow up"),
+                ),
+            ]
+        )
         results = adapter._call_model(conversation)
 
         self.assertEqual(len(results), 1)
@@ -112,9 +114,7 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
 
         detector = MagicMock()
         mock_plugins.load_plugin.side_effect = (
-            lambda name: probe
-            if name == "probes.test.Multi"
-            else detector
+            lambda name: probe if name == "probes.test.Multi" else detector
         )
 
         e = GarakMultiTurnEvaluation(
@@ -133,22 +133,26 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
     )
     async def test_run_scores_attempts(self, mock_plugins):
         attempt1 = Attempt(
-            prompt=Conversation([
-                Turn(
-                    role="user",
-                    content=GarakMessage(text="attack 1"),
-                ),
-            ]),
+            prompt=Conversation(
+                [
+                    Turn(
+                        role="user",
+                        content=GarakMessage(text="attack 1"),
+                    ),
+                ]
+            ),
         )
         attempt1.outputs = [GarakMessage(text="response 1")]
 
         attempt2 = Attempt(
-            prompt=Conversation([
-                Turn(
-                    role="user",
-                    content=GarakMessage(text="attack 2"),
-                ),
-            ]),
+            prompt=Conversation(
+                [
+                    Turn(
+                        role="user",
+                        content=GarakMessage(text="attack 2"),
+                    ),
+                ]
+            ),
         )
         attempt2.outputs = [GarakMessage(text="response 2")]
 
@@ -160,9 +164,7 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         detector.detect.side_effect = [[0.3], [0.8]]
 
         mock_plugins.load_plugin.side_effect = (
-            lambda name: probe
-            if name == "probes.test.Multi"
-            else detector
+            lambda name: probe if name == "probes.test.Multi" else detector
         )
 
         e = GarakMultiTurnEvaluation(
@@ -204,12 +206,14 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
     )
     async def test_session_captures_all_turns(self, mock_plugins):
         attempt = Attempt(
-            prompt=Conversation([
-                Turn(
-                    role="user",
-                    content=GarakMessage(text="turn 1"),
-                ),
-            ]),
+            prompt=Conversation(
+                [
+                    Turn(
+                        role="user",
+                        content=GarakMessage(text="turn 1"),
+                    ),
+                ]
+            ),
         )
         attempt.outputs = [GarakMessage(text="response 1")]
 
@@ -221,9 +225,7 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         detector.detect.return_value = [0.0]
 
         mock_plugins.load_plugin.side_effect = (
-            lambda name: probe
-            if name == "probes.test.Multi"
-            else detector
+            lambda name: probe if name == "probes.test.Multi" else detector
         )
 
         e = GarakMultiTurnEvaluation(
@@ -236,9 +238,7 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(e.status, EvaluationStatus.FINISHED)
         self.assertIsNotNone(e.session)
-        roles = [
-            m.content.role for m in e.session.messages
-        ]
+        roles = [m.content.role for m in e.session.messages]
         self.assertIn(Role.USER, roles)
 
 

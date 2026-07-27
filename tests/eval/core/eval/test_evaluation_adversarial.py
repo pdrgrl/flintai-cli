@@ -31,7 +31,8 @@ def _make_attacker_response(
     }
     msg = Message(
         content=Content.text(
-            Role.ASSISTANT, json.dumps(data),
+            Role.ASSISTANT,
+            json.dumps(data),
         ),
     )
     return ModelResponse(message=msg)
@@ -46,9 +47,7 @@ def _make_detector(scores) -> AsyncMock:
     detector = AsyncMock()
     if isinstance(scores, list):
         detector.detect = AsyncMock(
-            side_effect=[
-                DetectorResult(score=s) for s in scores
-            ],
+            side_effect=[DetectorResult(score=s) for s in scores],
         )
     else:
         detector.detect = AsyncMock(
@@ -68,10 +67,7 @@ class TestExtractJson(unittest.TestCase):
         self.assertEqual(data["key"], "value")
 
     def test_leading_prose(self):
-        text = (
-            "Here is the JSON output:\n"
-            '{"prompts": ["a", "b"]}'
-        )
+        text = "Here is the JSON output:\n" '{"prompts": ["a", "b"]}'
         data = _extract_json(text)
         self.assertEqual(data["prompts"], ["a", "b"])
 
@@ -91,19 +87,23 @@ class TestExtractJson(unittest.TestCase):
 
 class TestParseAttackerResponse(unittest.TestCase):
     def test_valid_json(self):
-        text = json.dumps({
-            "reasoning": "leaked info",
-            "next_prompt": "try this angle",
-        })
+        text = json.dumps(
+            {
+                "reasoning": "leaked info",
+                "next_prompt": "try this angle",
+            }
+        )
         result = _parse_attacker_response(text)
         self.assertEqual(result.reasoning, "leaked info")
         self.assertEqual(result.next_prompt, "try this angle")
 
     def test_valid_json_with_markdown_fences(self):
-        inner = json.dumps({
-            "reasoning": "safe",
-            "next_prompt": "try harder",
-        })
+        inner = json.dumps(
+            {
+                "reasoning": "safe",
+                "next_prompt": "try harder",
+            }
+        )
         text = f"```json\n{inner}\n```"
         result = _parse_attacker_response(text)
         self.assertEqual(result.reasoning, "safe")
@@ -113,7 +113,8 @@ class TestParseAttackerResponse(unittest.TestCase):
         result = _parse_attacker_response("not json at all")
         self.assertEqual(result.reasoning, "Parse error")
         self.assertEqual(
-            result.next_prompt, "Please continue.",
+            result.next_prompt,
+            "Please continue.",
         )
 
     def test_json_with_leading_prose(self):
@@ -284,12 +285,14 @@ class TestAdversarialTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         # All user messages should be USER role
         for i in range(0, len(messages), 2):
             self.assertEqual(
-                messages[i].content.role, Role.USER,
+                messages[i].content.role,
+                Role.USER,
             )
         # All assistant messages should be ASSISTANT role
         for i in range(1, len(messages), 2):
             self.assertEqual(
-                messages[i].content.role, Role.ASSISTANT,
+                messages[i].content.role,
+                Role.ASSISTANT,
             )
 
     async def test_init_validates_fields(self):
@@ -303,7 +306,8 @@ class TestAdversarialTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         )
         await e.init()
         self.assertEqual(
-            e.status, EvaluationStatus.INITIALIZED,
+            e.status,
+            EvaluationStatus.INITIALIZED,
         )
 
     async def test_results_include_session(self):
@@ -333,7 +337,8 @@ class TestAdversarialTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results), 1)
         self.assertIsNotNone(results[0].session)
         self.assertEqual(
-            results[0].status, EvaluationStatus.FINISHED,
+            results[0].status,
+            EvaluationStatus.FINISHED,
         )
 
 
@@ -374,7 +379,8 @@ class TestAdversarialEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(e.children), 2)
         for child in e.children:
             self.assertIsInstance(
-                child, AdversarialTurnEvaluation,
+                child,
+                AdversarialTurnEvaluation,
             )
             self.assertEqual(child.max_turns, 4)
         self.assertEqual(e.children[0].goal, "Goal A")
@@ -464,7 +470,8 @@ class TestAdversarialEvaluation(unittest.IsolatedAsyncioTestCase):
 
         summary = e.get_summary()
         self.assertEqual(
-            summary.status, EvaluationStatus.FINISHED,
+            summary.status,
+            EvaluationStatus.FINISHED,
         )
         self.assertEqual(summary.total_evaluations, 2)
         self.assertEqual(summary.finished_evaluations, 2)
@@ -494,7 +501,8 @@ class TestAdversarialEvaluation(unittest.IsolatedAsyncioTestCase):
         await e.init()
 
         self.assertEqual(
-            e.status, EvaluationStatus.ERROR,
+            e.status,
+            EvaluationStatus.ERROR,
         )
 
 

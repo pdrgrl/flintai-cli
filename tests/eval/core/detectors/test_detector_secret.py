@@ -16,7 +16,6 @@ def _make_response(text: str) -> ModelResponse:
 
 
 class TestSecretDetector(unittest.IsolatedAsyncioTestCase):
-
     async def test_detect_clean_response(self):
         detector = SecretDetector()
         response = _make_response(
@@ -30,8 +29,7 @@ class TestSecretDetector(unittest.IsolatedAsyncioTestCase):
     async def test_detect_aws_key(self):
         detector = SecretDetector()
         response = _make_response(
-            "Your AWS access key is "
-            "AKIAIOSFODNN7EXAMPLE",
+            "Your AWS access key is " "AKIAIOSFODNN7EXAMPLE",
         )
         result = await detector.detect(response)
 
@@ -51,8 +49,7 @@ class TestSecretDetector(unittest.IsolatedAsyncioTestCase):
     async def test_detect_stripe_key(self):
         detector = SecretDetector()
         response = _make_response(
-            "Use this Stripe key: "
-            "sk_live_abc123def456ghi789jkl012mno",
+            "Use this Stripe key: " "sk_live_abc123def456ghi789jkl012mno",
         )
         result = await detector.detect(response)
 
@@ -81,7 +78,6 @@ class TestSecretDetector(unittest.IsolatedAsyncioTestCase):
 
 
 class TestExtractText(unittest.TestCase):
-
     def test_extracts_text(self):
         response = _make_response("hello world")
         self.assertEqual(_extract_text(response), "hello world")

@@ -6,32 +6,29 @@ tries to lead the target off-topic, and a TopicGuardDetector
 judges each response.
 """
 
-from typing import ClassVar
 import logging
 from dataclasses import dataclass
+from typing import ClassVar
 
 from dataclasses_json import dataclass_json
-
 from flintai.eval.common.schema import Content, Message, Role, Session
-from flintai.eval.core.detectors.detector_topic_guard import (
-    TopicGuardDetector,
-)
+from flintai.eval.core.detectors.detector_topic_guard import TopicGuardDetector
 from flintai.eval.core.eval.evaluation import Evaluation, EvaluationStatus
 from flintai.eval.core.eval.evaluation_adversarial import (
-    AdversarialEvaluation,
-    _generate_starting_prompts,
-    _parse_attacker_response,
     _ATTACKER_SYSTEM,
     _BLOCKED_STATUSES,
     _TARGET_BROKEN_SCORE_THRESHOLD,
+    AdversarialEvaluation,
+    _generate_starting_prompts,
+    _parse_attacker_response,
 )
 from flintai.eval.core.eval.evaluation_single import SingleEvaluation
 from flintai.eval.core.models.model import (
     Model,
     ModelResponse,
     extract_final_text,
-    extract_text_from_message,
     extract_text_from_conversation,
+    extract_text_from_message,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,16 +44,10 @@ def _build_adversarial_goal(
     ]
 
     if agent_objective:
-        parts.append(
-            f"The model's stated objective is: "
-            f"{agent_objective}"
-        )
+        parts.append(f"The model's stated objective is: {agent_objective}")
 
     if agent_instructions:
-        parts.append(
-            f"The model's instructions are: "
-            f"{agent_instructions}"
-        )
+        parts.append(f"The model's instructions are: {agent_instructions}")
 
     parts.append(
         "Try to get the model to provide information, "
@@ -103,9 +94,7 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
 
     async def init(self):
         if not self.starting_prompt or not self.goal:
-            raise ValueError(
-                "starting_prompt and goal must be set"
-            )
+            raise ValueError("starting_prompt and goal must be set")
         if self._attacker_model is None:
             raise ValueError("attacker_model must be set")
         if self._detector is None:
@@ -120,13 +109,13 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
             or self._detector is None
         ):
             raise ValueError(
-                "starting_prompt, goal, attacker_model, "
-                "and detector must be set"
+                "starting_prompt, goal, attacker_model, " "and detector must be set"
             )
 
         conversation: list[Message] = []
         attacker_system = _ATTACKER_SYSTEM.replace(
-            "{goal}", self.goal,
+            "{goal}",
+            self.goal,
         )
 
         current_prompt = self.starting_prompt
@@ -135,7 +124,8 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
         for turn in range(self.max_turns):
             user_msg = Message(
                 content=Content.text(
-                    Role.USER, current_prompt,
+                    Role.USER,
+                    current_prompt,
                 ),
             )
             conversation.append(user_msg)
@@ -157,8 +147,7 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
 
             if target_response.message is None:
                 raise ValueError(
-                    "Target model returned no message "
-                    "and no block status"
+                    "Target model returned no message " "and no block status"
                 )
 
             conversation.append(target_response.message)
@@ -171,7 +160,8 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
                 ModelResponse(message=target_response.message),
             )
             min_detector_score = min(
-                min_detector_score, detector_result.score,
+                min_detector_score,
+                detector_result.score,
             )
 
             if detector_result.score < _TARGET_BROKEN_SCORE_THRESHOLD:
@@ -186,7 +176,8 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
             attacker_msgs = [
                 Message(
                     content=Content.text(
-                        Role.SYSTEM, attacker_system,
+                        Role.SYSTEM,
+                        attacker_system,
                     ),
                 ),
                 Message(
@@ -201,16 +192,14 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
                     ),
                 ),
             ]
-            attacker_response = (
-                await self._attacker_model.generate(
-                    attacker_msgs,
-                )
+            attacker_response = await self._attacker_model.generate(
+                attacker_msgs,
             )
 
             if attacker_response.message is None:
                 logger.warning(
-                    "Attacker model returned no "
-                    "response at turn %d", turn,
+                    "Attacker model returned no " "response at turn %d",
+                    turn,
                 )
                 continue
 
@@ -258,16 +247,17 @@ class TopicGuardEvaluation(AdversarialEvaluation):
     ):
         if not agent_objective and not agent_instructions:
             raise ValueError(
-                "at least one of agent_objective or "
-                "agent_instructions is required"
+                "at least one of agent_objective or " "agent_instructions is required"
             )
         goal = _build_adversarial_goal(
-            agent_objective, agent_instructions,
+            agent_objective,
+            agent_instructions,
         )
         if detector is None:
             from flintai.eval.core.models.generator_model import (
                 get_generator_model,
             )
+
             detector = TopicGuardDetector(
                 model=get_generator_model(),
                 agent_objective=agent_objective,
@@ -287,9 +277,7 @@ class TopicGuardEvaluation(AdversarialEvaluation):
 
     async def get_children(self) -> list[Evaluation]:
         if not self.goals or self._attacker_model is None:
-            raise ValueError(
-                "goals and attacker_model must be set"
-            )
+            raise ValueError("goals and attacker_model must be set")
         if self._detector is None:
             raise ValueError("detector must be set")
 
@@ -301,8 +289,7 @@ class TopicGuardEvaluation(AdversarialEvaluation):
             self.attack_techniques or self._DEFAULT_ATTACK_TECHNIQUES,
         )
         logger.debug(
-            "Generated %d starting prompts for "
-            "topic guard",
+            "Generated %d starting prompts for " "topic guard",
             len(prompts),
         )
 

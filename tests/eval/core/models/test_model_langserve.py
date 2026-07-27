@@ -23,7 +23,6 @@ def _make_aiohttp_mocks(json_data: dict):
 
 
 class TestLangServeModel(unittest.IsolatedAsyncioTestCase):
-
     @patch("flintai.eval.core.models.model_langserve.aiohttp.ClientSession")
     async def test_generate_text(self, mock_session_cls):
         mock_session = _make_aiohttp_mocks({"output": "Hello!"})
@@ -40,7 +39,8 @@ class TestLangServeModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(resp.message)
         self.assertEqual(
-            resp.message.content.parts[0].text, "Hello!",
+            resp.message.content.parts[0].text,
+            "Hello!",
         )
 
     @patch("flintai.eval.core.models.model_langserve.aiohttp.ClientSession")
@@ -97,16 +97,20 @@ class TestLangServeModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNone(resp.message)
         self.assertEqual(
-            resp.status, ResponseStatus.EMPTY_RESPONSE,
+            resp.status,
+            ResponseStatus.EMPTY_RESPONSE,
         )
 
     @patch("flintai.eval.core.models.model_langserve.aiohttp.ClientSession")
     async def test_dict_output_extracts_content(
-        self, mock_session_cls,
+        self,
+        mock_session_cls,
     ):
-        mock_session = _make_aiohttp_mocks({
-            "output": {"content": "The answer is 42"},
-        })
+        mock_session = _make_aiohttp_mocks(
+            {
+                "output": {"content": "The answer is 42"},
+            }
+        )
         mock_session_cls.return_value = mock_session
 
         model = LangServeModel(

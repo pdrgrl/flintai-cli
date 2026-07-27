@@ -6,8 +6,6 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 
 from dataclasses_json import dataclass_json
-
-from flintai.eval.core.models.model import Model
 from flintai.eval.core.eval.evaluation import (
     Evaluation,
     EvaluationObserver,
@@ -15,12 +13,13 @@ from flintai.eval.core.eval.evaluation import (
     EvaluationStatus,
     EvaluationSummary,
 )
+from flintai.eval.core.models.model import Model
 
 logger = logging.getLogger(__name__)
 
 
-PER_CHILD_TIMEOUT = 60   # seconds per child
-MIN_TIMEOUT = 30 * 60    # 30 minutes minimum
+PER_CHILD_TIMEOUT = 60  # seconds per child
+MIN_TIMEOUT = 30 * 60  # 30 minutes minimum
 MAX_CONSECUTIVE_FAILURES = 5
 
 
@@ -43,25 +42,24 @@ class MultiEvaluation(Evaluation):
     summary.
     """
 
-    status: EvaluationStatus = EvaluationStatus.WAITING
-    error_message: str | None = None
     children: list[Evaluation] = field(default_factory=list)
     _child_relay: EvaluationObserver | None = field(
-        default=None, repr=False,
+        default=None,
+        repr=False,
     )
 
     def __init__(self):
         super().__init__()
-        self.status = EvaluationStatus.WAITING
-        self.error_message = None
         self.children = []
         self._child_relay = None
 
     def _ensure_relay(self) -> EvaluationObserver:
         """Return a relay observer that notifies this parent."""
         if self._child_relay is None:
+
             def relay(_child: Evaluation) -> None:
                 self._notify_observers()
+
             self._child_relay = relay
         return self._child_relay
 
@@ -69,7 +67,9 @@ class MultiEvaluation(Evaluation):
         try:
             self.status = EvaluationStatus.INITIALIZING
             self.children = await self.get_children()
-            logger.debug("%s initialized: %d children", type(self).__name__, len(self.children))
+            logger.debug(
+                "%s initialized: %d children", type(self).__name__, len(self.children)
+            )
             relay = self._ensure_relay()
             for child in self.children:
                 child.add_observer(relay)
@@ -78,7 +78,9 @@ class MultiEvaluation(Evaluation):
         except Exception as e:
             self.error_message = str(e)
             self.status = EvaluationStatus.ERROR
-            logger.error("%s init failed (%s: %s)", type(self).__name__, type(e).__name__, e)
+            logger.error(
+                "%s init failed (%s: %s)", type(self).__name__, type(e).__name__, e
+            )
         finally:
             self._notify_observers()
 
@@ -94,11 +96,7 @@ class MultiEvaluation(Evaluation):
         errors = sum(s.error_evaluations for s in summaries)
         max_score = sum(s.max_score for s in summaries)
         achieved = sum(s.achieved_score for s in summaries)
-        error_msgs = [
-            msg
-            for s in summaries
-            for msg in s.error_messages
-        ]
+        error_msgs = [msg for s in summaries for msg in s.error_messages]
         if self.error_message:
             error_msgs.append(self.error_message)
 
@@ -130,9 +128,9 @@ class MultiEvaluation(Evaluation):
         error_lock = asyncio.Lock()
 
         initialized = [
-            c for c in self.children
-            if c.get_summary().status
-            == EvaluationStatus.INITIALIZED
+            c
+            for c in self.children
+            if c.get_summary().status == EvaluationStatus.INITIALIZED
         ]
         timeout = max(
             MIN_TIMEOUT,
@@ -140,14 +138,19 @@ class MultiEvaluation(Evaluation):
         )
 
         name = type(self).__name__
-        logger.debug("%s running: %d children, concurrency=%d", name, len(initialized), concurrency)
+        logger.debug(
+            "%s running: %d children, concurrency=%d",
+            name,
+            len(initialized),
+            concurrency,
+        )
 
         async def run_child(child: Evaluation) -> None:
             nonlocal consecutive_errors
             async with semaphore:
                 if abort.is_set():
-                    child.status = EvaluationStatus.ERROR  # type: ignore[attr-defined]
-                    child.error_message = "Aborted: too many consecutive failures"  # type: ignore[attr-defined]
+                    child.status = EvaluationStatus.ERROR
+                    child.error_message = "Aborted: too many consecutive failures"
                     child._notify_observers()
                     return
                 await child.run(model, concurrency)
@@ -158,42 +161,50 @@ class MultiEvaluation(Evaluation):
                             abort.set()
                             logger.warning(
                                 "%s: aborting after %d consecutive failures",
-                                name, consecutive_errors,
+                                name,
+                                consecutive_errors,
                             )
                     else:
                         consecutive_errors = 0
 
         try:
-            try:
-                async with asyncio.timeout(timeout):
-                    async with asyncio.TaskGroup() as tg:
-                        for child in initialized:
-                            tg.create_task(run_child(child))
-            except TimeoutError:
-                unfinished = sum(
-                    1 for c in self.children
-                    if c.get_summary().status not in (
-                        EvaluationStatus.FINISHED,
-                        EvaluationStatus.ERROR,
+            tasks = [asyncio.create_task(run_child(child)) for child in initialized]
+            if tasks:
+                try:
+                    results = await asyncio.wait_for(
+                        asyncio.gather(*tasks, return_exceptions=True),
+                        timeout=timeout,
                     )
-                )
-                self.error_message = (
-                    f"{unfinished} (of {len(initialized)}) "
-                    f"evaluations timed out after "
-                    f"{timeout}s"
-                )
-                logger.warning("%s: %s", name, self.error_message)
-            except ExceptionGroup as eg:
-                errors = [str(e) for e in eg.exceptions]
-                self.error_message = (
-                    f"Evaluation errors: {'; '.join(errors)}"
-                )
-                logger.warning("%s: %s", name, self.error_message)
+                    errors = [r for r in results if isinstance(r, Exception)]
+                    if errors:
+                        self.error_message = (
+                            f"Evaluation errors: "
+                            f"{'; '.join(str(e) for e in errors)}"
+                        )
+                        logger.warning("%s: %s", name, self.error_message)
+                except asyncio.TimeoutError:
+                    for task in tasks:
+                        task.cancel()
+                    unfinished = sum(
+                        1
+                        for c in self.children
+                        if c.get_summary().status
+                        not in (
+                            EvaluationStatus.FINISHED,
+                            EvaluationStatus.ERROR,
+                        )
+                    )
+                    self.error_message = (
+                        f"{unfinished} (of {len(initialized)}) "
+                        f"evaluations timed out after "
+                        f"{timeout}s"
+                    )
+                    logger.warning("%s: %s", name, self.error_message)
 
             errored = [
-                c for c in self.children
-                if c.get_summary().status
-                == EvaluationStatus.ERROR
+                c
+                for c in self.children
+                if c.get_summary().status == EvaluationStatus.ERROR
             ]
             if errored or self.error_message:
                 self.status = EvaluationStatus.ERROR

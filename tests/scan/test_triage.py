@@ -71,7 +71,10 @@ class TestRunTriage(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch("flintai.scan.triage.complete_text")
-    @patch("flintai.scan.triage._load_triage_prompt", return_value="You are a triage agent.")
+    @patch(
+        "flintai.scan.triage._load_triage_prompt",
+        return_value="You are a triage agent.",
+    )
     def test_successful_triage(self, mock_prompt, mock_complete):
         mock_complete.return_value = json.dumps(
             {
@@ -91,10 +94,20 @@ class TestRunTriage(unittest.TestCase):
         )
 
         findings = [
-            {"id": "F1", "ai_spm_severity": "High", "source": "ai_reasoning",
-             "subcategory": "test", "evidence": [{"confidence": "High"}]},
-            {"id": "F2", "ai_spm_severity": "Low", "source": "ai_reasoning",
-             "subcategory": "test", "evidence": [{"confidence": "Low"}]},
+            {
+                "id": "F1",
+                "ai_spm_severity": "High",
+                "source": "ai_reasoning",
+                "subcategory": "test",
+                "evidence": [{"confidence": "High"}],
+            },
+            {
+                "id": "F2",
+                "ai_spm_severity": "Low",
+                "source": "ai_reasoning",
+                "subcategory": "test",
+                "evidence": [{"confidence": "Low"}],
+            },
         ]
         ctx = {"repo_name": "test", "framework": "crewai", "agent_profiles": []}
 
@@ -123,14 +136,20 @@ class TestRunTriage(unittest.TestCase):
     @patch("flintai.scan.triage.complete_text")
     @patch("flintai.scan.triage._load_triage_prompt", return_value="prompt")
     def test_strips_code_fences(self, mock_prompt, mock_complete):
-        inner = json.dumps({
-            "kept_finding_ids": [{"id": "F1", "ai_spm_severity": "High"}],
-            "triage_dismissed": [],
-            "triage_downgraded": [],
-            "triage_summary": {"total_input": 1, "total_kept": 1,
-                               "total_dismissed": 0, "total_downgraded": 0,
-                               "severity_distribution": {}},
-        })
+        inner = json.dumps(
+            {
+                "kept_finding_ids": [{"id": "F1", "ai_spm_severity": "High"}],
+                "triage_dismissed": [],
+                "triage_downgraded": [],
+                "triage_summary": {
+                    "total_input": 1,
+                    "total_kept": 1,
+                    "total_dismissed": 0,
+                    "total_downgraded": 0,
+                    "severity_distribution": {},
+                },
+            }
+        )
         mock_complete.return_value = f"```json\n{inner}\n```"
 
         findings = [{"id": "F1", "ai_spm_severity": "High", "subcategory": "test"}]
@@ -141,12 +160,14 @@ class TestRunTriage(unittest.TestCase):
     @patch("flintai.scan.triage.complete_text")
     @patch("flintai.scan.triage._load_triage_prompt", return_value="prompt")
     def test_unaccounted_findings_readded(self, mock_prompt, mock_complete):
-        mock_complete.return_value = json.dumps({
-            "kept_finding_ids": [{"id": "F1", "ai_spm_severity": "High"}],
-            "triage_dismissed": [],
-            "triage_downgraded": [],
-            "triage_summary": {},
-        })
+        mock_complete.return_value = json.dumps(
+            {
+                "kept_finding_ids": [{"id": "F1", "ai_spm_severity": "High"}],
+                "triage_dismissed": [],
+                "triage_downgraded": [],
+                "triage_summary": {},
+            }
+        )
 
         findings = [
             {"id": "F1", "ai_spm_severity": "High", "subcategory": "test"},
@@ -160,22 +181,26 @@ class TestRunTriage(unittest.TestCase):
     @patch("flintai.scan.triage.complete_text")
     @patch("flintai.scan.triage._load_triage_prompt", return_value="prompt")
     def test_cve_dedup_and_expansion(self, mock_prompt, mock_complete):
-        mock_complete.return_value = json.dumps({
-            "kept_finding_ids": [{"id": "CVE1", "ai_spm_severity": "High"}],
-            "triage_dismissed": [],
-            "triage_downgraded": [],
-            "triage_summary": {},
-        })
+        mock_complete.return_value = json.dumps(
+            {
+                "kept_finding_ids": [{"id": "CVE1", "ai_spm_severity": "High"}],
+                "triage_dismissed": [],
+                "triage_downgraded": [],
+                "triage_summary": {},
+            }
+        )
 
         findings = [
             {
-                "id": "CVE1", "ai_spm_severity": "High",
+                "id": "CVE1",
+                "ai_spm_severity": "High",
                 "subcategory": "known_vulnerable_dependency",
                 "source": "static_pip_audit",
                 "affected_components": [{"name": "requests"}],
             },
             {
-                "id": "CVE2", "ai_spm_severity": "Medium",
+                "id": "CVE2",
+                "ai_spm_severity": "Medium",
                 "subcategory": "known_vulnerable_dependency",
                 "source": "static_pip_audit",
                 "affected_components": [{"name": "requests"}],
@@ -198,12 +223,14 @@ class TestRunTriage(unittest.TestCase):
     @patch("flintai.scan.triage.complete_text")
     @patch("flintai.scan.triage._load_triage_prompt", return_value="prompt")
     def test_missing_keys_backward_compat(self, mock_prompt, mock_complete):
-        mock_complete.return_value = json.dumps({
-            "kept_findings": [{"id": "F1", "ai_spm_severity": "High"}],
-            "triage_dismissed": [],
-            "triage_downgraded": [],
-            "triage_summary": {},
-        })
+        mock_complete.return_value = json.dumps(
+            {
+                "kept_findings": [{"id": "F1", "ai_spm_severity": "High"}],
+                "triage_dismissed": [],
+                "triage_downgraded": [],
+                "triage_summary": {},
+            }
+        )
 
         findings = [{"id": "F1", "ai_spm_severity": "High", "subcategory": "test"}]
         result = run_triage(findings, {}, model=MagicMock())

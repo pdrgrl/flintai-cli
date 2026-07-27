@@ -22,8 +22,9 @@ def _make_aiohttp_mocks(json_data: dict):
 
 
 class TestAnthropicAgentModel(unittest.IsolatedAsyncioTestCase):
-
-    @patch("flintai.eval.core.models.model_anthropic_agent.aiohttp.ClientSession")
+    @patch(
+        "flintai.eval.core.models.model_anthropic_agent.aiohttp.ClientSession"
+    )
     async def test_generate_text(self, mock_session_cls):
         mock_session = _make_aiohttp_mocks({"response": "Hello!"})
         mock_session_cls.return_value = mock_session
@@ -36,13 +37,17 @@ class TestAnthropicAgentModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(resp.message)
         self.assertEqual(
-            resp.message.content.role, Role.ASSISTANT,
+            resp.message.content.role,
+            Role.ASSISTANT,
         )
         self.assertEqual(
-            resp.message.content.parts[0].text, "Hello!",
+            resp.message.content.parts[0].text,
+            "Hello!",
         )
 
-    @patch("flintai.eval.core.models.model_anthropic_agent.aiohttp.ClientSession")
+    @patch(
+        "flintai.eval.core.models.model_anthropic_agent.aiohttp.ClientSession"
+    )
     async def test_generate_empty_response(self, mock_session_cls):
         mock_session = _make_aiohttp_mocks({"response": ""})
         mock_session_cls.return_value = mock_session
@@ -53,7 +58,9 @@ class TestAnthropicAgentModel(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNone(resp.message)
 
-    @patch("flintai.eval.core.models.model_anthropic_agent.aiohttp.ClientSession")
+    @patch(
+        "flintai.eval.core.models.model_anthropic_agent.aiohttp.ClientSession"
+    )
     async def test_custom_endpoint(self, mock_session_cls):
         mock_session = _make_aiohttp_mocks({"response": "ok"})
         mock_session_cls.return_value = mock_session

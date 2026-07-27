@@ -30,7 +30,6 @@ def _mock_model_with_response(text: str) -> AsyncMock:
 
 
 class TestCreationContext(unittest.TestCase):
-
     def test_minimal(self):
         c = CreationContext(
             purpose="A chatbot",
@@ -56,16 +55,17 @@ class TestCreationContext(unittest.TestCase):
 
 
 class TestEvaluationPlan(unittest.TestCase):
-
     def test_defaults(self):
         p = EvaluationPlan()
         self.assertIsNone(p.prompts)
         self.assertEqual(p.detector_prompt, "")
 
     def test_with_data(self):
-        collection = InMemoryMessageCollection([
-            Message(content=Content.text(Role.USER, "p1")),
-        ])
+        collection = InMemoryMessageCollection(
+            [
+                Message(content=Content.text(Role.USER, "p1")),
+            ]
+        )
         p = EvaluationPlan(
             prompts=collection,
             detector_prompt="Check for leaks",
@@ -75,7 +75,6 @@ class TestEvaluationPlan(unittest.TestCase):
 
 
 class TestBuildUserMessage(unittest.TestCase):
-
     def test_minimal(self):
         c = CreationContext(
             purpose="A chatbot",
@@ -104,7 +103,6 @@ class TestBuildUserMessage(unittest.TestCase):
 
 
 class TestParseResponse(unittest.TestCase):
-
     def test_valid_json(self):
         data = {
             "prompts": ["p1", "p2", "p3"],
@@ -113,19 +111,17 @@ class TestParseResponse(unittest.TestCase):
         result = _parse_response(json.dumps(data))
         self.assertIsInstance(result, EvaluationPlan)
         self.assertIsInstance(
-            result.prompts, InMemoryMessageCollection,
+            result.prompts,
+            InMemoryMessageCollection,
         )
         self.assertEqual(result.prompts.size(), 3)
         self.assertEqual(
-            result.detector_prompt, "Check safety",
+            result.detector_prompt,
+            "Check safety",
         )
 
     def test_json_with_markdown_fences(self):
-        raw = (
-            '```json\n'
-            '{"prompts": ["a"], "detector_prompt": "b"}\n'
-            '```'
-        )
+        raw = "```json\n" '{"prompts": ["a"], "detector_prompt": "b"}\n' "```"
         result = _parse_response(raw)
         self.assertEqual(result.prompts.size(), 1)
         self.assertEqual(result.detector_prompt, "b")
@@ -145,10 +141,7 @@ class TestParseResponse(unittest.TestCase):
 
     def test_prompts_not_list_raises(self):
         with self.assertRaises(ValueError):
-            _parse_response(
-                '{"prompts": "not a list", '
-                '"detector_prompt": "x"}'
-            )
+            _parse_response('{"prompts": "not a list", ' '"detector_prompt": "x"}')
 
     def test_prompt_messages_are_user_role(self):
         data = {
@@ -162,12 +155,13 @@ class TestParseResponse(unittest.TestCase):
 
 
 class TestCreateEvaluation(unittest.IsolatedAsyncioTestCase):
-
     async def test_calls_model_and_parses(self):
-        response_json = json.dumps({
-            "prompts": ["prompt1", "prompt2"],
-            "detector_prompt": "Evaluate safety",
-        })
+        response_json = json.dumps(
+            {
+                "prompts": ["prompt1", "prompt2"],
+                "detector_prompt": "Evaluate safety",
+            }
+        )
         mock_model = _mock_model_with_response(response_json)
 
         context = CreationContext(
@@ -180,7 +174,8 @@ class TestCreateEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(result, EvaluationPlan)
         self.assertEqual(result.prompts.size(), 2)
         self.assertEqual(
-            result.detector_prompt, "Evaluate safety",
+            result.detector_prompt,
+            "Evaluate safety",
         )
         mock_model.generate.assert_called_once()
 
@@ -204,10 +199,12 @@ class TestCreateEvaluation(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_passes_system_instruction(self):
-        response_json = json.dumps({
-            "prompts": ["p1"],
-            "detector_prompt": "judge",
-        })
+        response_json = json.dumps(
+            {
+                "prompts": ["p1"],
+                "detector_prompt": "judge",
+            }
+        )
         mock_model = _mock_model_with_response(response_json)
 
         context = CreationContext(
@@ -222,14 +219,16 @@ class TestCreateEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(messages, list)
         self.assertEqual(len(messages), 2)
         self.assertEqual(
-            messages[0].content.role, Role.SYSTEM,
+            messages[0].content.role,
+            Role.SYSTEM,
         )
         self.assertIn(
             "red-teaming",
             messages[0].content.parts[0].text,
         )
         self.assertEqual(
-            messages[1].content.role, Role.USER,
+            messages[1].content.role,
+            Role.USER,
         )
 
 

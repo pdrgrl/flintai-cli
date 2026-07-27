@@ -47,7 +47,8 @@ class MessageCollectionRepository(ABC):
 
     @abstractmethod
     def get_message_collection(
-        self, id: str,
+        self,
+        id: str,
     ) -> MessageCollection:
         """Return a MessageCollection instance for the given id.
 
@@ -57,7 +58,8 @@ class MessageCollectionRepository(ABC):
 
     @abstractmethod
     def create(
-        self, db_collection: DbMessageCollection,
+        self,
+        db_collection: DbMessageCollection,
     ) -> DbMessageCollection:
         """Persist a new collection.
 
@@ -68,7 +70,8 @@ class MessageCollectionRepository(ABC):
 
     @abstractmethod
     def update(
-        self, db_collection: DbMessageCollection,
+        self,
+        db_collection: DbMessageCollection,
     ) -> DbMessageCollection:
         """Replace an existing collection.
 

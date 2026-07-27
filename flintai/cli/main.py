@@ -21,11 +21,10 @@ from datetime import datetime
 from dotenv import load_dotenv
 from rich.panel import Panel
 from rich.text import Text
-
-from flintai.cli import eval_cli, scan_cli, init_cli
+from flintai.cli import eval_cli, init_cli, scan_cli
 from flintai.cli.console import CLI_WIDTH, console
-from flintai.cli.version import VERSION
 from flintai.cli.utils import is_ci
+from flintai.cli.version import VERSION
 from flintai.eval.common.log import setup_file_logging
 from flintai.eval.db.json.repository_json import JsonRepository
 
@@ -47,7 +46,6 @@ _BUILTIN_CONFIG = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "builtin_config.json",
 )
-
 
 
 def _count(repo: JsonRepository) -> dict[str, int]:
@@ -86,11 +84,15 @@ def _print_config_info(
     u = _count(user)
 
     console.print(f"[dim]Config:       {config_path}[/dim]")
-    console.print(f"[dim]Models:       {_fmt_count(m['models'], b['models'], u['models'])}[/dim]")
-    console.print(f"[dim]Evaluations:  {_fmt_count(m['evaluations'], b['evaluations'], u['evaluations'])}[/dim]")
-    console.print(f"[dim]Detectors:    {_fmt_count(m['detectors'], b['detectors'], u['detectors'])}[/dim]")
-    console.print(f"[dim]Collections:  {_fmt_count(m['collections'], b['collections'], u['collections'])}[/dim]")
-    console.print(f"[dim]Assignments:  {_fmt_count(m['assignments'], b['assignments'], u['assignments'])}[/dim]")
+    for label, key in [
+        ("Models", "models"),
+        ("Evaluations", "evaluations"),
+        ("Detectors", "detectors"),
+        ("Collections", "collections"),
+        ("Assignments", "assignments"),
+    ]:
+        counts = _fmt_count(m[key], b[key], u[key])
+        console.print(f"[dim]{label + ':':<14}{counts}[/dim]")
     console.print()
 
 
@@ -121,10 +123,10 @@ def _dispatch(args: argparse.Namespace) -> str | None:
 
     if args.command == "eval":
         return _dispatch_eval(args)
-    elif args.command == "scan":
-        return _dispatch_scan(args)
     elif args.command == "init":
         return _dispatch_init(args)
+    elif args.command == "scan":
+        return _dispatch_scan(args)
     else:
         console.print(f"[red]Unknown command: {args.command}[/red]")
         sys.exit(1)
@@ -135,7 +137,7 @@ def _dispatch_init(args: argparse.Namespace) -> str | None:
     return None
 
 
-def _dispatch_scan(args: argparse.Namespace) -> None | None:
+def _dispatch_scan(args: argparse.Namespace) -> str | None:
     logger.info("flintai v%s | scan mode", VERSION)
     _print_path(args.path)
     return scan_cli.handle_scan(args)
@@ -159,7 +161,10 @@ def _dispatch_eval(args: argparse.Namespace) -> str | None:
     m = _count(store)
     logger.info(
         "flintai v%s | models=%d, evaluations=%d, assignments=%d",
-        VERSION, m["models"], m["evaluations"], m["assignments"],
+        VERSION,
+        m["models"],
+        m["evaluations"],
+        m["assignments"],
     )
 
     cmd = args.eval_cmd
@@ -169,7 +174,9 @@ def _dispatch_eval(args: argparse.Namespace) -> str | None:
         eval_cli.handle_evaluations(args, store)
     elif cmd == "model-evaluations":
         eval_cli.handle_model_evaluations(
-            args, store, user,
+            args,
+            store,
+            user,
         )
     elif cmd == "run":
         return asyncio.run(eval_cli.handle_run(args, store))
@@ -206,14 +213,16 @@ def main(argv: list[str] | None = None) -> None:
         description="Flint AI CLI — AI Agent Evaluation Framework",
     )
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {VERSION}",
+        "--version",
+        action="version",
+        version=f"%(prog)s {VERSION}",
     )
 
     subparsers = parser.add_subparsers(dest="command")
     subparsers.required = True
     eval_cli.register(subparsers)
-    scan_cli.register(subparsers)
     init_cli.register(subparsers)
+    scan_cli.register(subparsers)
 
     args = parser.parse_args(argv)
 
@@ -223,8 +232,7 @@ def main(argv: list[str] | None = None) -> None:
     if not flintai_env.exists() and args.command != "init":
         if ci:
             console.print(
-                "[dim]CI environment detected —"
-                " skipping interactive init.[/dim]",
+                "[dim]CI environment detected —" " skipping interactive init.[/dim]",
             )
         else:
             console.print(
@@ -252,7 +260,9 @@ def main(argv: list[str] | None = None) -> None:
     except Exception as e:
         logger.critical(
             "Fatal error: %s: %s\n%s",
-            type(e).__name__, e, traceback.format_exc(),
+            type(e).__name__,
+            e,
+            traceback.format_exc(),
         )
         _print_error(e)
         elapsed = time.monotonic() - t0

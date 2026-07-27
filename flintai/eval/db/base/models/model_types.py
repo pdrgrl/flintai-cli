@@ -3,7 +3,6 @@ from datetime import datetime
 from enum import Enum
 
 from dataclasses_json import dataclass_json
-
 from flintai.eval.common.reference import Reference, ReferenceType
 from flintai.eval.common.utils import datetime_config, generate_id, now_utc
 from flintai.eval.db.base.eval.model_eval_run_types import DbModelEvaluationRun
@@ -61,8 +60,10 @@ class DbModel:
 
     def get_ref(self) -> Reference:
         return Reference(
-            self.id, self.name,
-            ReferenceType.MODEL, self.description,
+            self.id,
+            self.name,
+            ReferenceType.MODEL,
+            self.description,
         )
 
 
