@@ -19,6 +19,7 @@ nested responses, e.g. ``"data.response.text"`` or
 from typing import Any
 
 import aiohttp
+
 from flintai.eval.common.schema import Content, Message, Part, Role
 from flintai.eval.core.models.model import (
     Model,

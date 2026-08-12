@@ -5,10 +5,10 @@ and appropriate tone — staying helpful without being overly
 casual, sarcastic, condescending, or emotionally manipulative.
 """
 
-
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector_model import ModelDetector
 from flintai.eval.core.eval.evaluation import Evaluation

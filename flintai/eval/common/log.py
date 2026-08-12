@@ -69,10 +69,12 @@ def silence_noisy_loggers() -> None:
         logging.getLogger(name).setLevel(logging.WARNING)
     logging.captureWarnings(True)
 
+    os.environ.setdefault("HF_DATASETS_DISABLE_PROGRESS_BARS", "1")
+    os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+    os.environ.setdefault("DATASETS_VERBOSITY", "error")
 
-LOG_FORMAT = (
-    "%(asctime)s %(levelname)s " "%(name)s [%(filename)s:%(lineno)d]: %(message)s"
-)
+
+LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s [%(filename)s:%(lineno)d]: %(message)s"
 
 
 def setup_file_logging(log_path: str) -> None:

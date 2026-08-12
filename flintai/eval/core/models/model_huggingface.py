@@ -1,9 +1,10 @@
 import asyncio
 from typing import Any
 
+from transformers import Pipeline, pipeline
+
 from flintai.eval.common.schema import Content, Message, PartType, Role
 from flintai.eval.core.models.model import Model, ModelResponse
-from transformers import Pipeline, pipeline
 
 
 class HuggingFaceModel(Model):

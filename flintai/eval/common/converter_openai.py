@@ -6,6 +6,7 @@ import json
 from typing import Any
 
 from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
+
 from flintai.eval.common.schema import (
     Content,
     Message,

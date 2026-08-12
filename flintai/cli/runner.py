@@ -14,6 +14,7 @@ from dataclasses_json import dataclass_json
 from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
+
 from flintai.cli.console import CLI_WIDTH, console, score_style, status_style
 from flintai.cli.rich_observer import RichObserver, pad_description
 from flintai.eval.core.eval.evaluation import (
@@ -204,7 +205,7 @@ def log_run_summary(results: list[CliRunResult]) -> None:
         score_str = f"{s.score:.2f}" if s.score is not None else "N/A"
         error_str = f" | error={s.error_messages[0]}" if s.error_messages else ""
         logger.info(
-            "Evaluation: %s | status=%s | score=%s" " | completed=%d/%d%s",
+            "Evaluation: %s | status=%s | score=%s | completed=%d/%d%s",
             name,
             s.status.value,
             score_str,
@@ -216,7 +217,7 @@ def log_run_summary(results: list[CliRunResult]) -> None:
     overall = _aggregate_summary(results)
     overall_score = f"{overall.score:.2f}" if overall.score is not None else "N/A"
     logger.info(
-        "Overall: status=%s | score=%s" " | completed=%d/%d | errors=%d",
+        "Overall: status=%s | score=%s | completed=%d/%d | errors=%d",
         overall.status.value,
         overall_score,
         overall.finished_evaluations,

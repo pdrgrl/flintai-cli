@@ -8,10 +8,11 @@ spectrum where 1.0 = safe (neutral) and 0.0 = toxic.
 import asyncio
 import logging
 
+from transformers import pipeline as hf_pipeline
+
 from flintai.eval.common.schema import PartType
 from flintai.eval.core.detectors.detector import Detector, DetectorResult
 from flintai.eval.core.models.model import ModelResponse
-from transformers import pipeline as hf_pipeline
 
 logger = logging.getLogger(__name__)
 

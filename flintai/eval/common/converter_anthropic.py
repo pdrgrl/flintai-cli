@@ -6,6 +6,7 @@ from typing import Any
 
 from anthropic.types import Message as AnthropicMessage
 from anthropic.types import MessageParam, TextBlock, ThinkingBlock, ToolUseBlock
+
 from flintai.eval.common.schema import (
     Content,
     Message,

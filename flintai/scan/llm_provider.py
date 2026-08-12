@@ -30,8 +30,8 @@ from typing import Any
 
 from . import ADKModel
 from google.adk.models.llm_request import LlmRequest
-import google.genai as genai
 from google.genai import types as genai_types
+from google.adk.models.google_llm import Gemini
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def _safe_error(exc: Exception) -> str:
 PROVIDER_GOOGLE = "google"
 PROVIDER_LITELLM = "litellm"
 
-DEFAULT_MODEL = "gemini-3.5-flash"
+DEFAULT_MODEL = "gemini-3.6-flash"
 
 _PROVIDER_ALIASES = {"gemini": "google"}
 
@@ -81,12 +81,19 @@ def _resolve_model_string(model_string: str | None = None) -> tuple[str, str]:
     return provider, model or DEFAULT_MODEL
 
 
-def make_model(model_string: str | None = None, temperature: float = 0.0) -> ADKModel:
+def make_model(
+    model_string: str | None = None,
+    temperature: float = 0.0,
+    *,
+    scanner: str = "unknown",
+    phase: str = "unknown",
+) -> ADKModel:
     """Return an ADK-compatible model for any provider.
 
-    For Google: returns a bare model string (e.g. "gemini-3.5-flash").
-    ADK uses its native Google AI client with GOOGLE_API_KEY.
-    For other providers: returns a LiteLlm wrapper.
+    For Google: returns a bare model string (e.g. "gemini-3.6-flash"); ADK
+    uses its native Google AI client with GOOGLE_API_KEY. For other
+    providers: returns a LiteLlm wrapper. ``scanner`` and ``phase`` are
+    accepted for API compatibility but ignored.
     """
     provider, model = _resolve_model_string(model_string)
 
@@ -94,9 +101,8 @@ def make_model(model_string: str | None = None, temperature: float = 0.0) -> ADK
         return model or DEFAULT_MODEL
 
     LiteLlm = _import_litellm()
-    if provider == PROVIDER_LITELLM:
-        return LiteLlm(model=model, temperature=temperature)
-    return LiteLlm(model=f"{provider}/{model}", temperature=temperature)
+    name = model if provider == PROVIDER_LITELLM else f"{provider}/{model}"
+    return LiteLlm(model=name, temperature=temperature)
 
 
 def is_anthropic_model(model: ADKModel) -> bool:
@@ -180,10 +186,11 @@ def complete_text(
     temperature: float = 0.0,
     top_p: float = 1.0,
 ) -> str | None:
-    """Run a single-pass LLM completion.
+    """Run a single-pass LLM completion via ``model.generate_content_async``.
 
-    For bare string models (Google provider): uses google.genai.Client directly.
-    For LiteLlm objects: uses model.generate_content_async via LlmRequest.
+    Bare model strings are still accepted (ADK allows them and callers outside
+    ``make_model`` may pass one), but they bypass usage instrumentation, so
+    ``make_model`` never produces one.
     """
     config = genai_types.GenerateContentConfig(
         system_instruction=system_prompt,
@@ -199,17 +206,7 @@ def complete_text(
     ]
 
     if isinstance(model, str):
-        try:
-            client = genai.Client()
-            response = client.models.generate_content(
-                model=model,
-                contents=contents,
-                config=config,
-            )
-            return response.text.strip() if response.text else None
-        except Exception as e:
-            logger.error("LLM call failed: %s", _safe_error(e))
-            return None
+        model = Gemini(model=model)
 
     model_name = getattr(model, "model", str(model))
 

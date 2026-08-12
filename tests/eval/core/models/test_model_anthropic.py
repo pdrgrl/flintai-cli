@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from anthropic.types import Message as AnthropicMessage
 from anthropic.types import TextBlock, Usage
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model_anthropic import AnthropicModel
 

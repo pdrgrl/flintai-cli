@@ -9,5 +9,4 @@ from typing import Protocol, runtime_checkable
 class ADKModel(Protocol):
     """Anything ADK accepts as a model argument (str or LiteLlm wrapper)."""
 
-    def __str__(self) -> str:
-        ...
+    def __str__(self) -> str: ...

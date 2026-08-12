@@ -8,8 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Protocol, TypedDict
 
-from flintai.schema import AffectedComponent  # noqa: F401
-from flintai.schema import Evidence  # noqa: F401
+from flintai.schema import (
+    AffectedComponent,  # noqa: F401
+    Evidence,  # noqa: F401
+)
 
 # ── Protocols ────────────────────────────────────────────────────────────────
 
@@ -23,8 +25,7 @@ class InventoryLike(Protocol):
     """
 
     @property
-    def agents(self) -> dict[str, Any]:
-        ...
+    def agents(self) -> dict[str, Any]: ...
 
 
 # ── TypedDicts ───────────────────────────────────────────────────────────────

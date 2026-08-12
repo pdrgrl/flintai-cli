@@ -13,6 +13,7 @@ import tempfile
 
 from detect_secrets import SecretsCollection
 from detect_secrets.settings import default_settings
+
 from flintai.eval.common.schema import PartType
 from flintai.eval.core.detectors.detector import Detector, DetectorResult
 from flintai.eval.core.models.model import ModelResponse

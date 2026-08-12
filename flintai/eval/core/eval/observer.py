@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import threading
-from typing import Callable
+from collections.abc import Callable
 
 from flintai.eval.core.eval.evaluation import (
     Evaluation,

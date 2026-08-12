@@ -200,7 +200,7 @@ def _enforce_severity(
 def _load_triage_prompt() -> str:
     """Load the triage system prompt from config/triage_prompt.txt."""
     try:
-        with open(_PROMPT_PATH, "r", encoding="utf-8") as f:
+        with open(_PROMPT_PATH, encoding="utf-8") as f:
             return f.read().strip()
     except FileNotFoundError as e:
         raise FileNotFoundError(
@@ -306,7 +306,7 @@ def run_triage(
     # ── Resolve provider ───────────────────────────────────────────────────────
     if model is None:
         try:
-            model = make_model()
+            model = make_model(scanner="agent", phase="triage")
         except (ValueError, ImportError) as e:
             logger.error("Failed to create model: %s", e)
             return None

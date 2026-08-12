@@ -6,6 +6,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
     Function,
 )
+
 from flintai.eval.common import converter_openai as openai_converter
 from flintai.eval.common.schema import (
     Content,

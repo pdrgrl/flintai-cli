@@ -2,6 +2,7 @@ import random
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Message
 from flintai.eval.core.detectors.detector import Detector
 from flintai.eval.core.eval.evaluation import Evaluation

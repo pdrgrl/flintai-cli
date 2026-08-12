@@ -32,6 +32,7 @@ import typing
 
 import yaml
 from cvss import CVSS4
+
 from flintai.schema import RepoFile
 from flintai.scan.schema import AgentProfile, RawFinding
 from flintai.scan.static_scanner import StaticFinding
@@ -53,7 +54,7 @@ def _load_cvss_mapping() -> dict:
     if _CVSS_MAPPING is not None:
         return _CVSS_MAPPING
     try:
-        with open(_CVSS_MAPPING_PATH, "r", encoding="utf-8") as f:
+        with open(_CVSS_MAPPING_PATH, encoding="utf-8") as f:
             data = yaml.safe_load(f)
         _CVSS_MAPPING = data.get("agentic_cvss_mapping", {})
         return _CVSS_MAPPING
@@ -309,14 +310,14 @@ class ToolDispatcher:
             s = max(1, start_line or 1) - 1  # convert to 0-indexed
             e = min(total, end_line or total)
             selected = lines[s:e]
-            header = f"# {path} (lines {s+1}–{e} of {total})\n"
+            header = f"# {path} (lines {s + 1}–{e} of {total})\n"
             content = header + "\n".join(
-                f"{s+1+i:4d}  {line}" for i, line in enumerate(selected)
+                f"{s + 1 + i:4d}  {line}" for i, line in enumerate(selected)
             )
         else:
             header = f"# {path} ({total} lines)\n"
             content = header + "\n".join(
-                f"{i+1:4d}  {line}" for i, line in enumerate(lines)
+                f"{i + 1:4d}  {line}" for i, line in enumerate(lines)
             )
 
         result = _truncate(content)
@@ -330,8 +331,7 @@ class ToolDispatcher:
         if agent is None:
             available = sorted(self._agents.keys())
             return (
-                f"ERROR: Agent '{agent_id}' not found.\n"
-                f"Available agents: {available}"
+                f"ERROR: Agent '{agent_id}' not found.\nAvailable agents: {available}"
             )
         parts = [
             f"AgentProfile: {agent.agent_id}",

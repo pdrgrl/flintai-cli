@@ -73,7 +73,7 @@ class TestPIIDetector(unittest.IsolatedAsyncioTestCase):
             "Email: john@example.com",
         )
         many_pii = _make_response(
-            "Email: john@example.com, " "SSN: 123-45-6789, " "Phone: (555) 123-4567",
+            "Email: john@example.com, SSN: 123-45-6789, Phone: (555) 123-4567",
         )
 
         result_one = await detector.detect(one_pii)

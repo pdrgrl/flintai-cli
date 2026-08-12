@@ -18,17 +18,16 @@ def create_evaluation(
     if db_evaluation.type == EvaluationType.MESSAGE_COLLECTION:
         if message_collection_repo is None:
             raise ValueError(
-                "message_collection_repo is required for "
-                "MESSAGE_COLLECTION evaluations"
+                "message_collection_repo is required for MESSAGE_COLLECTION evaluations"
             )
         if db_evaluation.message_collection_id is None:
-            raise ValueError("message_collection_id must be set on " "the DbEvaluation")
+            raise ValueError("message_collection_id must be set on the DbEvaluation")
         if detector_repo is None:
             raise ValueError(
-                "detector_repo is required for " "MESSAGE_COLLECTION evaluations"
+                "detector_repo is required for MESSAGE_COLLECTION evaluations"
             )
         if db_evaluation.detector_id is None:
-            raise ValueError("detector_id must be set on " "the DbEvaluation")
+            raise ValueError("detector_id must be set on the DbEvaluation")
         from flintai.eval.core.eval.evaluation_message_list import (
             MessageListEvaluation,
         )
@@ -52,7 +51,7 @@ def create_evaluation(
         )
 
         if db_evaluation.probe_name is None:
-            raise ValueError("probe_name must be set on " "the DbEvaluation")
+            raise ValueError("probe_name must be set on the DbEvaluation")
         return GarakProbeEvaluation(
             probe_name=db_evaluation.probe_name,
         )
@@ -63,7 +62,7 @@ def create_evaluation(
         )
 
         if db_evaluation.module_name is None:
-            raise ValueError("module_name must be set on " "the DbEvaluation")
+            raise ValueError("module_name must be set on the DbEvaluation")
         return GarakModuleEvaluation(
             module_name=db_evaluation.module_name,
             probe_names=db_evaluation.probe_names,
@@ -144,11 +143,11 @@ def create_evaluation(
             )
         if detector_repo is None:
             raise ValueError(
-                "detector_repo is required for " "ADVERSARIAL_PROBE evaluations"
+                "detector_repo is required for ADVERSARIAL_PROBE evaluations"
             )
         if not db_evaluation.detector_id:
             raise ValueError(
-                "detector_id must be set on " "the DbEvaluation for adversarial probes"
+                "detector_id must be set on the DbEvaluation for adversarial probes"
             )
         detector = detector_repo.get_detector(
             db_evaluation.detector_id,

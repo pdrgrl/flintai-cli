@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 from openai.types.chat import ChatCompletionMessage
 from openai.types.chat.chat_completion import ChatCompletion, Choice
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model_litellm import LiteLLMModel
 

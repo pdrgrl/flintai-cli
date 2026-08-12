@@ -21,11 +21,25 @@ from datetime import datetime
 from dotenv import load_dotenv
 from rich.panel import Panel
 from rich.text import Text
+
 from flintai.cli import eval_cli, init_cli, scan_cli
 from flintai.cli.console import CLI_WIDTH, console
-from flintai.cli.utils import is_ci
+from flintai.cli.telemetry import (
+    command_span,
+    emit_event,
+    init_telemetry,
+    record_error,
+    record_interruption,
+)
+from flintai.cli.utils import (
+    ensure_client_id,
+    ensure_telemetry_consent,
+    get_client_id,
+    get_telemetry_consent,
+    is_ci,
+)
 from flintai.cli.version import VERSION
-from flintai.eval.common.log import setup_file_logging
+from flintai.eval.common.log import setup_file_logging, silence_noisy_loggers
 from flintai.eval.db.json.repository_json import JsonRepository
 
 logger = logging.getLogger(__name__)
@@ -206,6 +220,7 @@ def _print_error(error: BaseException) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    silence_noisy_loggers()
     load_dotenv()
 
     parser = argparse.ArgumentParser(
@@ -228,16 +243,16 @@ def main(argv: list[str] | None = None) -> None:
 
     ci = is_ci()
     flintai_env = init_cli.get_flintai_env_path()
+    is_first_time = not flintai_env.exists()
 
-    if not flintai_env.exists() and args.command != "init":
+    if is_first_time and args.command != "init":
         if ci:
             console.print(
-                "[dim]CI environment detected —" " skipping interactive init.[/dim]",
+                "[dim]CI environment detected — skipping interactive init.[/dim]",
             )
         else:
             console.print(
-                "[yellow]First-time setup required."
-                " Running flintai init...[/yellow]",
+                "[yellow]First-time setup required. Running flintai init...[/yellow]",
             )
             console.print()
             init_cli.run_init()
@@ -249,24 +264,61 @@ def main(argv: list[str] | None = None) -> None:
     setup_file_logging(log_path)
     _print_logo()
 
-    t0 = time.monotonic()
-    output_path: str | None = None
-    try:
-        output_path = _dispatch(args)
-    except KeyboardInterrupt:
-        logger.info("Interrupted by user")
-        console.print("\n[dim]Interrupted.[/dim]")
-        sys.exit(130)
-    except Exception as e:
-        logger.critical(
-            "Fatal error: %s: %s\n%s",
-            type(e).__name__,
-            e,
-            traceback.format_exc(),
-        )
-        _print_error(e)
+    ensure_client_id()
+    if args.command != "init":
+        ensure_telemetry_consent()
+
+    if get_telemetry_consent():
+        client_id = get_client_id()
+        if client_id:
+            init_telemetry(client_id, VERSION)
+
+    def _try_init_telemetry_after_init() -> None:
+        """Re-check consent after init creates the .env for the first time."""
+        if flintai_env.exists():
+            load_dotenv(flintai_env, override=True)
+        ensure_client_id()
+        if get_telemetry_consent():
+            client_id = get_client_id()
+            if client_id:
+                init_telemetry(client_id, VERSION)
+                emit_event("init", is_ci=ci, is_first_time=is_first_time)
+
+    subcommand_parts = []
+    for attr in ("eval_cmd", "models_cmd", "evals_cmd", "me_cmd"):
+        val = getattr(args, attr, None)
+        if val:
+            subcommand_parts.append(val)
+    subcommand = " ".join(subcommand_parts) if subcommand_parts else None
+
+    with command_span(
+        args.command,
+        subcommand,
+        is_ci=ci,
+        is_first_time=is_first_time,
+    ) as span:
+        t0 = time.monotonic()
+        output_path: str | None = None
+        try:
+            output_path = _dispatch(args)
+            if args.command == "init" and span is None:
+                _try_init_telemetry_after_init()
+        except KeyboardInterrupt:
+            record_interruption(span)
+            logger.info("Interrupted by user")
+            console.print("\n[dim]Interrupted.[/dim]")
+            sys.exit(130)
+        except Exception as e:
+            record_error(span, e)
+            logger.critical(
+                "Fatal error: %s: %s\n%s",
+                type(e).__name__,
+                e,
+                traceback.format_exc(),
+            )
+            _print_error(e)
+            elapsed = time.monotonic() - t0
+            _print_shutdown(elapsed, output_path, log_path)
+            sys.exit(1)
         elapsed = time.monotonic() - t0
         _print_shutdown(elapsed, output_path, log_path)
-        sys.exit(1)
-    elapsed = time.monotonic() - t0
-    _print_shutdown(elapsed, output_path, log_path)

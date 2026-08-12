@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from dataclasses_json import config
@@ -11,7 +11,7 @@ def setup_logging(level: int = logging.INFO) -> None:
     """Configure logging with a standard format."""
     logging.basicConfig(
         level=level,
-        format=("%(asctime)s %(levelname)s " "%(name)s: %(message)s"),
+        format=("%(asctime)s %(levelname)s %(name)s: %(message)s"),
     )
 
 
@@ -20,7 +20,7 @@ def generate_id() -> str:
 
 
 def now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 datetime_config = config(

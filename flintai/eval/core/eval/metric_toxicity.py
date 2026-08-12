@@ -12,6 +12,7 @@ scores on a 0-1 spectrum.
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector_toxicity import ToxicityDetector
 from flintai.eval.core.eval.evaluation import Evaluation

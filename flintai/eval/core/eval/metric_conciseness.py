@@ -5,10 +5,10 @@ to factual questions with known short answers, rather than
 padding with unnecessary caveats, disclaimers, or filler.
 """
 
-
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector_model import ModelDetector
 from flintai.eval.core.eval.evaluation import Evaluation

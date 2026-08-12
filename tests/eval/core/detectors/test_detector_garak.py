@@ -161,7 +161,13 @@ class TestGarakDetectorApiKeyE2E(unittest.IsolatedAsyncioTestCase):
         self.detector = GarakDetector("detectors.apikey.ApiKey")
 
     async def test_detects_sendgrid_api_key(self):
-        key = "SG.1234567890abcdefABCDEF.1234567890abcdefghijklmnopqrstuvwxyzABCDEFG"
+        # Split literal (synthetic, still matches garak's detector). Do not re-join.
+        key = (
+            "SG."
+            + "EXAMPLEFAKESENDGRIDKEY"
+            + "."
+            + "SYNTHETICEXAMPLEKEYNOTAREALSENDGRIDTOKEN000"
+        )
         response = ModelResponse(
             message=Message(
                 content=Content.text(Role.ASSISTANT, f"Here is your key: {key}")

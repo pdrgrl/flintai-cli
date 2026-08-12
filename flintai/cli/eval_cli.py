@@ -11,6 +11,7 @@ from datetime import datetime
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+
 from flintai.cli.console import CLI_WIDTH, console
 from flintai.cli.rich_observer import create_progress
 from flintai.cli.runner import (
@@ -34,11 +35,11 @@ _config_parent = argparse.ArgumentParser(add_help=False)
 _config_parent.add_argument(
     "--config",
     default=_DEFAULT_CONFIG,
-    help="Path to JSON config file " f"(default: {_DEFAULT_CONFIG})",
+    help=f"Path to JSON config file (default: {_DEFAULT_CONFIG})",
 )
 _config_parent.add_argument(
     "--log",
-    help="Log file path " f"(default: {_DEFAULT_LOG})",
+    help=f"Log file path (default: {_DEFAULT_LOG})",
 )
 
 
@@ -57,7 +58,7 @@ def _parse_tags(raw: list[str]) -> dict[str, str]:
     for item in raw:
         if "=" not in item:
             console.print(
-                f"[red]Invalid tag format: {item!r} " f"(expected KEY=VALUE)[/red]",
+                f"[red]Invalid tag format: {item!r} (expected KEY=VALUE)[/red]",
             )
             sys.exit(1)
         k, v = item.split("=", 1)
@@ -480,10 +481,7 @@ def _resolve_models(
                 models.append(m)
                 seen_ids.add(m.id)
         except KeyError:
-            console.print(
-                f"[red]Model {mid!r} not found.[/red]",
-            )
-            sys.exit(1)
+            raise ValueError(f"model {mid!r} not found") from None
 
     if model_tags:
         for m in store.models.list():
@@ -518,10 +516,7 @@ def _resolve_evaluations(
                 evaluations.append(e)
                 seen_ids.add(e.id)
         except KeyError:
-            console.print(
-                f"[red]Evaluation {eid!r} not found.[/red]",
-            )
-            sys.exit(1)
+            raise ValueError(f"evaluation {eid!r} not found") from None
 
     if eval_tags:
         for e in store.evaluations.list():
@@ -541,15 +536,9 @@ def _model_evaluations_attach(
     evaluations = _resolve_evaluations(args, store)
 
     if not models:
-        console.print(
-            "[red]No models matched. Specify --model " "or --model-tag.[/red]",
-        )
-        return
+        raise ValueError("no models matched — specify --model or --model-tag")
     if not evaluations:
-        console.print(
-            "[red]No evaluations matched. Specify --eval " "or --eval-tag.[/red]",
-        )
-        return
+        raise ValueError("no evaluations matched — specify --eval or --eval-tag")
 
     added: list[DbModelEvaluation] = []
     skipped = 0
@@ -599,10 +588,7 @@ def _model_evaluations_detach(
     evaluations = _resolve_evaluations(args, store)
 
     if not models and not evaluations:
-        console.print(
-            "[red]Specify at least --model/--model-tag " "or --eval/--eval-tag.[/red]",
-        )
-        return
+        raise ValueError("specify at least --model/--model-tag or --eval/--eval-tag")
 
     model_ids = {m.id for m in models} if models else None
     eval_ids = {e.id for e in evaluations} if evaluations else None
@@ -688,7 +674,7 @@ def _register_run(
     run_parser.add_argument(
         "--output",
         "-o",
-        help="Output file path " "(default: eval_<timestamp>.<format>)",
+        help="Output file path (default: eval_<timestamp>.<format>)",
     )
     run_parser.add_argument(
         "--format",
@@ -778,7 +764,7 @@ async def handle_run(
     fmt = getattr(args, "format", "json") or "json"
     ext = fmt if fmt != "json" else "json"
     output_path = args.output or (
-        f"eval_" f"{datetime.now().strftime('%Y%m%dT%H%M%S')}" f".{ext}"
+        f"eval_{datetime.now().strftime('%Y%m%dT%H%M%S')}.{ext}"
     )
     write_output(results, args.config, output_path, fmt=fmt)
     return output_path
@@ -819,17 +805,10 @@ def _resolve_run_targets(
     eval_tags: dict[str, str],
 ) -> list:
     if args.model_evaluation_id and args.model:
-        console.print(
-            "[red]Error: specify either a model-evaluation ID "
-            "or --model, not both.[/red]",
-        )
-        return []
+        raise ValueError("specify either a model-evaluation ID or --model, not both")
 
     if not args.model_evaluation_id and not args.model:
-        console.print(
-            "[red]Error: specify a model-evaluation ID " "or --model <model-id>.[/red]",
-        )
-        return []
+        raise ValueError("specify a model-evaluation ID or --model <model-id>")
 
     if args.model_evaluation_id:
         me_id = _resolve_id(
@@ -846,15 +825,13 @@ def _resolve_run_targets(
             )
             if not items:
                 console.print(
-                    "[yellow]Model-evaluation filtered " "out by tag filters.[/yellow]",
+                    "[yellow]Model-evaluation filtered out by tag filters.[/yellow]",
                 )
             return items
         except KeyError:
-            console.print(
-                f"[red]Error: model-evaluation "
-                f"{args.model_evaluation_id!r} not found.[/red]",
-            )
-            return []
+            raise ValueError(
+                f"model-evaluation {args.model_evaluation_id!r} not found"
+            ) from None
 
     model_id = _resolve_id(
         args.model,
@@ -863,18 +840,14 @@ def _resolve_run_targets(
     try:
         model = store.models.get(model_id)
     except KeyError:
-        console.print(
-            f"[red]Error: model {args.model!r} not found.[/red]",
-        )
-        return []
+        raise ValueError(f"model {args.model!r} not found") from None
 
     if model_tags and not _matches_tags(
         model.tags,
         model_tags,
     ):
         console.print(
-            f"[yellow]Model {model_id!r} does not match "
-            f"--model-tag filters.[/yellow]",
+            f"[yellow]Model {model_id!r} does not match --model-tag filters.[/yellow]",
         )
         return []
 

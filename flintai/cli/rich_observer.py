@@ -10,6 +10,7 @@ from rich.progress import (
 )
 from rich.spinner import Spinner
 from rich.text import Text
+
 from flintai.cli.console import console, score_style
 from flintai.eval.core.eval.evaluation import Evaluation
 

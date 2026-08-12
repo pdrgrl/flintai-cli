@@ -10,11 +10,11 @@ from flintai.eval.db.base.models.model_types import DbModel, ModelType
 
 
 def _db_model(**overrides) -> DbModel:
-    defaults = dict(
-        type=ModelType.OPENAI,
-        name="test-model",
-        model_name="gpt-4",
-    )
+    defaults = {
+        "type": ModelType.OPENAI,
+        "name": "test-model",
+        "model_name": "gpt-4",
+    }
     defaults.update(overrides)
     return DbModel(**defaults)
 
@@ -342,7 +342,7 @@ class TestCreateInnerModelOpenAIAgent(unittest.TestCase):
 
 class TestCreateInnerModelAnthropicAgent(unittest.TestCase):
     @patch(
-        "flintai.eval.core.models.model_anthropic_agent" ".AnthropicAgentModel",
+        "flintai.eval.core.models.model_anthropic_agent.AnthropicAgentModel",
     )
     def test_creates_anthropic_agent_model(self, MockModel):
         db = _db_model(
@@ -358,7 +358,7 @@ class TestCreateInnerModelAnthropicAgent(unittest.TestCase):
         )
 
     @patch(
-        "flintai.eval.core.models.model_anthropic_agent" ".AnthropicAgentModel",
+        "flintai.eval.core.models.model_anthropic_agent.AnthropicAgentModel",
     )
     def test_anthropic_agent_defaults(self, MockModel):
         db = _db_model(
@@ -374,8 +374,7 @@ class TestCreateInnerModelAnthropicAgent(unittest.TestCase):
 
 class TestCreateInnerModelOpenAICompatible(unittest.TestCase):
     @patch(
-        "flintai.eval.core.models.model_openai_compatible"
-        ".OpenAICompatibleModel",
+        "flintai.eval.core.models.model_openai_compatible.OpenAICompatibleModel",
     )
     def test_creates_openai_compatible_model(self, MockModel):
         db = _db_model(
@@ -396,8 +395,7 @@ class TestCreateInnerModelOpenAICompatible(unittest.TestCase):
         )
 
     @patch(
-        "flintai.eval.core.models.model_openai_compatible"
-        ".OpenAICompatibleModel",
+        "flintai.eval.core.models.model_openai_compatible.OpenAICompatibleModel",
     )
     def test_openai_compatible_defaults(self, MockModel):
         db = _db_model(
@@ -562,7 +560,7 @@ class TestEnvVarResolution(unittest.TestCase):
         )
 
     @patch(
-        "flintai.eval.core.models.model_generic_http" ".GenericHttpModel",
+        "flintai.eval.core.models.model_generic_http.GenericHttpModel",
     )
     @patch.dict(
         "os.environ",

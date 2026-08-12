@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+
 from flintai.cli.main import _print_error
 
 
@@ -28,10 +29,16 @@ class TestMainErrorHandling:
     @patch("flintai.cli.main.setup_file_logging")
     @patch("flintai.cli.main._print_logo")
     @patch("flintai.cli.main.load_dotenv")
+    @patch("flintai.cli.main.get_telemetry_consent", return_value=False)
+    @patch("flintai.cli.main.ensure_telemetry_consent")
+    @patch("flintai.cli.main.ensure_client_id")
     @patch("flintai.cli.main.init_cli")
     def test_exception_prints_error_and_exits(
         self,
         mock_init_cli,
+        mock_ensure_client_id,
+        mock_ensure_telemetry_consent,
+        mock_get_telemetry_consent,
         mock_dotenv,
         mock_logo,
         mock_logging,

@@ -1,6 +1,7 @@
 from typing import Any
 
 from openai import APIError, AsyncOpenAI, BadRequestError
+
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
