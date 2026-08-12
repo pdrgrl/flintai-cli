@@ -10,6 +10,7 @@ import asyncio
 import logging
 
 import datafog
+
 from flintai.eval.common.schema import PartType
 from flintai.eval.core.detectors.detector import Detector, DetectorResult
 from flintai.eval.core.models.model import ModelResponse

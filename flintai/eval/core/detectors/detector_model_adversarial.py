@@ -66,7 +66,7 @@ class AdversarialModelDetector(ModelDetector):
             )
         except Exception as e:
             raise ValueError(
-                "AdversarialModelDetector LLM returned invalid data " "structure: %s ",
+                "AdversarialModelDetector LLM returned invalid data structure: %s ",
                 e,
             ) from e
         logger.debug(

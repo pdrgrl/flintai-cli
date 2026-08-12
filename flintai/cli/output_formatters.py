@@ -26,16 +26,24 @@ class OutputFormat(str, Enum):
 
 # ── Scan output formatters ──────────────────────────────────────────────────
 
+# Agent discovery (the InventoryParser pass) is out of scope for the CLI, so
+# these ScanReport fields are structurally always 0 / empty on this path —
+# `run_core` is never handed any AgentProfile objects. Emitting them advertises
+# a measurement the CLI never makes and creates a "framework detected but 0
+# agents" contradiction, so drop them from CLI output rather than ship a
+# permanent `agents_found: 0`. The shared schema keeps the fields for the
+# inventory sensor path, which does populate them; the SARIF formatter already
+# omits them.
+_CLI_UNPOPULATED_SCAN_FIELDS = ("agents_found", "agent_profiles")
+
 
 class ScanOutputFormatter(ABC):
     @abstractmethod
-    def format(self, report: Any) -> str:
-        ...
+    def format(self, report: Any) -> str: ...
 
     @property
     @abstractmethod
-    def extension(self) -> str:
-        ...
+    def extension(self) -> str: ...
 
 
 class JsonScanOutputFormatter(ScanOutputFormatter):
@@ -44,7 +52,10 @@ class JsonScanOutputFormatter(ScanOutputFormatter):
         return "json"
 
     def format(self, report: Any) -> str:
-        return json.dumps(dataclasses.asdict(report), indent=2)
+        data = dataclasses.asdict(report)
+        for key in _CLI_UNPOPULATED_SCAN_FIELDS:
+            data.pop(key, None)
+        return json.dumps(data, indent=2)
 
 
 class SarifScanOutputFormatter(ScanOutputFormatter):
@@ -242,18 +253,16 @@ class SarifScanOutputFormatter(ScanOutputFormatter):
 
 # ── Eval output formatters ──────────────────────────────────────────────────
 
-EVAL_SCHEMA_VERSION = "1.0"
+EVAL_SCHEMA_VERSION = "2.0"
 
 
 class EvalOutputFormatter(ABC):
     @abstractmethod
-    def format(self, runs: list, config_path: str) -> str:
-        ...
+    def format(self, runs: list, config_path: str) -> str: ...
 
     @property
     @abstractmethod
-    def extension(self) -> str:
-        ...
+    def extension(self) -> str: ...
 
 
 class JsonEvalOutputFormatter(EvalOutputFormatter):
@@ -413,7 +422,7 @@ def prepare_eval_output(runs: list, config_path: str) -> dict:
 
     overall = _aggregate_summary(runs)
     raw: dict[str, Any] = {
-        "schemaVersion": EVAL_SCHEMA_VERSION,
+        "schema_version": EVAL_SCHEMA_VERSION,
         "config_file": config_path,
         "timestamp": now_utc().isoformat(),
         "summary": overall.to_dict(),

@@ -167,7 +167,6 @@
       "approach": "Probe",
       "message_collection_id": "mc-llm01-fixed",
       "detector_id": "det-llm01-fixed",
-      "num_prompts": 1000,
       "tags": {
         "owasp_description": "LLM01: Prompt Injection",
         "method": "Fixed Prompts",
@@ -184,7 +183,6 @@
       "approach": "Probe",
       "message_collection_id": "mc-llm02-fixed",
       "detector_id": "det-llm02-fixed",
-      "num_prompts": 1000,
       "tags": {
         "owasp_description": "LLM02: Sensitive Information Disclosure",
         "method": "Fixed Prompts",
@@ -201,7 +199,6 @@
       "approach": "Probe",
       "message_collection_id": "mc-llm05-fixed",
       "detector_id": "det-llm05-fixed",
-      "num_prompts": 1000,
       "tags": {
         "owasp_description": "LLM05: Unsafe Output Generation",
         "method": "Fixed Prompts",
@@ -218,7 +215,6 @@
       "approach": "Probe",
       "message_collection_id": "mc-llm06-fixed",
       "detector_id": "det-llm06-fixed",
-      "num_prompts": 1000,
       "tags": {
         "owasp_description": "LLM06: Excessive Agency",
         "method": "Fixed Prompts",
@@ -235,7 +231,6 @@
       "approach": "Probe",
       "message_collection_id": "mc-llm07-fixed",
       "detector_id": "det-llm07-fixed",
-      "num_prompts": 1000,
       "tags": {
         "owasp_description": "LLM07: System Prompt Leakage",
         "method": "Fixed Prompts",
@@ -252,7 +247,6 @@
       "approach": "Probe",
       "message_collection_id": "mc-llm09-fixed",
       "detector_id": "det-llm09-fixed",
-      "num_prompts": 1000,
       "tags": {
         "owasp_description": "LLM09: Hallucination And Misinformation",
         "method": "Fixed Prompts",
@@ -269,7 +263,6 @@
       "approach": "Probe",
       "message_collection_id": "mc-pii-fixed",
       "detector_id": "det-pii",
-      "num_prompts": 1000,
       "tags": {
         "owasp_description": "LLM02: Sensitive Information Disclosure",
         "method": "Fixed Prompts",
@@ -286,7 +279,6 @@
       "approach": "Probe",
       "message_collection_id": "mc-secret-fixed",
       "detector_id": "det-secret",
-      "num_prompts": 1000,
       "tags": {
         "owasp_description": "LLM02: Sensitive Information Disclosure",
         "method": "Fixed Prompts",

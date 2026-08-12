@@ -12,6 +12,7 @@ import logging
 from dataclasses import dataclass, field
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.message.message_collection import MessageCollection
 from flintai.eval.core.message.message_collection_memory import (
@@ -140,7 +141,7 @@ def _build_user_message(context: CreationContext) -> str:
         tools = ", ".join(context.tool_names)
         lines.append(f"Available tools: {tools}")
     if context.additional_context:
-        lines.append(f"Additional context: " f"{context.additional_context}")
+        lines.append(f"Additional context: {context.additional_context}")
     if context.evaluation_goal:
         lines.extend(
             [
@@ -148,7 +149,7 @@ def _build_user_message(context: CreationContext) -> str:
                 "## Evaluation Goal",
                 context.evaluation_goal,
                 "",
-                f"Generate exactly {context.num_prompts} " f"test prompts.",
+                f"Generate exactly {context.num_prompts} test prompts.",
             ]
         )
     return "\n".join(lines)

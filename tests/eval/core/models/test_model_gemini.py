@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from google.genai import types as genai_types
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model import ResponseStatus
 from flintai.eval.core.models.model_gemini import GeminiModel

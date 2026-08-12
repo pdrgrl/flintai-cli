@@ -67,7 +67,7 @@ class TestExtractJson(unittest.TestCase):
         self.assertEqual(data["key"], "value")
 
     def test_leading_prose(self):
-        text = "Here is the JSON output:\n" '{"prompts": ["a", "b"]}'
+        text = 'Here is the JSON output:\n{"prompts": ["a", "b"]}'
         data = _extract_json(text)
         self.assertEqual(data["prompts"], ["a", "b"])
 

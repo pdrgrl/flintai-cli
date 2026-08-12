@@ -8,6 +8,7 @@ import unittest
 
 from flintai.cli.file_filter import (
     FRAMEWORK_ROOTS,
+    FileType,
     RelevantFile,
     _detect_framework_in_file,
     _get_framework_name,
@@ -260,6 +261,65 @@ class TestFindRelevantFiles(unittest.TestCase):
                 f.write("import openai\n")
             result = find_relevant_files(tmpdir)
             self.assertEqual(len(result), 0)
+
+    def test_single_python_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            py_path = os.path.join(tmpdir, "agent.py")
+            with open(py_path, "w") as f:
+                f.write("import openai\nx = 1\n")
+            result = find_relevant_files(py_path)
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0].path, py_path)
+            self.assertEqual(result[0].type, FileType.PYTHON)
+            self.assertEqual(result[0].framework, "OpenAI")
+
+    def test_single_requirements_txt(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            req_path = os.path.join(tmpdir, "requirements.txt")
+            with open(req_path, "w") as f:
+                f.write("openai==1.0\n")
+            result = find_relevant_files(req_path)
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0].path, req_path)
+            self.assertEqual(result[0].type, FileType.REQUIREMENTS)
+            self.assertIsNone(result[0].framework)
+
+    def test_single_python_file_without_framework_is_skipped(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            py_path = os.path.join(tmpdir, "utils.py")
+            with open(py_path, "w") as f:
+                f.write("import os\n")
+            self.assertEqual(find_relevant_files(py_path), [])
+
+    def test_single_non_python_file_is_skipped(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            md_path = os.path.join(tmpdir, "readme.md")
+            with open(md_path, "w") as f:
+                f.write("import openai\n")
+            self.assertEqual(find_relevant_files(md_path), [])
+
+    def test_single_init_py_is_skipped(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            init_path = os.path.join(tmpdir, "__init__.py")
+            with open(init_path, "w") as f:
+                f.write("import openai\n")
+            self.assertEqual(find_relevant_files(init_path), [])
+
+    def test_relative_path_is_resolved(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, "agent.py"), "w") as f:
+                f.write("import openai\n")
+            nested = os.path.join(tmpdir, "sub", "deeper")
+            os.makedirs(nested)
+            cwd = os.getcwd()
+            os.chdir(nested)
+            try:
+                result = find_relevant_files("../../agent.py")
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(len(result), 1)
+            self.assertTrue(os.path.isabs(result[0].path))
+            self.assertEqual(os.path.basename(result[0].path), "agent.py")
 
     def test_multiple_files_different_frameworks(self):
         with tempfile.TemporaryDirectory() as tmpdir:

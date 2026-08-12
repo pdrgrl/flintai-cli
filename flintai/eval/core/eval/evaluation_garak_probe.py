@@ -9,6 +9,7 @@ from garak import _config, _plugins
 from garak.attempt import Conversation
 from garak.attempt import Message as GarakMessage
 from garak.generators.base import Generator
+
 from flintai.eval.common.schema import Content, Message, PartType, Role, Session
 from flintai.eval.core.detectors.detector_garak import GarakDetector
 from flintai.eval.core.eval.evaluation import Evaluation, EvaluationStatus

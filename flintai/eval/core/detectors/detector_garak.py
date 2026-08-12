@@ -1,9 +1,9 @@
 import asyncio
 import logging
 
-from garak.attempt import Attempt, Conversation
+from garak.attempt import Attempt, Conversation, Turn
 from garak.attempt import Message as GarakMessage
-from garak.attempt import Turn
+
 from flintai.eval.common.schema import PartType, Role
 from flintai.eval.core.detectors.detector import Detector, DetectorResult
 from flintai.eval.core.models.model import ModelResponse

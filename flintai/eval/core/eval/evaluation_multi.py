@@ -6,6 +6,7 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.core.eval.evaluation import (
     Evaluation,
     EvaluationObserver,
@@ -178,11 +179,10 @@ class MultiEvaluation(Evaluation):
                     errors = [r for r in results if isinstance(r, Exception)]
                     if errors:
                         self.error_message = (
-                            f"Evaluation errors: "
-                            f"{'; '.join(str(e) for e in errors)}"
+                            f"Evaluation errors: {'; '.join(str(e) for e in errors)}"
                         )
                         logger.warning("%s: %s", name, self.error_message)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     for task in tasks:
                         task.cancel()
                     unfinished = sum(

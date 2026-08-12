@@ -36,9 +36,7 @@ class ModelDetector(Detector):
 
     async def detect(self, response: ModelResponse) -> DetectorResult:
         response_text = _extract_text(response)
-        evaluation_prompt = (
-            f"{self._prompt}\n\n" f"Response to evaluate:\n{response_text}"
-        )
+        evaluation_prompt = f"{self._prompt}\n\nResponse to evaluate:\n{response_text}"
         message = Message(
             content=Content.text(Role.USER, evaluation_prompt),
         )

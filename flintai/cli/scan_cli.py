@@ -9,10 +9,10 @@ import dataclasses
 import datetime
 import logging
 import os
-import sys
 
 from rich.panel import Panel
 from rich.table import Table
+
 from flintai.cli.console import CLI_WIDTH, console, severity_style
 from flintai.cli.file_filter import FileType, RelevantFile, find_relevant_files
 from flintai.scan.agent_scanner import run_core
@@ -34,7 +34,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     scan_parser.add_argument(
         "--output",
         "-o",
-        help="Output file path " "(default: scan_<timestamp>.<format>)",
+        help="Output file path (default: scan_<timestamp>.<format>)",
     )
     scan_parser.add_argument(
         "--format",
@@ -42,6 +42,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         choices=["json", "sarif"],
         default="json",
         help="Output format (default: json)",
+    )
+    scan_parser.add_argument(
+        "--log",
+        help="Log file path (default: flintai_<timestamp>.log)",
     )
 
 
@@ -85,10 +89,44 @@ def print_report(report: ScanReport) -> None:
     if tools:
         grid.add_row("Tools", ", ".join(tools))
 
+    skipped = meta.get("tools_skipped") or []
+    if skipped:
+        grid.add_row(
+            "Skipped",
+            "[bold yellow]"
+            + ", ".join(s.get("tool", "unknown") for s in skipped)
+            + "[/bold yellow]",
+        )
+
     if meta.get("ai_summary"):
         grid.add_row("AI summary", meta["ai_summary"])
 
     console.print(Panel(grid, title="[bold]Scan Summary[/bold]", width=CLI_WIDTH))
+
+    # ── Partial-scan warning ─────────────────────────────────────
+    # A skipped tool means whole rule families never ran, so the findings
+    # below are incomplete. Say so loudly — the log file is not enough.
+    if skipped:
+        warn = Table.grid(padding=(0, 1))
+        warn.add_column()
+        plural = "s were" if len(skipped) > 1 else " was"
+        warn.add_row(
+            f"[bold yellow]This scan is incomplete — "
+            f"{len(skipped)} analysis tool{plural} skipped.[/bold yellow]"
+        )
+        for s in skipped:
+            warn.add_row("")
+            warn.add_row(
+                f"[bold]{s.get('tool', 'unknown')}[/bold] — {s.get('reason', '')}"
+            )
+        console.print(
+            Panel(
+                warn,
+                title="[bold yellow]Warning[/bold yellow]",
+                border_style="yellow",
+                width=CLI_WIDTH,
+            )
+        )
 
     # ── Findings table ───────────────────────────────────────────
     if not report.findings:
@@ -200,14 +238,17 @@ def handle_scan(args: argparse.Namespace) -> str:
     path: str = os.path.abspath(os.path.expanduser(args.path))
 
     if not os.path.exists(path):
-        console.print(f"[red]Path does not exist: {path}[/red]")
-        sys.exit(1)
+        # Raise instead of sys.exit so the error flows through main's unified
+        # exception handler (record_error -> telemetry, error panel, logging).
+        # sys.exit raises SystemExit, a BaseException that bypasses that path.
+        raise FileNotFoundError(f"Path does not exist: {path}")
 
-    files: list[RelevantFile]
-    if os.path.isfile(path):
-        files = [RelevantFile(path=path, type=FileType.OTHER)]
-    else:
-        files = find_relevant_files(path)
+    files: list[RelevantFile] = find_relevant_files(path)
+
+    if not files:
+        # Raise (rather than sys.exit) so the error reaches main's unified
+        # handler and is recorded to telemetry. See the path check above.
+        raise ValueError("No scannable targets found")
 
     model = os.environ.get("GENERATOR_MODEL")
 
@@ -218,7 +259,7 @@ def handle_scan(args: argparse.Namespace) -> str:
     python_files: list[RepoFile] = []
     requirements_files: list[RepoFile] = []
     for rf in files:
-        with open(rf.path, "r", encoding="utf-8", errors="replace") as fh:
+        with open(rf.path, encoding="utf-8", errors="replace") as fh:
             content = fh.read()
         repo_file = RepoFile(path=rf.path, content=content, size=len(content))
         if rf.type == FileType.REQUIREMENTS:
@@ -241,28 +282,25 @@ def handle_scan(args: argparse.Namespace) -> str:
 
     logger.info("Frameworks detected: %s (primary: %s)", ", ".join(frameworks), primary)
 
-    try:
-        report = run_core(
-            python_files,
-            requirements_files,
-            skip_triage=False,
-            agentic=True,
-            model_string=model,
-            repo_name=os.path.basename(path),
-            primary_framework=primary,
-            frameworks_detected=frameworks,
-            total_files_scanned=len(files),
-        )
-    except Exception as e:
-        logger.error("Scan failed (%s: %s)", type(e).__name__, e)
-        console.print(f"[red]Scan failed: {e}[/red]")
-        sys.exit(1)
+    # Let a scan failure propagate to main's unified exception handler so it is
+    # recorded to telemetry; previously it was swallowed into sys.exit(1).
+    report = run_core(
+        python_files,
+        requirements_files,
+        skip_triage=False,
+        agentic=True,
+        model_string=model,
+        repo_name=os.path.basename(path),
+        primary_framework=primary,
+        frameworks_detected=frameworks,
+        total_files_scanned=len(files),
+    )
 
     print_report(report)
     fmt = getattr(args, "format", "json") or "json"
     ext = fmt if fmt != "json" else "json"
     output_path = args.output or (
-        f"scan_" f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}" f".{ext}"
+        f"scan_{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}.{ext}"
     )
     write_output(report, output_path, fmt=fmt)
     return output_path

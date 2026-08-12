@@ -6,10 +6,10 @@ step requirements, length limits, or behavioral directives
 — rather than ignoring or loosely interpreting them.
 """
 
-
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector_model import ModelDetector
 from flintai.eval.core.eval.evaluation import Evaluation

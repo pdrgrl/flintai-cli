@@ -121,7 +121,7 @@ class TestParseResponse(unittest.TestCase):
         )
 
     def test_json_with_markdown_fences(self):
-        raw = "```json\n" '{"prompts": ["a"], "detector_prompt": "b"}\n' "```"
+        raw = '```json\n{"prompts": ["a"], "detector_prompt": "b"}\n```'
         result = _parse_response(raw)
         self.assertEqual(result.prompts.size(), 1)
         self.assertEqual(result.detector_prompt, "b")
@@ -141,7 +141,7 @@ class TestParseResponse(unittest.TestCase):
 
     def test_prompts_not_list_raises(self):
         with self.assertRaises(ValueError):
-            _parse_response('{"prompts": "not a list", ' '"detector_prompt": "x"}')
+            _parse_response('{"prompts": "not a list", "detector_prompt": "x"}')
 
     def test_prompt_messages_are_user_role(self):
         data = {

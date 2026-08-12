@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 
 from flintai.eval.common.schema import Content, Message, PartType, Role
 
@@ -19,7 +19,7 @@ class ResponseStatus(str, Enum):
     ERROR = "error"
 
 
-ModelContent = Union[str, Message, list[Message]]
+ModelContent = str | Message | list[Message]
 
 
 class ModelResponse:

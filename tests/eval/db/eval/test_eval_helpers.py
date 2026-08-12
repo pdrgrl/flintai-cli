@@ -149,7 +149,7 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertIsNone(result.num_prompts)
 
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_garak_probe" ".GarakProbeEvaluation",
+        "flintai.eval.core.eval.evaluation_garak_probe.GarakProbeEvaluation",
     )
     def test_garak_probe_creates_evaluation(
         self,
@@ -175,8 +175,7 @@ class TestCreateEvaluation(unittest.TestCase):
             create_evaluation(db_eval)
 
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_garak_module"
-        ".GarakModuleEvaluation",
+        "flintai.eval.core.eval.evaluation_garak_module.GarakModuleEvaluation",
     )
     def test_garak_module_creates_evaluation(
         self,
@@ -204,7 +203,7 @@ class TestCreateEvaluation(unittest.TestCase):
             create_evaluation(db_eval)
 
     @unittest.mock.patch(
-        "flintai.eval.core.eval.metric_toxicity" ".ToxicityMetricEvaluation",
+        "flintai.eval.core.eval.metric_toxicity.ToxicityMetricEvaluation",
     )
     def test_metric_toxicity_creates_evaluation(
         self,
@@ -219,14 +218,13 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockToxicity.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model" ".get_generator_model",
+        "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.metric_conciseness"
-        ".ConcisenessMetricEvaluation",
+        "flintai.eval.core.eval.metric_conciseness.ConcisenessMetricEvaluation",
     )
     def test_metric_conciseness_creates_evaluation(
         self,
@@ -248,10 +246,10 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockConciseness.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model" ".get_generator_model",
+        "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     @unittest.mock.patch(
         "flintai.eval.core.eval.metric_factual_accuracy"
@@ -277,10 +275,10 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockFactual.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model" ".get_generator_model",
+        "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     @unittest.mock.patch(
         "flintai.eval.core.eval.metric_instruction_adherence"
@@ -306,13 +304,13 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockAdherence.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model" ".get_generator_model",
+        "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.metric_tone" ".ToneMetricEvaluation",
+        "flintai.eval.core.eval.metric_tone.ToneMetricEvaluation",
     )
     def test_metric_tone_creates_evaluation(
         self,
@@ -334,13 +332,13 @@ class TestCreateEvaluation(unittest.TestCase):
         self.assertEqual(result, MockTone.return_value)
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model" ".get_generator_model",
+        "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_adversarial" ".AdversarialEvaluation",
+        "flintai.eval.core.eval.evaluation_adversarial.AdversarialEvaluation",
     )
     def test_adversarial_probe_creates_evaluation(
         self,
@@ -381,13 +379,13 @@ class TestCreateEvaluation(unittest.TestCase):
         mock_det_repo.get_detector.assert_called_once_with("det-1")
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model" ".get_generator_model",
+        "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_adversarial" ".AdversarialEvaluation",
+        "flintai.eval.core.eval.evaluation_adversarial.AdversarialEvaluation",
     )
     def test_adversarial_probe_defaults(
         self,
@@ -424,13 +422,13 @@ class TestCreateEvaluation(unittest.TestCase):
         )
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model" ".get_generator_model",
+        "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.core.eval.evaluation_adversarial" ".AdversarialEvaluation",
+        "flintai.eval.core.eval.evaluation_adversarial.AdversarialEvaluation",
     )
     def test_adversarial_probe_with_message_collection(
         self,
@@ -542,10 +540,10 @@ class TestCreateEvaluation(unittest.TestCase):
             )
 
     @unittest.mock.patch(
-        "flintai.eval.core.models.generator_model" ".get_generator_model",
+        "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
-        "flintai.eval.db.base.eval.eval_helpers" ".get_generator_model",
+        "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     def test_topic_guard_creates_evaluation(
         self,

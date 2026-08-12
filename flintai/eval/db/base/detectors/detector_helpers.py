@@ -13,7 +13,7 @@ def create_detector(
     """Create a Detector instance from a DbDetector."""
     if db_detector.type == DetectorType.GARAK:
         if not db_detector.detector_name:
-            raise ValueError("detector_name is required for " "GARAK detectors")
+            raise ValueError("detector_name is required for GARAK detectors")
         from flintai.eval.core.detectors.detector_garak import GarakDetector
 
         return GarakDetector(db_detector.detector_name)

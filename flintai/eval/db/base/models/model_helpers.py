@@ -4,22 +4,34 @@ from flintai.eval.core.models.model_retry import RetryModel
 from flintai.eval.db.base.models.model_types import DbModel, ModelType
 
 
-def create_model(db_model: DbModel, max_retries: int = 5) -> Model:
+def create_model(
+    db_model: DbModel,
+    max_retries: int = 5,
+    resolve_env_vars: bool = True,
+) -> Model:
     """Create a Model instance from a DbModel,
     wrapped in a RetryModel for transient error handling."""
     return RetryModel(
-        _create_inner_model(db_model),
+        _create_inner_model(db_model, resolve_env_vars=resolve_env_vars),
         max_retries=max_retries,
     )
 
 
-def _create_inner_model(db_model: DbModel) -> Model:
+def _create_inner_model(
+    db_model: DbModel,
+    resolve_env_vars: bool = True,
+) -> Model:
     temp = db_model.temperature
-    key = resolve_env(db_model.key)
-    headers = resolve_env_dict(db_model.headers)
+    if resolve_env_vars:
+        key = resolve_env(db_model.key)
+        headers = resolve_env_dict(db_model.headers)
+    else:
+        key = db_model.key
+        headers = dict(db_model.headers)
 
     if db_model.type == ModelType.ANTHROPIC:
         from anthropic import AsyncAnthropic
+
         from flintai.eval.core.models.model_anthropic import AnthropicModel
 
         client_kwargs = {}
@@ -34,6 +46,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
 
     elif db_model.type == ModelType.OPENAI:
         from openai import AsyncOpenAI
+
         from flintai.eval.core.models.model_openai import OpenAIModel
 
         client_kwargs = {}
@@ -48,6 +61,7 @@ def _create_inner_model(db_model: DbModel) -> Model:
 
     elif db_model.type == ModelType.GEMINI:
         from google.genai import Client
+
         from flintai.eval.core.models.model_gemini import GeminiModel
 
         client_kwargs = {}

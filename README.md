@@ -198,6 +198,25 @@ or a locally hosted LLM (i.e. `litellm` or `ollama`).
 
 [Read more](https://docs.flintai.dev/flintai/cli/reference/data-privacy).
 
+### Telemetry
+
+Flint AI CLI collects **anonymous usage analytics** to help us understand how the tool is used and improve it. Telemetry is **opt-in** — you are asked for consent during `flintai init`, and no data is sent without your explicit agreement.
+
+**What we collect:**
+
+| Data | Example | Purpose |
+|------|---------|---------|
+| Command name | `scan`, `eval run` | Understand which features are used |
+| CLI version | `1.1.1` | Track adoption of new releases |
+| Execution duration | `12.3s` | Identify performance issues |
+| Error type (on crash) | `ConnectionError` | Prioritize bug fixes |
+| CI environment flag | `true` / `false` | Understand CI vs interactive usage |
+| Anonymous client ID | `a1b2c3d4-...` (random UUID) | Count unique installations |
+
+**What we never collect:** source code, file paths, prompts, API keys, model outputs, usernames, hostnames, IP addresses, or any personally identifiable information.
+
+**Opting out:** Set `FLINTAI_TELEMETRY_CONSENT=false` in `~/.flintai/.env`, or select "N" when prompted during `flintai init`. You can change this at any time.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details.

@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from garak.attempt import Attempt, Conversation
+from garak.attempt import Attempt, Conversation, Turn
 from garak.attempt import Message as GarakMessage
-from garak.attempt import Turn
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.eval.evaluation import EvaluationStatus
 from flintai.eval.core.eval.evaluation_garak_probe import (
@@ -113,8 +113,8 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         probe.probe.return_value = []
 
         detector = MagicMock()
-        mock_plugins.load_plugin.side_effect = (
-            lambda name: probe if name == "probes.test.Multi" else detector
+        mock_plugins.load_plugin.side_effect = lambda name: (
+            probe if name == "probes.test.Multi" else detector
         )
 
         e = GarakMultiTurnEvaluation(
@@ -163,8 +163,8 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         detector = MagicMock()
         detector.detect.side_effect = [[0.3], [0.8]]
 
-        mock_plugins.load_plugin.side_effect = (
-            lambda name: probe if name == "probes.test.Multi" else detector
+        mock_plugins.load_plugin.side_effect = lambda name: (
+            probe if name == "probes.test.Multi" else detector
         )
 
         e = GarakMultiTurnEvaluation(
@@ -224,8 +224,8 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         detector = MagicMock()
         detector.detect.return_value = [0.0]
 
-        mock_plugins.load_plugin.side_effect = (
-            lambda name: probe if name == "probes.test.Multi" else detector
+        mock_plugins.load_plugin.side_effect = lambda name: (
+            probe if name == "probes.test.Multi" else detector
         )
 
         e = GarakMultiTurnEvaluation(

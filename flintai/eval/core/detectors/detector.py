@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.core.models.model import ModelResponse
 
 

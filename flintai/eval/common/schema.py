@@ -17,6 +17,7 @@ from enum import Enum
 from typing import Any
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.utils import datetime_config, generate_id
 
 # ---------------------------------------------------------------------------

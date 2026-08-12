@@ -8,16 +8,21 @@ import os
 import stat
 
 from rich.prompt import Prompt
+
 from flintai.cli.console import console, select
 from flintai.cli.utils import (
+    CLIENT_ID_ENV_VAR,
+    TELEMETRY_CONSENT_ENV_VAR,
+    generate_client_id,
     get_flintai_config_path,
     get_flintai_dir,
     get_flintai_env_path,
+    prompt_telemetry_consent,
 )
 
 _PROVIDER_DEFAULTS: dict[str, dict[str, str | None]] = {
     "gemini": {
-        "model": "gemini-3.5-flash",
+        "model": "gemini-3.6-flash",
         "api_key_var": "GEMINI_API_KEY",
     },
     "openai": {
@@ -58,7 +63,7 @@ def run_init() -> None:
 
     if flintai_dir.exists():
         proceed = select(
-            "Existing configuration will be overwritten." " Do you want to proceed?",
+            "Existing configuration will be overwritten. Do you want to proceed?",
             options=["yes", "no"],
             default_index=0,
         )
@@ -105,10 +110,16 @@ def run_init() -> None:
         password=True,
     )
     console.print()
+
+    telemetry_consent = prompt_telemetry_consent()
+
+    client_id = generate_client_id()
     env_lines = [
         f"GENERATOR_MODEL={generator_model}",
         f"{api_key_var}={api_key}",
         "EXECUTOR_MAX_WORKERS=20",
+        f"{CLIENT_ID_ENV_VAR}={client_id}",
+        f"{TELEMETRY_CONSENT_ENV_VAR}={telemetry_consent}",
     ]
 
     default_config = {
@@ -140,6 +151,6 @@ def run_init() -> None:
     )
     console.print()
     console.print(
-        "[bold green]Flint AI initialized" " successfully![/bold green]",
+        "[bold green]Flint AI initialized successfully![/bold green]",
     )
     console.print()

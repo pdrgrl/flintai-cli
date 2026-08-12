@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Session
 from flintai.eval.core.models.model import Model
 

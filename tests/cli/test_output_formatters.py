@@ -190,7 +190,17 @@ class TestScanJson(unittest.TestCase):
         expected = json.loads(
             json.dumps(dataclasses.asdict(self.scan_report), indent=2),
         )
+        # Agent-discovery fields are dropped from CLI JSON output (out of scope
+        # for the CLI path); everything else must match the raw asdict.
+        for key in ("agents_found", "agent_profiles"):
+            expected.pop(key, None)
         self.assertEqual(result, expected)
+
+    def test_agent_discovery_fields_dropped(self):
+        formatter = JsonScanOutputFormatter()
+        parsed = json.loads(formatter.format(self.scan_report))
+        self.assertNotIn("agents_found", parsed)
+        self.assertNotIn("agent_profiles", parsed)
 
     def test_valid_json(self):
         formatter = JsonScanOutputFormatter()
@@ -453,12 +463,18 @@ class TestEvalJson(unittest.TestCase):
     def test_schema_version_present(self):
         formatter = JsonEvalOutputFormatter()
         parsed = json.loads(formatter.format([self.eval_run], "/config.json"))
-        self.assertEqual(parsed["schemaVersion"], EVAL_SCHEMA_VERSION)
+        self.assertEqual(parsed["schema_version"], EVAL_SCHEMA_VERSION)
 
     def test_keys_match_old_format_plus_schema_version(self):
         formatter = JsonEvalOutputFormatter()
         parsed = json.loads(formatter.format([self.eval_run], "/config.json"))
-        expected_keys = {"schemaVersion", "config_file", "timestamp", "summary", "runs"}
+        expected_keys = {
+            "schema_version",
+            "config_file",
+            "timestamp",
+            "summary",
+            "runs",
+        }
         self.assertEqual(set(parsed.keys()), expected_keys)
 
     def test_runs_preserved(self):
@@ -598,7 +614,7 @@ class TestPrepareEvalOutput(unittest.TestCase):
 
     def test_schema_version_added(self):
         output = prepare_eval_output([self.eval_run], "/config.json")
-        self.assertEqual(output["schemaVersion"], EVAL_SCHEMA_VERSION)
+        self.assertEqual(output["schema_version"], EVAL_SCHEMA_VERSION)
 
     def test_status_stripped_from_results(self):
         output = prepare_eval_output([self.eval_run], "/config.json")

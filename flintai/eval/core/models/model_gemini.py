@@ -2,6 +2,7 @@ from typing import Any
 
 from google.genai import Client
 from google.genai import types as genai_types
+
 from flintai.eval.common import converter_genai
 from flintai.eval.common.schema import Message, Role
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus

@@ -31,7 +31,7 @@ from __future__ import annotations
 import abc
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import tiktoken
 
@@ -56,7 +56,7 @@ def estimate_tokens(text: str) -> int:
 
 def now_iso() -> str:
     """Return the current UTC time as an ISO 8601 string."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class CallContext:

@@ -1,6 +1,7 @@
 from garak import _plugins
 from garak.attempt import Conversation
 from garak.attempt import Message as GarakMessage
+
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.message.message_collection import MessageCollection
 

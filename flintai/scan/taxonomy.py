@@ -17,7 +17,7 @@ _CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
 
 
 def _load_json(filename: str) -> Any:
-    with open(os.path.join(_CONFIG_DIR, filename), "r", encoding="utf-8") as f:
+    with open(os.path.join(_CONFIG_DIR, filename), encoding="utf-8") as f:
         return json.load(f)
 
 

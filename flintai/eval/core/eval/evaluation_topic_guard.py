@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Content, Message, Role, Session
 from flintai.eval.core.detectors.detector_topic_guard import TopicGuardDetector
 from flintai.eval.core.eval.evaluation import Evaluation, EvaluationStatus
@@ -109,7 +110,7 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
             or self._detector is None
         ):
             raise ValueError(
-                "starting_prompt, goal, attacker_model, " "and detector must be set"
+                "starting_prompt, goal, attacker_model, and detector must be set"
             )
 
         conversation: list[Message] = []
@@ -146,9 +147,7 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
                 return 1.0
 
             if target_response.message is None:
-                raise ValueError(
-                    "Target model returned no message " "and no block status"
-                )
+                raise ValueError("Target model returned no message and no block status")
 
             conversation.append(target_response.message)
             self.session = Session(
@@ -198,7 +197,7 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
 
             if attacker_response.message is None:
                 logger.warning(
-                    "Attacker model returned no " "response at turn %d",
+                    "Attacker model returned no response at turn %d",
                     turn,
                 )
                 continue
@@ -247,7 +246,7 @@ class TopicGuardEvaluation(AdversarialEvaluation):
     ):
         if not agent_objective and not agent_instructions:
             raise ValueError(
-                "at least one of agent_objective or " "agent_instructions is required"
+                "at least one of agent_objective or agent_instructions is required"
             )
         goal = _build_adversarial_goal(
             agent_objective,
@@ -289,7 +288,7 @@ class TopicGuardEvaluation(AdversarialEvaluation):
             self.attack_techniques or self._DEFAULT_ATTACK_TECHNIQUES,
         )
         logger.debug(
-            "Generated %d starting prompts for " "topic guard",
+            "Generated %d starting prompts for topic guard",
             len(prompts),
         )
 

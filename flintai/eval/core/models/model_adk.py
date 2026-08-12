@@ -12,6 +12,7 @@ from typing import Any
 
 import aiohttp
 import requests
+
 from flintai.eval.common.schema import Content, Message, Part, Role
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
 

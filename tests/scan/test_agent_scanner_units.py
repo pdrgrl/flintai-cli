@@ -17,23 +17,25 @@ from flintai.scan.schema import AffectedComponent, CvssScores, Evidence, Finding
 
 
 def _make_finding(**overrides) -> Finding:
-    defaults = dict(
-        id="TEST-0001",
-        category="asi01_agent_goal_hijack",
-        subcategory="direct_prompt_injection",
-        ai_spm_severity="High",
-        cvss_v4_severity="High",
-        cvss_scores=CvssScores(base_score=7.5, vector="CVSS:4.0/AV:N"),
-        description="desc",
-        impact="impact",
-        likelihood="High",
-        remediation="fix",
-        affected_components=[AffectedComponent(name="my_agent", path="agent.py")],
-        evidence=[Evidence(file="agent.py", code_snippet="eval(x)", confidence="High")],
-        hallucination_flag=False,
-        title="Test",
-        source="ai_reasoning",
-    )
+    defaults = {
+        "id": "TEST-0001",
+        "category": "asi01_agent_goal_hijack",
+        "subcategory": "direct_prompt_injection",
+        "ai_spm_severity": "High",
+        "cvss_v4_severity": "High",
+        "cvss_scores": CvssScores(base_score=7.5, vector="CVSS:4.0/AV:N"),
+        "description": "desc",
+        "impact": "impact",
+        "likelihood": "High",
+        "remediation": "fix",
+        "affected_components": [AffectedComponent(name="my_agent", path="agent.py")],
+        "evidence": [
+            Evidence(file="agent.py", code_snippet="eval(x)", confidence="High")
+        ],
+        "hallucination_flag": False,
+        "title": "Test",
+        "source": "ai_reasoning",
+    }
     defaults.update(overrides)
     return Finding(**defaults)
 
@@ -226,15 +228,15 @@ class TestConvertStaticFindings(unittest.TestCase):
     def _make_static_finding(self, **overrides):
         from flintai.scan.static_scanner import StaticFinding
 
-        defaults = dict(
-            tool="bandit",
-            rule_id="B102",
-            severity="high",
-            message="exec() used",
-            filepath="agent.py",
-            line=10,
-            evidence="exec(user_input)",
-        )
+        defaults = {
+            "tool": "bandit",
+            "rule_id": "B102",
+            "severity": "high",
+            "message": "exec() used",
+            "filepath": "agent.py",
+            "line": 10,
+            "evidence": "exec(user_input)",
+        }
         defaults.update(overrides)
         return StaticFinding(**defaults)
 
@@ -713,15 +715,15 @@ class TestConvertStaticFindingsPipAudit(unittest.TestCase):
     def _make_static_finding(self, **overrides):
         from flintai.scan.static_scanner import StaticFinding
 
-        defaults = dict(
-            tool="pip_audit",
-            rule_id="CVE-2024-1234",
-            severity="high",
-            message="langchain==0.1.0 has known vulnerability",
-            filepath="requirements.txt",
-            line=1,
-            evidence="langchain==0.1.0",
-        )
+        defaults = {
+            "tool": "pip_audit",
+            "rule_id": "CVE-2024-1234",
+            "severity": "high",
+            "message": "langchain==0.1.0 has known vulnerability",
+            "filepath": "requirements.txt",
+            "line": 1,
+            "evidence": "langchain==0.1.0",
+        }
         defaults.update(overrides)
         return StaticFinding(**defaults)
 

@@ -15,7 +15,7 @@ import logging
 import os
 import tempfile
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from flintai.scan.constants import (
@@ -130,7 +130,7 @@ def _dicts_to_findings(finding_dicts: list[dict[str, Any]]) -> list[Finding]:
 # ── Static findings → Finding objects ────────────────────────────────────────
 
 
-def convert_static_findings(static_findings: list["StaticFinding"]) -> list[Finding]:
+def convert_static_findings(static_findings: list[StaticFinding]) -> list[Finding]:
     """Convert StaticFinding objects to canonical Finding objects with CVSS scoring."""
     findings = []
     seen = set()  # Deduplicate by (rule_id, filepath, line)
@@ -498,7 +498,7 @@ def _read_inventory_files(
         abs_path = os.path.join(scan_root, rel_path)
         if os.path.isfile(abs_path):
             try:
-                with open(abs_path, "r", encoding="utf-8", errors="replace") as fh:
+                with open(abs_path, encoding="utf-8", errors="replace") as fh:
                     content = fh.read()
                 python_files.append(
                     RepoFile(path=rel_path, content=content, size=len(content))
@@ -511,7 +511,7 @@ def _read_inventory_files(
         req_path = os.path.join(scan_root, name)
         if os.path.isfile(req_path):
             try:
-                with open(req_path, "r", encoding="utf-8", errors="replace") as fh:
+                with open(req_path, encoding="utf-8", errors="replace") as fh:
                     content = fh.read()
                 requirements_files.append(
                     RepoFile(path=name, content=content, size=len(content))
@@ -540,7 +540,7 @@ def run_core(
     This is the main scanning engine. Discovery is handled by callers
     (run_scan or direct invocation).
     """
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     agents = agent_profiles or []
 
     # ── LAYER 2: Static Scan ─────────────────────────────────────────────────
@@ -548,8 +548,9 @@ def run_core(
     all_findings: list[Finding] = []
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        static_raw = run_static_scan(python_files, requirements_files, tmp_dir)
+        static_result = run_static_scan(python_files, requirements_files, tmp_dir)
 
+    static_raw = static_result.findings
     static_findings = convert_static_findings(static_raw)
     all_findings.extend(static_findings)
     logger.info("Static findings converted: %d", len(static_findings))
@@ -563,7 +564,7 @@ def run_core(
     try:
         if model_string:
             os.environ["SCANNER_MODEL"] = model_string
-        llm_model = make_model()
+        llm_model = make_model(scanner="agent", phase="triage")
         logger.info("LLM model: %s", llm_model)
     except Exception as e:
         logger.info("Could not initialise LLM model (%s): %s", type(e).__name__, e)
@@ -780,7 +781,7 @@ def run_core(
                 len(triage_downgraded) if triage_downgraded else 0
             ),
             "tools_used": (
-                ["bandit", "opengrep", "detect-secrets", "pip-audit"]
+                static_result.tools_used
                 + (
                     [f"ai-reasoning:{get_model_name()}"]
                     if llm_model is not None
@@ -793,6 +794,11 @@ def run_core(
                     else []
                 )
             ),
+            # asdict, not the dataclasses themselves — the SARIF formatter
+            # json.dumps() scan_metadata without an asdict pass of its own.
+            "tools_skipped": [
+                dataclasses.asdict(s) for s in static_result.tools_skipped
+            ],
             "agentic_trace": agentic_trace,
         },
         pre_triage_findings=pre_triage_findings,

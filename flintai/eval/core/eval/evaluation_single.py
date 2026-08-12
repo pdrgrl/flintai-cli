@@ -3,6 +3,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
+
 from flintai.eval.common.schema import Session
 from flintai.eval.core.eval.evaluation import (
     Evaluation,

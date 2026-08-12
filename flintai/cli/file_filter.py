@@ -39,27 +39,40 @@ class RelevantFile:
     framework: str | None = None
 
 
-def find_relevant_files(root_path: str) -> list[RelevantFile]:
-    """Recursively find relevant files in the given directory."""
+def _detect_relevant_file(
+    abs_file_path: str,
+) -> RelevantFile | None:
+    """Detects relevant files for scanning."""
+    if os.path.basename(abs_file_path).lower() == REQUIREMENTS_FILE:
+        logger.info("File in scope: %s", abs_file_path)
+        return RelevantFile(path=abs_file_path, type=FileType.REQUIREMENTS)
+    elif abs_file_path.endswith(PYTHON_EXTENSIONS) and not abs_file_path.endswith(
+        PYTHON_IGNORES
+    ):
+        match = _detect_framework_in_file(abs_file_path)
+        if match:
+            logger.info("File in scope: %s", abs_file_path)
+            return match
+    return None
+
+
+def find_relevant_files(path: str) -> list[RelevantFile]:
+    """`path` might be a file or a directory.
+    If it is a file, detect its type, if it is a directory,
+    recursively find relevant files in the given directory."""
     relevant_files = []
 
-    for dirpath, _, filenames in os.walk(root_path):
-        for filename in filenames:
-            abs_path = os.path.join(dirpath, filename)
-            file_name = os.path.basename(abs_path).lower()
-
-            if file_name == REQUIREMENTS_FILE:
-                logger.info("File in scope: %s", abs_path)
-                relevant_files.append(
-                    RelevantFile(path=abs_path, type=FileType.REQUIREMENTS)
-                )
-            elif abs_path.endswith(PYTHON_EXTENSIONS) and not abs_path.endswith(
-                PYTHON_IGNORES
-            ):
-                match = _detect_framework_in_file(abs_path)
-                if match:
-                    logger.info("File in scope: %s", abs_path)
-                    relevant_files.append(match)
+    path = os.path.abspath(path)
+    if os.path.isfile(path):
+        relevant_file = _detect_relevant_file(path)
+        if relevant_file:
+            relevant_files.append(relevant_file)
+    else:
+        for dirpath, _, filenames in os.walk(path):
+            for filename in filenames:
+                relevant_file = _detect_relevant_file(os.path.join(dirpath, filename))
+                if relevant_file:
+                    relevant_files.append(relevant_file)
 
     return relevant_files
 
@@ -79,7 +92,7 @@ def is_relevant_file(file_path: str) -> bool:
 def is_relevant_python_file(file_path: str) -> bool:
     content = ""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
     except Exception as e:
@@ -110,7 +123,7 @@ def has_relevant_imports(content: str) -> bool:
 def _detect_framework_in_file(file_path: str) -> RelevantFile | None:
     """Read a Python file and return a RelevantFile if it imports a known framework."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
         logger.warning("Failed to read file %s: %s", file_path, e)

@@ -72,6 +72,21 @@ MAX_FILES_FETCHED = int(os.getenv("ADK_MAX_FILES_FETCHED", "50"))
 MAX_FETCH_TOKENS = int(os.getenv("ADK_MAX_FETCH_TOKENS", "200000"))
 LOOP_TIMEOUT_SECS = int(os.getenv("ADK_LOOP_TIMEOUT_SECS", "600"))
 
+# The `exit_reason` values that mean "we stopped early because one of our own
+# budgets ran out", as opposed to "we finished" or "we broke". Kept next to the
+# guards in `_run_adk_async` that produce them, not in the caller that
+# interprets them, so a new guard cannot silently fall outside the set.
+BUDGET_EXIT_REASONS = frozenset(
+    {
+        "timeout",
+        "max_iterations",
+        "max_files",
+        "max_tokens",
+        "max_bandit_calls",
+        "max_cvss_calls",
+    }
+)
+
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
@@ -434,7 +449,7 @@ def run_agentic_reasoning(
         return [], "No valid agent profiles or files found to analyze.", {}
 
     try:
-        adk_model = make_model()
+        adk_model = make_model(scanner="agent", phase="reasoner")
         logger.info("ADK model: %s", adk_model)
     except (ImportError, ValueError) as e:
         logger.error("ADK model resolution failed: %s", e)

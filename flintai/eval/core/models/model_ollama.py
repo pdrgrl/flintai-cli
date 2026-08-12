@@ -2,6 +2,7 @@ from typing import Any
 
 import requests
 from openai import AsyncOpenAI
+
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse

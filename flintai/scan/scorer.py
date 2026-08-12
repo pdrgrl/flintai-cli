@@ -7,6 +7,7 @@ All category/subcategory keys align with the OWASP ASI taxonomy in taxonomy.py.
 import logging
 
 from cvss import CVSS4
+
 from flintai.scan.taxonomy import get_finding_metadata
 
 # CVSS v4 official severity bands (FIRST.org spec)
