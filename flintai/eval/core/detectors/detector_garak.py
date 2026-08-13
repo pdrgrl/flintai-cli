@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import asyncio
 import logging
-
-from garak.attempt import Attempt, Conversation, Turn
-from garak.attempt import Message as GarakMessage
+from typing import TYPE_CHECKING
 
 from flintai.eval.common.schema import PartType, Role
 from flintai.eval.core.detectors.detector import Detector, DetectorResult
 from flintai.eval.core.models.model import ModelResponse
+from flintai.eval.core.optional_deps import require_garak
+
+if TYPE_CHECKING:
+    from garak.attempt import Conversation
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +25,9 @@ class GarakDetector(Detector):
     def _ensure_loaded(self):
         if self._detector is None:
             logger.debug("Loading garak detector: %s", self._detector_name)
-            from garak import _plugins
-
-            self._detector = _plugins.load_plugin(self._detector_name)
+            self._detector = require_garak()._plugins.load_plugin(
+                self._detector_name,
+            )
         return self._detector
 
     async def detect(self, response: ModelResponse) -> DetectorResult:
@@ -34,7 +38,7 @@ class GarakDetector(Detector):
 
     def _detect_sync(self, response: ModelResponse) -> DetectorResult:
         conversation = _create_conversation(response)
-        attempt = Attempt(prompt=conversation)
+        attempt = require_garak().attempt.Attempt(prompt=conversation)
         results = self._ensure_loaded().detect(attempt)
         scores = [r for r in results if r is not None]
         if not scores:
@@ -70,14 +74,15 @@ def _map_role(role: Role) -> str:
 
 
 def _create_conversation(response: ModelResponse) -> Conversation:
-    turns: list[Turn] = []
+    garak = require_garak()
+    turns = []
     if response.message is not None:
         role = _map_role(response.message.content.role)
         text = _extract_text(response)
         turns.append(
-            Turn(
+            garak.attempt.Turn(
                 role=role,
-                content=GarakMessage(text=text),
+                content=garak.attempt.Message(text=text),
             )
         )
-    return Conversation(turns)
+    return garak.attempt.Conversation(turns)

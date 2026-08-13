@@ -62,8 +62,12 @@ class TestHuggingFaceModel(unittest.IsolatedAsyncioTestCase):
         prompt = mock_pipeline.call_args.args[0]
         self.assertEqual(prompt, "Hello World")
 
-    @patch("flintai.eval.core.models.model_huggingface.pipeline")
-    def test_init_from_model_name(self, mock_pipeline_fn):
+    @patch(
+        "flintai.eval.core.models.model_huggingface."
+        "require_transformers_pipeline"
+    )
+    def test_init_from_model_name(self, mock_require):
+        mock_pipeline_fn = mock_require.return_value
         mock_pipeline_fn.return_value = MagicMock()
         HuggingFaceModel(model="gpt2")
         mock_pipeline_fn.assert_called_once_with("text-generation", model="gpt2")

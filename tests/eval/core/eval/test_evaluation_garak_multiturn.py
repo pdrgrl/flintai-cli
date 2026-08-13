@@ -7,8 +7,8 @@ from garak.attempt import Message as GarakMessage
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.eval.evaluation import EvaluationStatus
 from flintai.eval.core.eval.evaluation_garak_probe import (
-    GarakGeneratorAdapter,
     GarakMultiTurnEvaluation,
+    _get_generator_adapter_cls,
 )
 from flintai.eval.core.models.model import ModelResponse, ResponseStatus
 
@@ -24,7 +24,7 @@ class TestGarakGeneratorAdapter(unittest.TestCase):
             status=ResponseStatus.OK,
         )
 
-        adapter = GarakGeneratorAdapter(sync_model)
+        adapter = _get_generator_adapter_cls()(sync_model)
         conversation = Conversation(
             [
                 Turn(
@@ -47,7 +47,7 @@ class TestGarakGeneratorAdapter(unittest.TestCase):
             status=ResponseStatus.BLOCKED_SAFETY,
         )
 
-        adapter = GarakGeneratorAdapter(sync_model)
+        adapter = _get_generator_adapter_cls()(sync_model)
         conversation = Conversation(
             [
                 Turn(
@@ -70,7 +70,7 @@ class TestGarakGeneratorAdapter(unittest.TestCase):
             status=ResponseStatus.OK,
         )
 
-        adapter = GarakGeneratorAdapter(sync_model)
+        adapter = _get_generator_adapter_cls()(sync_model)
         conversation = Conversation(
             [
                 Turn(role="user", content=GarakMessage(text="hi")),
@@ -104,16 +104,14 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(TypeError):
             GarakMultiTurnEvaluation()
 
-    @patch(
-        "flintai.eval.core.eval.evaluation_garak_probe._plugins",
-    )
-    async def test_run_with_no_attempts(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    async def test_run_with_no_attempts(self, mock_load):
         probe = MagicMock()
         probe.primary_detector = "always.Pass"
         probe.probe.return_value = []
 
         detector = MagicMock()
-        mock_plugins.load_plugin.side_effect = lambda name: (
+        mock_load.side_effect = lambda name: (
             probe if name == "probes.test.Multi" else detector
         )
 
@@ -128,10 +126,8 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(e.status, EvaluationStatus.FINISHED)
         self.assertAlmostEqual(e.score, 1.0)
 
-    @patch(
-        "flintai.eval.core.eval.evaluation_garak_probe._plugins",
-    )
-    async def test_run_scores_attempts(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    async def test_run_scores_attempts(self, mock_load):
         attempt1 = Attempt(
             prompt=Conversation(
                 [
@@ -163,7 +159,7 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         detector = MagicMock()
         detector.detect.side_effect = [[0.3], [0.8]]
 
-        mock_plugins.load_plugin.side_effect = lambda name: (
+        mock_load.side_effect = lambda name: (
             probe if name == "probes.test.Multi" else detector
         )
 
@@ -180,15 +176,13 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(e.session)
         self.assertTrue(len(e.session.messages) > 0)
 
-    @patch(
-        "flintai.eval.core.eval.evaluation_garak_probe._plugins",
-    )
-    async def test_run_handles_probe_error(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    async def test_run_handles_probe_error(self, mock_load):
         probe = MagicMock()
         probe.primary_detector = "always.Pass"
         probe.probe.side_effect = RuntimeError("probe failed")
 
-        mock_plugins.load_plugin.return_value = probe
+        mock_load.return_value = probe
 
         e = GarakMultiTurnEvaluation(
             probe_name="probes.test.Multi",
@@ -201,10 +195,8 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(e.status, EvaluationStatus.ERROR)
         self.assertIn("probe failed", e.error_message)
 
-    @patch(
-        "flintai.eval.core.eval.evaluation_garak_probe._plugins",
-    )
-    async def test_session_captures_all_turns(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    async def test_session_captures_all_turns(self, mock_load):
         attempt = Attempt(
             prompt=Conversation(
                 [
@@ -224,7 +216,7 @@ class TestGarakMultiTurnEvaluation(unittest.IsolatedAsyncioTestCase):
         detector = MagicMock()
         detector.detect.return_value = [0.0]
 
-        mock_plugins.load_plugin.side_effect = lambda name: (
+        mock_load.side_effect = lambda name: (
             probe if name == "probes.test.Multi" else detector
         )
 

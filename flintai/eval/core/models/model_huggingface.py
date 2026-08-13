@@ -1,10 +1,14 @@
-import asyncio
-from typing import Any
+from __future__ import annotations
 
-from transformers import Pipeline, pipeline
+import asyncio
+from typing import TYPE_CHECKING, Any
 
 from flintai.eval.common.schema import Content, Message, PartType, Role
 from flintai.eval.core.models.model import Model, ModelResponse
+from flintai.eval.core.optional_deps import require_transformers_pipeline
+
+if TYPE_CHECKING:
+    from transformers import Pipeline
 
 
 class HuggingFaceModel(Model):
@@ -24,6 +28,7 @@ class HuggingFaceModel(Model):
         **pipeline_kwargs: Any,
     ):
         if isinstance(model, str):
+            pipeline = require_transformers_pipeline()
             self._pipeline = pipeline(
                 "text-generation",
                 model=model,

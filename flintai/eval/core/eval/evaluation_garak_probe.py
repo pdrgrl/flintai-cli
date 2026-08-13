@@ -1,14 +1,12 @@
+from __future__ import annotations
+
 import asyncio
 import io
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from dataclasses_json import dataclass_json
-from garak import _config, _plugins
-from garak.attempt import Conversation
-from garak.attempt import Message as GarakMessage
-from garak.generators.base import Generator
 
 from flintai.eval.common.schema import Content, Message, PartType, Role, Session
 from flintai.eval.core.detectors.detector_garak import GarakDetector
@@ -20,8 +18,17 @@ from flintai.eval.core.eval.evaluation_single_prompt import (
 )
 from flintai.eval.core.models.model import Model, ResponseStatus
 from flintai.eval.core.models.model_sync_wrapper import SyncModelWrapper
+from flintai.eval.core.optional_deps import require_garak
+
+if TYPE_CHECKING:
+    from garak.attempt import Conversation
+    from garak.attempt import Message as GarakMessage
 
 logger = logging.getLogger(__name__)
+
+# Cached at first use so the garak Generator base class (part of the optional
+# ``full`` extra) is only imported when a dynamic garak probe actually runs.
+_generator_adapter_cls: type | None = None
 
 
 # -- Helpers -------------------------------------------------------
@@ -36,18 +43,20 @@ def _ensure_garak_config() -> None:
     to set all defaults.  We also provide a dummy ``reportfile``
     since some probes write progress to it.
     """
-    if not _config.loaded:
-        _config.load_base_config()
-    if _config.transient.reportfile is None:
-        _config.transient.reportfile = io.StringIO()
+    config = require_garak()._config
+    if not config.loaded:
+        config.load_base_config()
+    if config.transient.reportfile is None:
+        config.transient.reportfile = io.StringIO()
 
 
 def _garak_prompt_to_message(prompt) -> Message:
+    garak = require_garak()
     if isinstance(prompt, str):
         text = prompt
-    elif isinstance(prompt, GarakMessage):
+    elif isinstance(prompt, garak.attempt.Message):
         text = prompt.text
-    elif isinstance(prompt, Conversation):
+    elif isinstance(prompt, garak.attempt.Conversation):
         parts = [turn.content.text for turn in prompt.turns]
         text = "\n".join(parts)
     else:
@@ -115,42 +124,58 @@ def _attempts_to_session(attempts: list) -> Session:
 # -- Generator adapter ---------------------------------------------
 
 
-class GarakGeneratorAdapter(Generator):
-    """Wraps an AIRed Model as a garak Generator.
+def _get_generator_adapter_cls() -> type:
+    """Build (once) the garak Generator adapter class.
 
-    Garak probes call ``generator.generate(conversation)`` which
-    delegates to ``_call_model``.  This adapter translates between
-    garak's Conversation/Message types and AIRed's Message type,
-    forwards the call to the wrapped SyncModelWrapper, and returns
-    the result as a garak Message.
-
-    Uses SyncModelWrapper because garak's probe system is entirely
-    synchronous.
+    The class subclasses garak's ``Generator``, which lives in the optional
+    ``full`` extra, so it can only be defined once garak is importable.  The
+    result is memoized in ``_generator_adapter_cls``.
     """
+    global _generator_adapter_cls
+    if _generator_adapter_cls is not None:
+        return _generator_adapter_cls
 
-    def __init__(self, sync_model: SyncModelWrapper):
-        self._sync_model = sync_model
-        self.name = "aired-adapter"
-        self.generations = 1
-        self.supports_multiple_generations = False
-        self.seed = None
-        self.fullname = "aired-adapter"
+    generator_base = require_garak().generators.base.Generator
 
-    def _call_model(
-        self,
-        prompt: Conversation,
-        generations_this_call: int = 1,
-    ) -> list[GarakMessage | None]:
-        messages = _conversation_to_messages(prompt)
-        response = self._sync_model.generate(messages)
+    class GarakGeneratorAdapter(generator_base):
+        """Wraps an AIRed Model as a garak Generator.
 
-        if response.status != ResponseStatus.OK:
-            return [None]
-        if response.message is None:
-            return [None]
+        Garak probes call ``generator.generate(conversation)`` which
+        delegates to ``_call_model``.  This adapter translates between
+        garak's Conversation/Message types and AIRed's Message type,
+        forwards the call to the wrapped SyncModelWrapper, and returns
+        the result as a garak Message.
 
-        text = _extract_text(response.message)
-        return [GarakMessage(text=text)]
+        Uses SyncModelWrapper because garak's probe system is entirely
+        synchronous.
+        """
+
+        def __init__(self, sync_model: SyncModelWrapper):
+            self._sync_model = sync_model
+            self.name = "aired-adapter"
+            self.generations = 1
+            self.supports_multiple_generations = False
+            self.seed = None
+            self.fullname = "aired-adapter"
+
+        def _call_model(
+            self,
+            prompt: Conversation,
+            generations_this_call: int = 1,
+        ) -> list[GarakMessage | None]:
+            messages = _conversation_to_messages(prompt)
+            response = self._sync_model.generate(messages)
+
+            if response.status != ResponseStatus.OK:
+                return [None]
+            if response.message is None:
+                return [None]
+
+            text = _extract_text(response.message)
+            return [require_garak().attempt.Message(text=text)]
+
+    _generator_adapter_cls = GarakGeneratorAdapter
+    return _generator_adapter_cls
 
 
 # -- Evaluation classes --------------------------------------------
@@ -192,12 +217,13 @@ class GarakMultiTurnEvaluation(SingleEvaluation):
     def _execute_sync(self, model: Model) -> float:
         sync_model = SyncModelWrapper(model)
         try:
+            plugins = require_garak()._plugins
             _ensure_garak_config()
-            probe = _plugins.load_plugin(self.probe_name)
+            probe = plugins.load_plugin(self.probe_name)
             detector_name = f"detectors.{probe.primary_detector}"
-            detector = _plugins.load_plugin(detector_name)
+            detector = plugins.load_plugin(detector_name)
 
-            adapter = GarakGeneratorAdapter(sync_model)
+            adapter = _get_generator_adapter_cls()(sync_model)
             attempts = probe.probe(adapter)
 
             if not attempts:
@@ -246,7 +272,7 @@ class GarakProbeEvaluation(MultiEvaluation):
             raise ValueError("probe_name is required")
 
         _ensure_garak_config()
-        probe = _plugins.load_plugin(self.probe_name)
+        probe = require_garak()._plugins.load_plugin(self.probe_name)
 
         if _has_static_prompts(probe):
             detector_name = probe.primary_detector
