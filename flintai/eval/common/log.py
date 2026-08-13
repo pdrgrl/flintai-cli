@@ -20,29 +20,47 @@ _REDACT_PATTERNS = re.compile(
 _REPLACEMENT = "[REDACTED]"
 
 
+def redact(text: str) -> str:
+    """Replace any known secret pattern in ``text`` with ``[REDACTED]``."""
+    return _REDACT_PATTERNS.sub(_REPLACEMENT, text)
+
+
 class RedactingFilter(logging.Filter):
     """Scrub secrets from log records before they reach handlers."""
 
     def filter(self, record: logging.LogRecord) -> bool:
         if isinstance(record.msg, str):
-            record.msg = _REDACT_PATTERNS.sub(
-                _REPLACEMENT,
-                record.msg,
-            )
+            record.msg = redact(record.msg)
         if record.args:
             if isinstance(record.args, tuple):
                 record.args = tuple(
-                    _REDACT_PATTERNS.sub(_REPLACEMENT, a) if isinstance(a, str) else a
-                    for a in record.args
+                    redact(a) if isinstance(a, str) else a for a in record.args
                 )
             elif isinstance(record.args, dict):
                 record.args = {
-                    k: _REDACT_PATTERNS.sub(_REPLACEMENT, v)
-                    if isinstance(v, str)
-                    else v
+                    k: redact(v) if isinstance(v, str) else v
                     for k, v in record.args.items()
                 }
         return True
+
+
+class RedactingFormatter(logging.Formatter):
+    """Wrap another formatter and scrub secrets from its rendered output.
+
+    A handler-level :class:`RedactingFilter` only sees ``record.msg`` and
+    ``record.args``, so secrets that surface elsewhere — an exception message or
+    traceback (e.g. an aiohttp connect error carrying a key in the URL), or a
+    stray ``extra=`` field — reach the handler unredacted. Redacting the fully
+    formatted string closes that gap regardless of how the wrapped formatter
+    renders exceptions.
+    """
+
+    def __init__(self, inner: logging.Formatter) -> None:
+        super().__init__()
+        self._inner = inner
+
+    def format(self, record: logging.LogRecord) -> str:
+        return redact(self._inner.format(record))
 
 
 _NOISY_LOGGERS = [

@@ -17,6 +17,7 @@ IGNORE_PACKAGES := --ignore-packages replicate tiktoken zalgolib flintai-cli
 
 license-check:
 	@echo "=== License review ==="
+	mkdir release/
 	pip-licenses \
 		--format=csv \
 		--with-urls \
@@ -96,5 +97,5 @@ vuln-scan:
 
 lock-deps:
 	@echo "=== Locking dependencies ==="
-	pip-compile --strip-extras --output-file=requirements.lock pyproject.toml
+	pip-compile --no-strip-extras --extra full --output-file=requirements.lock pyproject.toml
 	@echo "Locked dependencies written to requirements.lock"

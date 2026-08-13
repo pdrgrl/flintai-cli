@@ -15,8 +15,8 @@ from flintai.eval.core.models.model import ModelResponse, ResponseStatus
 
 
 class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
-    @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
-    async def test_static_probe_creates_children(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    async def test_static_probe_creates_children(self, mock_load):
         probe = MagicMock()
         probe.prompts = [
             "prompt one",
@@ -24,7 +24,7 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
             "prompt three",
         ]
         probe.primary_detector = "always.Pass"
-        mock_plugins.load_plugin.return_value = probe
+        mock_load.return_value = probe
 
         e = GarakProbeEvaluation(
             probe_name="probes.test.Dummy",
@@ -36,12 +36,12 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
         for child in e.children:
             self.assertIsInstance(child, SinglePromptEvaluation)
 
-    @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
-    async def test_static_probe_runs_children(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    async def test_static_probe_runs_children(self, mock_load):
         probe = MagicMock()
         probe.prompts = ["prompt one"]
         probe.primary_detector = "always.Pass"
-        mock_plugins.load_plugin.return_value = probe
+        mock_load.return_value = probe
 
         e = GarakProbeEvaluation(
             probe_name="probes.test.Dummy",
@@ -73,13 +73,13 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
             0.9,
         )
 
-    @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
+    @patch("garak._plugins.load_plugin")
     async def test_multiturn_probe_creates_single_child(
         self,
-        mock_plugins,
+        mock_load,
     ):
         probe = MagicMock(spec=["primary_detector", "goal"])
-        mock_plugins.load_plugin.return_value = probe
+        mock_load.return_value = probe
 
         e = GarakProbeEvaluation(
             probe_name="probes.atkgen.Tox",
@@ -97,14 +97,14 @@ class TestGarakProbeEvaluation(unittest.IsolatedAsyncioTestCase):
             "probes.atkgen.Tox",
         )
 
-    @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
+    @patch("garak._plugins.load_plugin")
     async def test_empty_prompts_treated_as_multiturn(
         self,
-        mock_plugins,
+        mock_load,
     ):
         probe = MagicMock()
         probe.prompts = []
-        mock_plugins.load_plugin.return_value = probe
+        mock_load.return_value = probe
 
         e = GarakProbeEvaluation(
             probe_name="probes.topic.WordnetControversial",

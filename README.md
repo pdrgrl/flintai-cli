@@ -48,6 +48,18 @@ Install Flint AI CLI:
 pip install flintai-cli
 ```
 
+<details>
+<summary>Optional <code>full</code> extra for toxicity, local & garak evaluations</summary>
+
+Some evaluations rely on heavy ML backends that are kept out of the default
+install: toxicity detection, local evaluation of models retrieved from Huggingface,
+and garak probes and detectors. Install them with the optional `full`
+extra when you need those features:
+```bash
+pip install "flintai-cli[full]"
+```
+</details>
+
 ### Step 2: Configure your LLM provider
 
 Flint AI uses AI to analyze agent code and score reliability. Run the interactive setup:

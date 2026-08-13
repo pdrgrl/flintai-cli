@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
-from garak._plugins import enumerate_plugins
 
 from flintai.eval.core.eval.evaluation import Evaluation
 from flintai.eval.core.eval.evaluation_garak_probe import GarakProbeEvaluation
 from flintai.eval.core.eval.evaluation_multi import MultiEvaluation
+from flintai.eval.core.optional_deps import require_garak
 
 
 @dataclass_json
@@ -35,7 +35,7 @@ class GarakModuleEvaluation(MultiEvaluation):
             prefix = f"probes.{self.module_name}."
             names = [
                 name
-                for name, active in enumerate_plugins("probes")
+                for name, active in require_garak()._plugins.enumerate_plugins("probes")
                 if name.startswith(prefix) and active
             ]
 

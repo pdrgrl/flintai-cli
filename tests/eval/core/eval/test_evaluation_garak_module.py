@@ -10,11 +10,11 @@ from flintai.eval.core.models.model import ModelResponse, ResponseStatus
 
 
 class TestGarakModuleEvaluation(unittest.IsolatedAsyncioTestCase):
-    @patch("flintai.eval.core.eval.evaluation_garak_module.enumerate_plugins")
-    @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
+    @patch("garak._plugins.enumerate_plugins")
+    @patch("garak._plugins.load_plugin")
     async def test_init_creates_probe_children(
         self,
-        mock_probe_plugins,
+        mock_load,
         mock_enumerate,
     ):
         mock_enumerate.return_value = [
@@ -27,7 +27,7 @@ class TestGarakModuleEvaluation(unittest.IsolatedAsyncioTestCase):
         probe = MagicMock()
         probe.prompts = ["p1"]
         probe.primary_detector = "always.Pass"
-        mock_probe_plugins.load_plugin.return_value = probe
+        mock_load.return_value = probe
 
         e = GarakModuleEvaluation(module_name="mymod")
         await e.init()
@@ -40,11 +40,11 @@ class TestGarakModuleEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertIn("probes.mymod.ProbeA", names)
         self.assertIn("probes.mymod.ProbeB", names)
 
-    @patch("flintai.eval.core.eval.evaluation_garak_module.enumerate_plugins")
-    @patch("flintai.eval.core.eval.evaluation_garak_probe._plugins")
+    @patch("garak._plugins.enumerate_plugins")
+    @patch("garak._plugins.load_plugin")
     async def test_run_executes_all_probes(
         self,
-        mock_probe_plugins,
+        mock_load,
         mock_enumerate,
     ):
         mock_enumerate.return_value = [
@@ -54,7 +54,7 @@ class TestGarakModuleEvaluation(unittest.IsolatedAsyncioTestCase):
         probe = MagicMock()
         probe.prompts = ["prompt"]
         probe.primary_detector = "always.Pass"
-        mock_probe_plugins.load_plugin.return_value = probe
+        mock_load.return_value = probe
 
         e = GarakModuleEvaluation(module_name="mod")
         await e.init()
@@ -85,7 +85,7 @@ class TestGarakModuleEvaluation(unittest.IsolatedAsyncioTestCase):
         summary = e.get_summary()
         self.assertAlmostEqual(summary.achieved_score, 0.7)
 
-    @patch("flintai.eval.core.eval.evaluation_garak_module.enumerate_plugins")
+    @patch("garak._plugins.enumerate_plugins")
     async def test_no_probes_found_errors(self, mock_enumerate):
         mock_enumerate.return_value = [
             ("probes.other.Probe", True),

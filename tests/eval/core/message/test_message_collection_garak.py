@@ -7,11 +7,11 @@ from flintai.eval.core.message.message_collection_garak import (
 
 
 class TestGarakMessageCollection(unittest.TestCase):
-    @patch("flintai.eval.core.message.message_collection_garak._plugins")
-    def test_load_returns_messages(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    def test_load_returns_messages(self, mock_load):
         mock_probe = MagicMock()
         mock_probe.prompts = ["prompt 1", "prompt 2"]
-        mock_plugins.load_plugin.return_value = mock_probe
+        mock_load.return_value = mock_probe
 
         collection = GarakMessageCollection(
             probe_name="probes.test.Probe",
@@ -23,15 +23,15 @@ class TestGarakMessageCollection(unittest.TestCase):
             messages[0].content.parts[0].text,
             "prompt 1",
         )
-        mock_plugins.load_plugin.assert_called_once_with(
+        mock_load.assert_called_once_with(
             "probes.test.Probe",
         )
 
-    @patch("flintai.eval.core.message.message_collection_garak._plugins")
-    def test_load_caches_messages(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    def test_load_caches_messages(self, mock_load):
         mock_probe = MagicMock()
         mock_probe.prompts = ["prompt"]
-        mock_plugins.load_plugin.return_value = mock_probe
+        mock_load.return_value = mock_probe
 
         collection = GarakMessageCollection(
             probe_name="probes.test.Probe",
@@ -39,13 +39,13 @@ class TestGarakMessageCollection(unittest.TestCase):
         collection.load()
         collection.load()
 
-        mock_plugins.load_plugin.assert_called_once()
+        mock_load.assert_called_once()
 
-    @patch("flintai.eval.core.message.message_collection_garak._plugins")
-    def test_get_existing(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    def test_get_existing(self, mock_load):
         mock_probe = MagicMock()
         mock_probe.prompts = ["prompt"]
-        mock_plugins.load_plugin.return_value = mock_probe
+        mock_load.return_value = mock_probe
 
         collection = GarakMessageCollection(
             probe_name="probes.test.Probe",
@@ -58,11 +58,11 @@ class TestGarakMessageCollection(unittest.TestCase):
             "prompt",
         )
 
-    @patch("flintai.eval.core.message.message_collection_garak._plugins")
-    def test_get_missing_raises(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    def test_get_missing_raises(self, mock_load):
         mock_probe = MagicMock()
         mock_probe.prompts = []
-        mock_plugins.load_plugin.return_value = mock_probe
+        mock_load.return_value = mock_probe
 
         collection = GarakMessageCollection(
             probe_name="probes.test.Probe",
@@ -70,19 +70,19 @@ class TestGarakMessageCollection(unittest.TestCase):
         with self.assertRaises(KeyError):
             collection.get("no-such-id")
 
-    @patch("flintai.eval.core.message.message_collection_garak._plugins")
-    def test_save_raises(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    def test_save_raises(self, mock_load):
         collection = GarakMessageCollection(
             probe_name="probes.test.Probe",
         )
         with self.assertRaises(NotImplementedError):
             collection.save([])
 
-    @patch("flintai.eval.core.message.message_collection_garak._plugins")
-    def test_size_returns_count(self, mock_plugins):
+    @patch("garak._plugins.load_plugin")
+    def test_size_returns_count(self, mock_load):
         mock_probe = MagicMock()
         mock_probe.prompts = ["a", "b", "c"]
-        mock_plugins.load_plugin.return_value = mock_probe
+        mock_load.return_value = mock_probe
 
         collection = GarakMessageCollection(
             probe_name="probes.test.Probe",
