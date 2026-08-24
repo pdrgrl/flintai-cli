@@ -143,6 +143,7 @@ PROCEDURE:
    ASI categories and ask the kinds of questions below. Use
    analyze_code(mode="search") to trace data flow (e.g. where a request body,
    query param, or tool argument is used). Investigate — do not assume clean.
+   After processing all patterns for all files, output a final summary.
 
 4. Report each finding you can evidence. Call compute_cvss(vuln_type=<subcategory>)
    then report_finding() for it. One call per finding; do not batch.
@@ -191,12 +192,13 @@ contains KEY, TOKEN, SECRET, PASSWORD, CREDENTIAL, or DATABASE_URL.
           subcategory=hardcoded_credentials
 
 PATTERN 2: An f-string, string concatenation, or string interpolation that puts a variable
-into text sent to an LLM (in instruction=, prompt=, system=, or Message.new_user!("...#{{var}}...")).
+into text sent to an LLM (in instruction=, prompt=, system=, or Message.new_user!("...#[var]...")).
   Match: instruction=f"...some variable..."
   Match: prompt = "..." + user_input
-  Match: Message.new_user!("...#{{user_input}}...")
+  Match: Message.new_user!("...#[user_input]...")
   Report: category=asi01_agent_goal_hijack,
           subcategory=direct_prompt_injection
+
 
 PATTERN 3: A call to eval(), exec(), compile(), or Elixir Code.eval_string/quoted on any variable.
   Match: eval(anything)

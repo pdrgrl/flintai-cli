@@ -122,16 +122,54 @@ def _openai_reasoning_effort(name: str) -> str | None:
         return None
     return os.getenv("SCANNER_REASONING_EFFORT", DEFAULT_REASONING_EFFORT)
 
+_KNOWN_PROVIDERS = {
+
+    "google",
+    "gemini",
+    "openai",
+    "anthropic",
+    "litellm",
+    "groq",
+    "mistral",
+    "ollama",
+    "deepseek",
+}
 
 def parse_model_string(model_string: str) -> tuple[str, str | None]:
-    """Parse 'provider:model' -> (provider, model)."""
-    if ":" in model_string:
-        provider, model = model_string.split(":", 1)
-    else:
-        provider, model = model_string, None
-    provider = provider.strip().lower()
-    provider = _PROVIDER_ALIASES.get(provider, provider)
-    return provider, model.strip() if model else None
+    """Parse model string into (provider, model_name)."""
+    ms = model_string.strip()
+    if ":" in ms:
+        provider, model = ms.split(":", 1)
+        provider = provider.strip().lower()
+        provider = _PROVIDER_ALIASES.get(provider, provider)
+        return provider, model.strip() if model else None
+
+    # Handle provider prefix with slash: e.g. "openai/cf/llama-3.3-70b" -> ("openai", "cf/llama-3.3-70b")
+    if "/" in ms:
+        first_segment, rest = ms.split("/", 1)
+        first_segment_clean = first_segment.strip().lower()
+        if (
+            first_segment_clean in _KNOWN_PROVIDERS
+            or first_segment_clean in _PROVIDER_ALIASES
+        ):
+            provider = _PROVIDER_ALIASES.get(
+                first_segment_clean, first_segment_clean
+            )
+            return provider, rest.strip()
+
+    if ms.lower() in ("google", "gemini"):
+        return PROVIDER_GOOGLE, None
+
+    if ms.lower() == "litellm":
+        return PROVIDER_LITELLM, None
+
+    if "gemini" in ms.lower():
+        return PROVIDER_GOOGLE, ms
+
+    if os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE"):
+        return "openai", ms
+
+    return PROVIDER_GOOGLE, ms
 
 
 def _resolve_model_string(model_string: str | None = None) -> tuple[str, str]:
@@ -150,13 +188,7 @@ def make_model(
     scanner: str = "unknown",
     phase: str = "unknown",
 ) -> ADKModel:
-    """Return an ADK-compatible model for any provider.
-
-    For Google: returns a bare model string (e.g. "gemini-3.6-flash"); ADK
-    uses its native Google AI client with GOOGLE_API_KEY. For other
-    providers: returns a LiteLlm wrapper. ``scanner`` and ``phase`` are
-    accepted for API compatibility but ignored.
-    """
+    """Return an ADK-compatible model for any provider."""
     provider, model = _resolve_model_string(model_string)
 
     if provider == PROVIDER_GOOGLE:
@@ -192,6 +224,7 @@ def make_model(
        drop_params=True,
        **extra_args,
     )
+
 
 def is_anthropic_model(model: ADKModel) -> bool:
     """Return True if *model* looks like an Anthropic / Claude model."""
