@@ -177,6 +177,13 @@ def make_model(
     reasoning_effort = _openai_reasoning_effort(name)
     if reasoning_effort is not None:
         extra_args["reasoning_effort"] = reasoning_effort
+    api_base = (
+        os.getenv("OPENAI_BASE_URL")
+        or os.getenv("OPENAI_API_BASE")
+        or os.getenv("LITELLM_API_BASE")
+    )
+    if api_base:
+        extra_args["api_base"] = api_base
 
     LiteLlm = _import_litellm()
     return LiteLlm(
