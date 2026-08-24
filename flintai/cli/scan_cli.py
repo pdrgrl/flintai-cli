@@ -184,6 +184,12 @@ def print_report(report: ScanReport) -> None:
             if f.affected_components:
                 file_name = os.path.basename(f.affected_components[0].name)
 
+        is_hallucinated = (
+            f.get("hallucination_flag", False)
+            if isinstance(f, dict)
+            else getattr(f, "hallucination_flag", False)
+        )
+
         sev_display = f"[{severity_style(sev)}]{sev}[/]"
         source_label = (
             source.replace("_", " ")
@@ -191,7 +197,12 @@ def print_report(report: ScanReport) -> None:
             .replace("static ", "")
         )
 
+        if is_hallucinated:
+            title = f"[yellow]⚠ {title}[/] [dim italic](Unverified / Suspected)[/]"
+            source_label = f"[yellow]{source_label} (Unverified)[/]"
+
         table.add_row(sev_display, cvss, title, file_name, source_label)
+
 
     console.print(table)
 
