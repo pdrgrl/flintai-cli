@@ -33,7 +33,7 @@ One CLI to analyze agent code and runtime behavior, any framework.
 > - [OpenGrep](https://github.com/opengrep/opengrep#linux--macos) (required for Flint AI Scan)
 > - A running agent accessible via HTTP (required for Flint AI Eval)
 >
-> **Supported frameworks:** Google ADK, Google GenAI, Anthropic, OpenAI, OpenAI Agents SDK, LangGraph, CrewAI, AutoGen, HuggingFace Transformers, HuggingFace smolagents
+> **Supported frameworks:** Google ADK, Google GenAI, Anthropic, OpenAI, OpenAI Agents SDK, LangGraph, CrewAI, AutoGen, HuggingFace Transformers, HuggingFace smolagents, LangChain (Elixir), Instructor / InstructorLite (Elixir), ReqLLM, Bumblebee, Anubis MCP, Complear / Specialist Agents, OTP GenServers
 
 ### Step 1: Install Flint AI
 
@@ -84,16 +84,18 @@ You'll be prompted to select a provider (Gemini, OpenAI, Anthropic, or LiteLLM),
 
 ### Step 3: Try the example agents
 
-To demonstrate the CLIs capabilities, we've shipped this tool with two example agents. You can get them [here](https://github.com/sandbox-quantum/flintai-cli/tree/main/examples).
+To demonstrate the CLI's capabilities, we've shipped this tool with example agents in Python and Elixir. You can get them [here](https://github.com/sandbox-quantum/flintai-cli/tree/main/examples).
 
-**Both agents work with both `flintai scan` and `flintai eval`**:
+**Example agents:**
 
 | Agent | Framework | Description |
 |-------|-----------|-------------|
 | **weather_agent** | Google ADK | Weather assistant that looks up conditions for cities. Should refuse off-topic requests. |
 | **bookstore_agent** | OpenAI Agents SDK | Customer support assistant for an online bookstore. Searches books, checks orders, and processes returns. |
+| **elixir_weather_agent** | LangChain (Elixir) | Elixir weather assistant using LangChain chains and tools with safe parameter validation. |
 
-The included `examples/config.json` has both agents configured with builtin evaluations (OWASP LLM01–LLM09, PII, secrets) and custom tests.
+The included `examples/config.json` has agents configured with builtin evaluations (OWASP LLM01–LLM09, PII, secrets) and custom tests.
+
 
 ---
 
