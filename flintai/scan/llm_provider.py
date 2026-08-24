@@ -181,6 +181,37 @@ def _resolve_model_string(model_string: str | None = None) -> tuple[str, str]:
     return provider, model or DEFAULT_MODEL
 
 
+def _flatten_content(content: Any) -> str | None:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for p in content:
+            if isinstance(p, dict) and "text" in p:
+                parts.append(p["text"])
+            elif isinstance(p, str):
+                parts.append(p)
+            else:
+                parts.append(str(p))
+        return "\n".join(parts)
+    return str(content) if content is not None else None
+
+
+def _sanitize_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Flatten array content parts to plain strings for Cloudflare compatibility."""
+    sanitized = []
+    for m in messages:
+        if not isinstance(m, dict):
+            sanitized.append(m)
+            continue
+        m_copy = dict(m)
+        if "content" in m_copy:
+            flat = _flatten_content(m_copy["content"])
+            m_copy["content"] = flat if flat is not None else ""
+        sanitized.append(m_copy)
+    return sanitized
+
+
 def make_model(
     model_string: str | None = None,
     temperature: float = 0.0,
@@ -218,12 +249,25 @@ def make_model(
         extra_args["api_base"] = api_base
 
     LiteLlm = _import_litellm()
-    return LiteLlm(
+    instance = LiteLlm(
        model=name,
        temperature=temperature,
        drop_params=True,
        **extra_args,
     )
+
+    # Cloudflare Workers AI / OpenAI compatibility: ensure message contents are strings
+    if hasattr(instance, "llm_client") and hasattr(instance.llm_client, "acompletion"):
+        orig_acompletion = instance.llm_client.acompletion
+
+        async def _acompletion_wrapper(**call_kwargs):
+            if "messages" in call_kwargs and isinstance(call_kwargs["messages"], list):
+                call_kwargs["messages"] = _sanitize_messages(call_kwargs["messages"])
+            return await orig_acompletion(**call_kwargs)
+
+        instance.llm_client.acompletion = _acompletion_wrapper
+
+    return instance
 
 
 def is_anthropic_model(model: ADKModel) -> bool:
