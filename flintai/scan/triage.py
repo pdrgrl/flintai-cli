@@ -47,8 +47,9 @@ logger = logging.getLogger(__name__)
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 MAX_TOKENS = (
-    16000  # Must accommodate triage output for large finding sets (49+ findings)
+    4096  # Accommodates triage JSON output while staying within gateway context limits (e.g. 24k token caps)
 )
+
 TEMPERATURE = (
     0.0  # Fully deterministic — same input must always produce same triage result
 )

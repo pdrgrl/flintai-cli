@@ -201,6 +201,11 @@ class ToolDispatcher:
         Returns:
             Matching results or import list. ERROR string on failure.
         """
+        if max_results is not None:
+            try:
+                max_results = int(max_results)
+            except (ValueError, TypeError):
+                max_results = 20
         self._call_counts["analyze_code"] = self._call_counts.get("analyze_code", 0) + 1
         if mode == "search":
             if not pattern:
@@ -283,6 +288,17 @@ class ToolDispatcher:
         lines = rf.content.splitlines()
         total = len(lines)
 
+        if start_line is not None:
+            try:
+                start_line = int(start_line)
+            except (ValueError, TypeError):
+                start_line = None
+        if end_line is not None:
+            try:
+                end_line = int(end_line)
+            except (ValueError, TypeError):
+                end_line = None
+
         if start_line is not None or end_line is not None:
             # Reject negative line numbers — they would silently clamp to 1
             # via max(1, ...) and confuse the agent about what was returned.
@@ -296,6 +312,7 @@ class ToolDispatcher:
                     f"ERROR: end_line must be >= 1, got {end_line}. "
                     f"Use a value between 1 and {total}."
                 )
+
             # Fix #27: Validate line number bounds before slicing.
             # Out-of-range requests return an empty result that confuses the agent.
             if start_line is not None and start_line > total:
