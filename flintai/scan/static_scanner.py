@@ -304,10 +304,16 @@ def _parse_pinned_packages(requirements_content: str) -> list[PackageInfo]:
     return packages
 
 
-def _query_osv_api(packages: list[PackageInfo], filepath: str) -> list[StaticFinding]:
+def _query_osv_api(
+    packages: list[PackageInfo],
+    filepath: str,
+    ecosystem: str = "PyPI",
+    tool_name: str = "pip_audit",
+) -> list[StaticFinding]:
     """
     Query the OSV.dev batch API directly for a list of {name, version} packages.
-    No virtual env, no package installation, no Python version constraints.
+    No virtual env, no package installation, no language version constraints.
+    Supports PyPI, Hex, npm, etc.
     Docs: https://osv.dev/docs/#tag/api/operation/OSV_QueryAffectedBatch
     """
     findings = []
@@ -319,7 +325,7 @@ def _query_osv_api(packages: list[PackageInfo], filepath: str) -> list[StaticFin
         "queries": [
             {
                 "version": pkg["version"],
-                "package": {"name": pkg["name"], "ecosystem": "PyPI"},
+                "package": {"name": pkg["name"], "ecosystem": ecosystem},
             }
             for pkg in packages
         ]
@@ -382,7 +388,7 @@ def _query_osv_api(packages: list[PackageInfo], filepath: str) -> list[StaticFin
 
             findings.append(
                 StaticFinding(
-                    tool="pip_audit",
+                    tool=tool_name,
                     rule_id=cve_id or vuln_id,
                     severity=severity,
                     message=(f"{pkg['name']}=={pkg['version']}: {summary[:200]}"),
@@ -397,7 +403,8 @@ def _query_osv_api(packages: list[PackageInfo], filepath: str) -> list[StaticFin
             )
 
     logger.info(
-        "OSV: %d CVE(s) found across %d of %d packages",
+        "OSV (%s): %d CVE(s) found across %d of %d packages",
+        ecosystem,
         vuln_count,
         len([p for p in results if p.get("vulns")]),
         len(packages),
@@ -407,17 +414,11 @@ def _query_osv_api(packages: list[PackageInfo], filepath: str) -> list[StaticFin
 
 def run_pip_audit(requirements_files: list) -> list[StaticFinding]:
     """
-    Scan requirements files for known CVEs.
+    Scan Python requirements files for known CVEs.
     Strategy:
       1. Try pip-audit (fast, uses local pip resolver)
-      2. If pip-audit is not installed, or fails due to Python version
-         conflicts or resolver errors, fall back to querying the OSV.dev
-         batch API directly (no virtual env, no installation, no Python
-         version constraints)
-
-    An absent pip-audit is a *degraded* scan, not a failed one — the caller
-    is expected to report it via `tools_skipped` (see `run_static_scan`),
-    because the fallback only covers `==`-pinned packages.
+      2. If pip-audit is not installed, fall back to querying the OSV.dev
+         batch API directly.
     """
     findings = []
     pip_audit_available = _module_available("pip_audit")
@@ -428,7 +429,6 @@ def run_pip_audit(requirements_files: list) -> list[StaticFinding]:
         if not req_file_path.endswith(".txt"):
             continue
 
-        # ── Attempt 1: pip-audit ────────────────────────────────────────────────
         pip_audit_succeeded = False
         if pip_audit_available:
             try:
@@ -450,9 +450,6 @@ def run_pip_audit(requirements_files: list) -> list[StaticFinding]:
                     text=True,
                     timeout=120,
                 )
-                # pip-audit exits 1 when vulnerabilities are found — that is
-                # normal. Only treat return code > 1 as a hard error
-                # warranting fallback.
                 if result.returncode <= 1:
                     stdout = result.stdout.strip()
                     if stdout:
@@ -491,7 +488,6 @@ def run_pip_audit(requirements_files: list) -> list[StaticFinding]:
                         )
                         pip_audit_succeeded = True
                     else:
-                        # Empty stdout — fall through to OSV fallback
                         stderr_preview = result.stderr.strip()[:200]
                         logger.warning(
                             "pip-audit: empty output — falling back to OSV API. Reason: %s",
@@ -523,7 +519,14 @@ def run_pip_audit(requirements_files: list) -> list[StaticFinding]:
                         len(packages),
                         req_file_path.split("/")[-1],
                     )
-                    findings.extend(_query_osv_api(packages, req_file_path))
+                    findings.extend(
+                        _query_osv_api(
+                            packages,
+                            req_file_path,
+                            ecosystem="PyPI",
+                            tool_name="pip_audit",
+                        )
+                    )
                 else:
                     logger.info(
                         "OSV fallback: no pinned packages found in %s",
@@ -531,6 +534,143 @@ def run_pip_audit(requirements_files: list) -> list[StaticFinding]:
                     )
             except Exception as e:
                 logger.error("OSV fallback error: %s", e)
+
+    return findings
+
+
+def _parse_mix_lock_packages(content: str) -> list[PackageInfo]:
+    """Extract pinned Hex packages from mix.lock."""
+    packages = []
+    # Pattern matching "pkg_name": {:hex, :pkg_name, "version", ...}
+    pattern = re.compile(
+        r'"([a-zA-Z0-9_]+)":\s*\{:hex,\s*:[a-zA-Z0-9_]+,\s*"([0-9a-zA-Z.\-+]+)"'
+    )
+    for match in pattern.finditer(content):
+        name, version = match.group(1), match.group(2)
+        packages.append({"name": name, "version": version})
+    return packages
+
+
+def check_unpinned_mix_dependencies(
+    mix_exs_content: str, filepath: str
+) -> list[StaticFinding]:
+    """Check for unpinned AI framework dependencies in mix.exs."""
+    findings = []
+    ai_packages = {
+        "langchain",
+        "instructor",
+        "instructor_lite",
+        "req_llm",
+        "bumblebee",
+        "anubis_mcp",
+        "openai_ex",
+        "anthropic",
+    }
+    pattern = re.compile(r'\{:([a-zA-Z0-9_]+),\s*["\']([^"\']+)["\']')
+    for line in mix_exs_content.splitlines():
+        line_s = line.strip()
+        if not line_s or line_s.startswith("#"):
+            continue
+        match = pattern.search(line_s)
+        if match:
+            pkg, req = match.group(1).lower(), match.group(2).strip()
+            if pkg in ai_packages:
+                if ">=" in req:
+                    findings.append(
+                        StaticFinding(
+                            tool="internal",
+                            rule_id="unpinned-ai-dependency",
+                            severity="medium",
+                            message=f"Unpinned AI framework dependency in mix.exs: '{line_s}' — supply chain risk",
+                            filepath=filepath,
+                            line=0,
+                            evidence=line_s,
+                        )
+                    )
+    return findings
+
+
+def run_mix_audit(mix_paths: list[str]) -> list[StaticFinding]:
+    """Scan Elixir mix.lock files for known CVEs via OSV.dev Hex ecosystem API."""
+    findings = []
+    for mix_file_path in mix_paths:
+        if os.path.basename(mix_file_path) == "mix.lock":
+            try:
+                content = open(mix_file_path, encoding="utf-8").read()
+                packages = _parse_mix_lock_packages(content)
+                if packages:
+                    logger.info(
+                        "Auditing %d Hex packages from %s via OSV API...",
+                        len(packages),
+                        mix_file_path.split("/")[-1],
+                    )
+                    findings.extend(
+                        _query_osv_api(
+                            packages,
+                            mix_file_path,
+                            ecosystem="Hex",
+                            tool_name="mix_audit",
+                        )
+                    )
+            except Exception as e:
+                logger.error("Hex package audit error: %s", e)
+    return findings
+
+
+def find_sobelow_binary() -> str | None:
+    """Locate sobelow binary in PATH."""
+    import shutil
+
+    return shutil.which("sobelow")
+
+
+def run_sobelow(files_dir: str) -> list[StaticFinding]:
+    """Run Sobelow static security analysis on Elixir files and parse findings."""
+    findings = []
+    sobelow_bin = find_sobelow_binary()
+    if not sobelow_bin:
+        return findings
+
+    try:
+        result = subprocess.run(
+            [sobelow_bin, "--format", "json", "--root", files_dir],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        raw_json = result.stdout.strip()
+        if not raw_json:
+            return findings
+
+        data = json.loads(raw_json)
+        findings_dict = data.get("findings", data)
+        for conf, items in findings_dict.items():
+            if not isinstance(items, list):
+                continue
+            severity = (
+                "high"
+                if "high" in conf.lower()
+                else ("medium" if "med" in conf.lower() else "low")
+            )
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                type_name = item.get("type", "Sobelow finding")
+                file_path = item.get("file", "").replace(files_dir, "").lstrip("/\\")
+                line_num = item.get("line", 0)
+                findings.append(
+                    StaticFinding(
+                        tool="sobelow",
+                        rule_id=type_name,
+                        severity=severity,
+                        message=f"{type_name}: {item.get('variable', '') or item.get('vuln', '')}",
+                        filepath=file_path,
+                        line=line_num,
+                        evidence=str(item.get("code", ""))[:200],
+                    )
+                )
+    except Exception as e:
+        logger.warning("Sobelow scan error: %s", e)
 
     return findings
 
@@ -579,27 +719,31 @@ def check_unpinned_dependencies(
 
 
 def run_static_scan(
-    python_files: list[RepoFile], requirements_files: list[RepoFile], tmp_dir: str
+    source_files: list[RepoFile],
+    requirements_files: list[RepoFile],
+    tmp_dir: str,
 ) -> StaticScanResult:
     """
-    Write files to temp dir and run all static analysis tools.
+    Write source and manifest files to temp dir and run static analysis tools.
 
-    Returns the combined findings alongside the tools that produced them and
-    the tools that could not run, so callers can distinguish a clean scan from
-    a partial one.
+    Supports both Python (.py) and Elixir (.ex, .exs, mix.exs, mix.lock) files.
     """
     all_findings = []
     tools_used: list[str] = []
     tools_skipped: list[SkippedTool] = []
 
-    # Write Python files to disk preserving their original relative
-    # paths. Tools then report findings with paths relative to py_dir,
-    # which match the original repo_file.path — no remapping needed.
-    py_dir = os.path.join(tmp_dir, "src")
-    os.makedirs(py_dir, exist_ok=True)
+    # Separate python and elixir files
+    py_files = [f for f in source_files if f.path.endswith(".py")]
+    elixir_files = [
+        f for f in source_files if f.path.endswith((".ex", ".exs"))
+    ]
 
-    for repo_file in python_files:
-        dest = os.path.join(py_dir, repo_file.path.lstrip(os.sep))
+    # Write source files to disk preserving original relative paths.
+    src_dir = os.path.join(tmp_dir, "src")
+    os.makedirs(src_dir, exist_ok=True)
+
+    for repo_file in source_files:
+        dest = os.path.join(src_dir, repo_file.path.lstrip(os.sep))
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         with open(dest, "w", encoding="utf-8") as f:
             f.write(repo_file.content)
@@ -609,59 +753,82 @@ def run_static_scan(
     with open(rules_path, "w") as f:
         f.write(_load_opengrep_rules())
 
-    # Write requirements files preserving original paths.
+    # Write requirements & manifest files preserving original paths.
     req_dir = os.path.join(tmp_dir, "reqs")
     os.makedirs(req_dir, exist_ok=True)
     req_paths = []
+    mix_paths = []
+
     for repo_file in requirements_files:
+        dest = os.path.join(req_dir, repo_file.path.lstrip(os.sep))
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, "w", encoding="utf-8") as f:
+            f.write(repo_file.content)
+
         if repo_file.path.endswith(".txt"):
-            dest = os.path.join(req_dir, repo_file.path.lstrip(os.sep))
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
-            with open(dest, "w", encoding="utf-8") as f:
-                f.write(repo_file.content)
             req_paths.append(dest)
-            # Also check for unpinned deps inline
             all_findings.extend(
                 check_unpinned_dependencies(repo_file.content, repo_file.path)
             )
+        elif repo_file.path.endswith("mix.exs"):
+            mix_paths.append(dest)
+            all_findings.extend(
+                check_unpinned_mix_dependencies(repo_file.content, repo_file.path)
+            )
+        elif repo_file.path.endswith("mix.lock"):
+            mix_paths.append(dest)
 
-    if _module_available("bandit"):
-        logger.info("Running Bandit on %d files...", len(python_files))
-        all_findings.extend(run_bandit(py_dir))
-        tools_used.append("bandit")
-    else:
-        logger.warning("Skipping Bandit scan. %s", _BANDIT_SKIP_REASON)
-        tools_skipped.append(SkippedTool(tool="bandit", reason=_BANDIT_SKIP_REASON))
+    # 1. Bandit (Python only)
+    if py_files:
+        if _module_available("bandit"):
+            logger.info("Running Bandit on %d Python files...", len(py_files))
+            all_findings.extend(run_bandit(src_dir))
+            tools_used.append("bandit")
+        else:
+            logger.warning("Skipping Bandit scan. %s", _BANDIT_SKIP_REASON)
+            tools_skipped.append(
+                SkippedTool(tool="bandit", reason=_BANDIT_SKIP_REASON)
+            )
 
+    # 2. Sobelow (Elixir only)
+    if elixir_files:
+        sobelow_bin = find_sobelow_binary()
+        if sobelow_bin:
+            logger.info("Running Sobelow on %d Elixir files...", len(elixir_files))
+            all_findings.extend(run_sobelow(src_dir))
+            tools_used.append("sobelow")
+
+    # 3. OpenGrep (Multi-language agent rules)
     if find_opengrep_binary():
         logger.info("Running OpenGrep with custom agent rules...")
-        all_findings.extend(run_opengrep(py_dir, rules_path))
+        all_findings.extend(run_opengrep(src_dir, rules_path))
         tools_used.append("opengrep")
     else:
         skip_reason = _opengrep_skip_reason()
         logger.warning("Skipping OpenGrep pattern scan. %s", skip_reason)
         tools_skipped.append(SkippedTool(tool="opengrep", reason=skip_reason))
 
+    # 4. detect-secrets (All source files)
     if _module_available("detect_secrets"):
-        logger.info("Running detect-secrets...")
-        all_findings.extend(run_detect_secrets(py_dir))
+        logger.info("Running detect-secrets on %d files...", len(source_files))
+        all_findings.extend(run_detect_secrets(src_dir))
         tools_used.append("detect-secrets")
     else:
-        logger.warning("Skipping detect-secrets scan. %s", _DETECT_SECRETS_SKIP_REASON)
+        logger.warning(
+            "Skipping detect-secrets scan. %s", _DETECT_SECRETS_SKIP_REASON
+        )
         tools_skipped.append(
             SkippedTool(tool="detect-secrets", reason=_DETECT_SECRETS_SKIP_REASON)
         )
 
-    # Only judged when there are requirements to audit: with no requirements
-    # files pip-audit was never going to run, so its absence costs no coverage
-    # and reporting it as skipped would be noise.
+    # 5. pip-audit (Python dependencies)
     if req_paths:
         pip_audit_available = _module_available("pip_audit")
         if pip_audit_available:
-            logger.info("Running pip-audit on %d requirements files...", len(req_paths))
+            logger.info(
+                "Running pip-audit on %d requirements files...", len(req_paths)
+            )
         else:
-            # No warning here: `run_pip_audit` still runs (for the fallback)
-            # and logs the skip itself.
             tools_skipped.append(
                 SkippedTool(tool="pip-audit", reason=_PIP_AUDIT_SKIP_REASON)
             )
@@ -669,9 +836,15 @@ def run_static_scan(
         for f in pip_findings:
             f.filepath = f.filepath.replace(req_dir, "").lstrip("/\\")
         all_findings.extend(pip_findings)
-        # `run_pip_audit` degrades to the OSV.dev API rather than returning
-        # nothing, so name the source that actually produced the CVEs.
         tools_used.append("pip-audit" if pip_audit_available else "osv")
+
+    # 6. mix-audit (Elixir dependencies via OSV Hex API)
+    if mix_paths:
+        hex_findings = run_mix_audit(mix_paths)
+        for f in hex_findings:
+            f.filepath = f.filepath.replace(req_dir, "").lstrip("/\\")
+        all_findings.extend(hex_findings)
+        tools_used.append("hex-audit")
 
     logger.info("Total static findings: %d", len(all_findings))
     return StaticScanResult(
@@ -679,3 +852,4 @@ def run_static_scan(
         tools_used=tools_used,
         tools_skipped=tools_skipped,
     )
+

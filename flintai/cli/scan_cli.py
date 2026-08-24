@@ -74,8 +74,18 @@ def print_report(report: ScanReport) -> None:
 
     meta = report.scan_metadata or {}
     py_files = meta.get("python_files", 0)
+    elx_files = meta.get("elixir_files", 0)
     total_files = meta.get("total_files_scanned", 0)
-    grid.add_row("Files", f"{py_files} Python, {total_files} total scanned")
+
+    if elx_files > 0 and py_files > 0:
+        file_desc = f"{py_files} Python, {elx_files} Elixir, {total_files} total scanned"
+    elif elx_files > 0:
+        file_desc = f"{elx_files} Elixir, {total_files} total scanned"
+    else:
+        file_desc = f"{py_files} Python, {total_files} total scanned"
+
+    grid.add_row("Files", file_desc)
+
 
     total = len(report.findings)
     pre_triage = (
@@ -264,8 +274,11 @@ def handle_scan(args: argparse.Namespace) -> str:
         "Starting agent scan on %s files with model '%s'", len(files), model or "none"
     )
 
-    python_files: list[RepoFile] = []
+    source_files: list[RepoFile] = []
     requirements_files: list[RepoFile] = []
+    python_count = 0
+    elixir_count = 0
+
     for rf in files:
         with open(rf.path, encoding="utf-8", errors="replace") as fh:
             content = fh.read()
@@ -273,11 +286,16 @@ def handle_scan(args: argparse.Namespace) -> str:
         if rf.type == FileType.REQUIREMENTS:
             requirements_files.append(repo_file)
         elif rf.type == FileType.PYTHON:
-            python_files.append(repo_file)
+            source_files.append(repo_file)
+            python_count += 1
+        elif rf.type == FileType.ELIXIR:
+            source_files.append(repo_file)
+            elixir_count += 1
 
     logger.info(
-        "Files categorized: %d Python, %d requirements",
-        len(python_files),
+        "Files categorized: %d Python, %d Elixir, %d requirements/manifests",
+        python_count,
+        elixir_count,
         len(requirements_files),
     )
 
@@ -293,7 +311,7 @@ def handle_scan(args: argparse.Namespace) -> str:
     # Let a scan failure propagate to main's unified exception handler so it is
     # recorded to telemetry; previously it was swallowed into sys.exit(1).
     report = run_core(
-        python_files,
+        source_files,
         requirements_files,
         skip_triage=False,
         agentic=True,
@@ -302,6 +320,8 @@ def handle_scan(args: argparse.Namespace) -> str:
         primary_framework=primary,
         frameworks_detected=frameworks,
         total_files_scanned=len(files),
+        python_files_count=python_count,
+        elixir_files_count=elixir_count,
     )
 
     print_report(report)
@@ -312,3 +332,4 @@ def handle_scan(args: argparse.Namespace) -> str:
     )
     write_output(report, output_path, fmt=fmt)
     return output_path
+

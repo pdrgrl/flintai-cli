@@ -353,12 +353,47 @@ class ToolDispatcher:
 
     def _resolve_imports(self, file_path: str) -> str:
         """
-        Parse a Python file's import statements and identify which imported
+        Parse a Python or Elixir file's import statements and identify which imported
         modules are also present in the repository.
         """
         rf = self._files.get(file_path)
         if rf is None:
             return f"ERROR: File not found: '{file_path}'"
+
+        if file_path.endswith((".ex", ".exs")):
+            # Elixir module and alias resolution
+            elixir_imported = []
+            alias_pattern = re.compile(
+                r"\b(?:alias|import|use|require)\s+([A-Z][a-zA-Z0-9_]*(?:\.[A-Z][a-zA-Z0-9_]*)*)"
+            )
+            for line in rf.content.splitlines():
+                line_clean = line.split("#")[0].strip()
+                match = alias_pattern.search(line_clean)
+                if match:
+                    full_module = match.group(1)
+                    elixir_imported.append(full_module)
+
+            results = []
+            for mod in sorted(set(elixir_imported)):
+                mod_last = mod.split(".")[-1].lower().replace("_", "")
+                candidates = [
+                    p
+                    for p in self._files
+                    if os.path.basename(p)
+                    .replace(".ex", "")
+                    .replace(".exs", "")
+                    .replace("_", "")
+                    .lower()
+                    == mod_last
+                ]
+                if candidates:
+                    results.append(f"  {mod}  →  {candidates[0]}  [IN REPO — can fetch]")
+                else:
+                    results.append(f"  {mod}  →  (external package or not fetched)")
+
+            if not results:
+                return f"No imports/aliases found in {file_path}"
+            return f"Imports/Aliases in {file_path}:\n" + "\n".join(results)
 
         try:
             tree = ast.parse(rf.content)
@@ -414,6 +449,7 @@ class ToolDispatcher:
             return f"No non-stdlib imports found in {file_path}"
 
         return f"Imports in {file_path}:\n" + "\n".join(results)
+
 
     def _search_codebase(
         self,

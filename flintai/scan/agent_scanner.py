@@ -523,7 +523,7 @@ def _read_inventory_files(
 
 
 def run_core(
-    python_files: list[RepoFile],
+    source_files: list[RepoFile],
     requirements_files: list[RepoFile],
     *,
     agent_profiles: list[AgentProfile] | None = None,
@@ -534,6 +534,8 @@ def run_core(
     primary_framework: str = "unknown",
     frameworks_detected: list[str] | None = None,
     total_files_scanned: int = 0,
+    python_files_count: int | None = None,
+    elixir_files_count: int | None = None,
 ) -> ScanReport:
     """Core scanning pipeline (layers 2-4). Takes already-resolved files.
 
@@ -543,12 +545,23 @@ def run_core(
     timestamp = datetime.now(UTC).isoformat()
     agents = agent_profiles or []
 
+    py_count = (
+        python_files_count
+        if python_files_count is not None
+        else sum(1 for f in source_files if f.path.endswith(".py"))
+    )
+    elx_count = (
+        elixir_files_count
+        if elixir_files_count is not None
+        else sum(1 for f in source_files if f.path.endswith((".ex", ".exs")))
+    )
+
     # ── LAYER 2: Static Scan ─────────────────────────────────────────────────
     logger.info("Layer 2: Static Scan")
     all_findings: list[Finding] = []
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        static_result = run_static_scan(python_files, requirements_files, tmp_dir)
+        static_result = run_static_scan(source_files, requirements_files, tmp_dir)
 
     static_raw = static_result.findings
     static_findings = convert_static_findings(static_raw)
@@ -578,9 +591,10 @@ def run_core(
                 logger.info("Mode: AGENTIC v2 (Google ADK reasoning loop)")
                 ai_raw, ai_summary, agentic_trace = run_agentic_reasoning(
                     agents,
-                    python_files,
+                    source_files,
                     static_findings=static_raw,
                 )
+
                 logger.info(
                     "ADK session: %s | exit: %s | model: %s",
                     agentic_trace.get("session_id", "?"),
@@ -769,7 +783,9 @@ def run_core(
         agent_profiles=agent_profile_dicts,
         scan_metadata={
             "total_files_scanned": total_files_scanned,
-            "python_files": len(python_files),
+            "python_files": py_count,
+            "elixir_files": elx_count,
+            "source_files": len(source_files),
             "requirements_files": len(requirements_files),
             "frameworks_detected": frameworks_detected or [],
             "static_findings_count": len(static_findings),

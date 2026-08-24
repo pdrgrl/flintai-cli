@@ -332,6 +332,49 @@ class TestFindRelevantFiles(unittest.TestCase):
             frameworks = {r.framework for r in result}
             self.assertEqual(frameworks, {"OpenAI", "Anthropic"})
 
+    def test_single_elixir_langchain_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ex_path = os.path.join(tmpdir, "agent.ex")
+            with open(ex_path, "w") as f:
+                f.write("defmodule Agent do\n  alias LangChain.Chains.LLMChain\nend\n")
+            result = find_relevant_files(ex_path)
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0].path, ex_path)
+            self.assertEqual(result[0].type, FileType.ELIXIR)
+            self.assertEqual(result[0].framework, "LangChain (Elixir)")
+
+    def test_single_elixir_specialist_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ex_path = os.path.join(tmpdir, "specialist.ex")
+            with open(ex_path, "w") as f:
+                f.write("defmodule ItemSpecialist do\n  @behaviour Complear.Agents.Specialist\nend\n")
+            result = find_relevant_files(ex_path)
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0].path, ex_path)
+            self.assertEqual(result[0].type, FileType.ELIXIR)
+            self.assertEqual(result[0].framework, "Elixir Agent Specialist")
+
+    def test_elixir_mix_exs_manifest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mix_path = os.path.join(tmpdir, "mix.exs")
+            with open(mix_path, "w") as f:
+                f.write("defmodule MyApp.MixProject do\n  use Mix.Project\nend\n")
+            result = find_relevant_files(mix_path)
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0].path, mix_path)
+            self.assertEqual(result[0].type, FileType.REQUIREMENTS)
+
+    def test_elixir_mix_lock_manifest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lock_path = os.path.join(tmpdir, "mix.lock")
+            with open(lock_path, "w") as f:
+                f.write('%{"langchain": {:hex, :langchain, "0.9.0"}}\n')
+            result = find_relevant_files(lock_path)
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0].path, lock_path)
+            self.assertEqual(result[0].type, FileType.REQUIREMENTS)
+
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -69,16 +69,29 @@ _SEV_RANK = {s: i for i, s in enumerate(_SEV_LEVELS)}
 
 # Patterns that prove a flaw directly — if matched, block downgrades.
 _ANCHOR_PATTERNS = [
+    # Python
     re.compile(r"\beval\s*\("),
     re.compile(r"\bexec\s*\("),
     re.compile(r"shell\s*=\s*True"),
     re.compile(r"pickle\.load"),
     re.compile(r"yaml\.load\s*\("),
+    # Elixir
+    re.compile(r"Code\.(?:eval_string|eval_quoted|eval_file)"),
+    re.compile(r"System\.(?:cmd|shell)"),
+    re.compile(r":os\.cmd"),
+    re.compile(r":erlang\.binary_to_term"),
+    re.compile(r"String\.to_atom"),
+    # General / Multi-language Secrets
     re.compile(
-        r"(?:password|api_key|secret|token)\s*=\s*['\"][^'\"]{8,}['\"]",
+        r"(?:password|api_key|secret|token)\s*[:=]\s*['\"][^'\"]{8,}['\"]",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:@api_key|@secret|@token)\s*['\"][^'\"]{8,}['\"]",
         re.IGNORECASE,
     ),
 ]
+
 
 # Path to the prompt file
 _PROMPT_PATH = os.path.join(os.path.dirname(__file__), "config", "triage_prompt.txt")

@@ -180,6 +180,78 @@ taxonomy subcategory that fits, not only these):
 - ASI10 rogue agents: Missing behavioral guardrails, unchecked delegation to
   sub-agents, no monitoring/kill switch.
 
+Use the following concrete patterns as prompts for investigation, applying
+judgment and confirming data flow rather than matching tokens alone:
+
+PATTERN 1: Variable or module attribute assigned a string literal where the name
+contains KEY, TOKEN, SECRET, PASSWORD, CREDENTIAL, or DATABASE_URL.
+  Match: SOME_API_KEY = "any-string-here"
+  Match: @api_key "any-string-here" or api_key: "any-string-here"
+  Report: category=asi03_identity_privilege_abuse,
+          subcategory=hardcoded_credentials
+
+PATTERN 2: An f-string, string concatenation, or string interpolation that puts a variable
+into text sent to an LLM (in instruction=, prompt=, system=, or Message.new_user!("...#{{var}}...")).
+  Match: instruction=f"...some variable..."
+  Match: prompt = "..." + user_input
+  Match: Message.new_user!("...#{{user_input}}...")
+  Report: category=asi01_agent_goal_hijack,
+          subcategory=direct_prompt_injection
+
+PATTERN 3: A call to eval(), exec(), compile(), or Elixir Code.eval_string/quoted on any variable.
+  Match: eval(anything)
+  Match: exec(anything)
+  Match: Code.eval_string(anything) or Code.eval_quoted(anything)
+  Report: category=asi05_unexpected_code_execution,
+          subcategory=arbitrary_code_execution
+
+PATTERN 4: subprocess.run/call/Popen with shell=True, os.system(), System.cmd(), System.shell(), or :os.cmd().
+  Match: subprocess.run(cmd, shell=True)
+  Match: os.system(cmd)
+  Match: System.cmd(cmd, args) or System.shell(cmd) or :os.cmd(cmd)
+  Report: category=asi05_unexpected_code_execution,
+          subcategory=arbitrary_code_execution
+
+PATTERN 5: pickle.loads(), yaml.load() without SafeLoader, or Elixir :erlang.binary_to_term() without [:safe].
+  Match: pickle.loads(data)
+  Match: yaml.load(data)
+  Match: :erlang.binary_to_term(data)
+  Report: category=asi05_unexpected_code_execution,
+          subcategory=unsafe_deserialization
+
+PATTERN 6: A function that opens a file path parameter without
+checking that the path is within a safe directory (no Path.resolve,
+no startswith, no allowlist).
+  Match: open(path, "r") or File.read!(path) with no path validation above it
+  Report: category=asi02_tool_misuse, subcategory=path_traversal
+
+PATTERN 7: An agent created without max_iterations, max_turns, or recursion_limit.
+Dynamic atom creation (String.to_atom) on untrusted LLM input.
+  Match: LoopAgent(...) without max_iterations=
+  Match: String.to_atom(llm_output)
+  Match: while resp.stop_reason == "tool_use": (no counter)
+  Report: category=asi08_cascading_failures,
+          subcategory=unbounded_agent_loop
+
+PATTERN 8: An agent with unchecked delegation, sub_agents without callbacks, or wildcard MCP tools.
+  Match: Agent(..., sub_agents=[...]) without callbacks
+  Match: mcp_tools: [:*] or mcp_tools: ["*"]
+  Report: category=asi10_rogue_agents,
+          subcategory=unchecked_agent_delegation
+
+PATTERN 9: Destructive operations (file write, delete, DB update,
+shell command) with no human approval check before them.
+  Match: open(path, "w") or File.rm!(path) with no approval gate
+  Match: os.remove(path) with no confirmation
+  Report: category=asi09_human_agent_trust_exploitation,
+          subcategory=missing_action_confirmation
+
+PATTERN 10: Global mutable state shared across function calls or unisolated ETS tables with no session isolation.
+  Match: GLOBAL_LIST = [] at module level, modified in functions
+  Match: :ets.insert(table, data) without session-keyed namespace
+  Report: category=asi06_memory_context_poisoning,
+          subcategory=cross_session_contamination
+
 REPORTING RULES:
 - Call compute_cvss(vuln_type=<subcategory>) before EVERY report_finding().
 - `subcategory` MUST be one of the taxonomy keys above; `category` is its ASI
@@ -218,6 +290,21 @@ EXAMPLE:
     evidence_file="agent.py", evidence_line=180,
     agent_name="bookstore_agent")
 
+  Code at line 33 of agent.ex: @api_key "**********************"
+  Step 1: compute_cvss(vuln_type="hardcoded_credentials")
+  Step 2: report_finding(
+    category="asi03_identity_privilege_abuse",
+    subcategory="hardcoded_credentials",
+    title="Hardcoded API Key",
+    description="API key hardcoded at line 33.",
+    impact="Credential exposed to anyone with repo access.",
+    remediation="Use System.get_env() or os.environ.get().",
+    affected_component="agent.ex",
+    evidence='@api_key "**********************"',
+    confidence="high", hallucination_flag=false,
+    evidence_file="agent.ex", evidence_line=33,
+    agent_name="research_agent")
+
 LIMITS: {MAX_ITERATIONS} rounds, {MAX_FILES_FETCHED} files, {MAX_FETCH_TOKENS} tokens.
 """
 
@@ -231,13 +318,14 @@ def _build_initial_context(
     static_count: int,
 ) -> str:
     parts = ["=== INVESTIGATION BRIEF ===\n"]
-    parts.append(f"Repository contains {len(python_files)} Python file(s).")
+    parts.append(f"Repository contains {len(python_files)} source file(s).")
     parts.append(
         f"Pre-computed static scan found {static_count} findings "
         f"(available via get_static_findings_for_file).\n"
     )
 
     parts.append(f"=== AGENT PROFILES SUMMARY ({len(agents)} agent(s)) ===")
+
     sorted_agents = sorted(agents, key=lambda a: a.agent_id)
     for a in sorted_agents[:15]:
         graph_info = (

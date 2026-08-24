@@ -531,3 +531,78 @@ rules:
     metadata:
       category: asi10_rogue_agents
       subcategory: missing_agent_monitoring
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Elixir Framework Rules (LangChain, Instructor, MCP, OTP)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - id: elixir-prompt-interpolation
+    patterns:
+      - pattern-regex: 'Message\.(new_user!|new_system!|new_message!)\(["\x27].*#\{.*\}.*["\x27]\)'
+    message: "User input directly interpolated into LLM prompt via string interpolation — prompt injection risk"
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      category: asi01_agent_goal_hijack
+      subcategory: direct_prompt_injection
+
+  - id: elixir-mcp-unbounded-tools
+    patterns:
+      - pattern-regex: 'mcp_tools:\s*\[\s*(?::\*|"\*")\s*\]'
+    message: "Wildcard tool permissions granted to agent — excessive agency risk"
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      category: asi02_tool_misuse
+      subcategory: excessive_tool_permissions
+
+  - id: elixir-code-eval
+    patterns:
+      - pattern-regex: 'Code\.(eval_string|eval_quoted|eval_file)\('
+    message: "Code.eval_* called — arbitrary code execution risk if input originates from LLM or user"
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      category: asi05_unexpected_code_execution
+      subcategory: arbitrary_code_execution
+
+  - id: elixir-system-cmd
+    patterns:
+      - pattern-regex: '(?:System\.(?:cmd|shell)|:os\.cmd)\('
+    message: "System command execution in agent tool context — command injection risk"
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      category: asi05_unexpected_code_execution
+      subcategory: arbitrary_code_execution
+
+  - id: elixir-atom-exhaustion
+    patterns:
+      - pattern-regex: 'String\.to_atom\('
+    message: "String.to_atom called on dynamic input — atom exhaustion / memory leak vulnerability"
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: asi06_memory_context_poisoning
+      subcategory: memory_poisoning
+
+  - id: elixir-unsafe-binary-to-term
+    patterns:
+      - pattern-regex: ':erlang\.binary_to_term\([^,)]+\)'
+    message: "binary_to_term called without [:safe] option — arbitrary code execution risk"
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      category: asi05_unexpected_code_execution
+      subcategory: unsafe_deserialization
+
+  - id: elixir-hardcoded-secret
+    patterns:
+      - pattern-regex: '(?:@api_key|@secret|@token|api_key:|secret:|token:)\s*["\x27][A-Za-z0-9_\-]{20,}["\x27]'
+    message: "Potential hardcoded API key or secret in Elixir module"
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      category: asi03_identity_privilege_abuse
+      subcategory: hardcoded_credentials
+

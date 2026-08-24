@@ -363,6 +363,35 @@ def map_opengrep_to_taxonomy(rule_id: str) -> tuple[str, str]:
             "asi08_cascading_failures",
             "unbounded_agent_loop",
         ),
+        # Elixir (LangChain, Instructor, MCP, OTP)
+        "elixir-prompt-interpolation": (
+            "asi01_agent_goal_hijack",
+            "direct_prompt_injection",
+        ),
+        "elixir-mcp-unbounded-tools": (
+            "asi02_tool_misuse",
+            "excessive_tool_permissions",
+        ),
+        "elixir-code-eval": (
+            "asi05_unexpected_code_execution",
+            "arbitrary_code_execution",
+        ),
+        "elixir-system-cmd": (
+            "asi05_unexpected_code_execution",
+            "arbitrary_code_execution",
+        ),
+        "elixir-atom-exhaustion": (
+            "asi06_memory_context_poisoning",
+            "memory_poisoning",
+        ),
+        "elixir-unsafe-binary-to-term": (
+            "asi05_unexpected_code_execution",
+            "unsafe_deserialization",
+        ),
+        "elixir-hardcoded-secret": (
+            "asi03_identity_privilege_abuse",
+            "hardcoded_credentials",
+        ),
     }
 
     # Strip path prefix from rule ID (opengrep adds the rules file path)
@@ -370,3 +399,27 @@ def map_opengrep_to_taxonomy(rule_id: str) -> tuple[str, str]:
     return rule_map.get(
         short_id, rule_map.get(rule_id, ("asi02_tool_misuse", "unvalidated_tool_input"))
     )
+
+
+# ── Sobelow rule → (ASI category key, subcategory) ───────────────────────────
+
+
+def map_sobelow_to_taxonomy(sobelow_type: str) -> tuple[str, str]:
+    """Map a Sobelow finding type to the ASI-aligned taxonomy category/subcategory."""
+    sobelow_type_lower = sobelow_type.lower()
+
+    if "rce" in sobelow_type_lower or "code" in sobelow_type_lower or "system" in sobelow_type_lower or "ci.os" in sobelow_type_lower:
+        return ("asi05_unexpected_code_execution", "arbitrary_code_execution")
+    if "bintoterm" in sobelow_type_lower or "deserializ" in sobelow_type_lower:
+        return ("asi05_unexpected_code_execution", "unsafe_deserialization")
+    if "traversal" in sobelow_type_lower or "file" in sobelow_type_lower:
+        return ("asi02_tool_misuse", "path_traversal")
+    if "sql" in sobelow_type_lower:
+        return ("asi02_tool_misuse", "unvalidated_tool_input")
+    if "secret" in sobelow_type_lower or "key" in sobelow_type_lower or "password" in sobelow_type_lower:
+        return ("asi03_identity_privilege_abuse", "hardcoded_credentials")
+    if "https" in sobelow_type_lower or "csrf" in sobelow_type_lower or "cors" in sobelow_type_lower:
+        return ("asi03_identity_privilege_abuse", "missing_auth_on_endpoint")
+
+    return ("asi02_tool_misuse", "unvalidated_tool_input")
+
