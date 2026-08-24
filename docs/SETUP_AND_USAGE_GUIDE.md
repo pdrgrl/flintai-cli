@@ -13,7 +13,7 @@
 ### What This Means for Business & Commercial Use:
 | Permission / Use Case | Allowed? | Details |
 | :--- | :---: | :--- |
-| **Internal Company Audits** | ✅ **YES** | Scanning your own applications (e.g., Complear) in development or CI/CD pipelines is 100% permitted and royalty-free. |
+| **Internal Company Audits** | ✅ **YES** | Scanning your own applications in development or CI/CD pipelines is 100% permitted and royalty-free. |
 | **Modifications & Extensions** | ✅ **YES** | You may modify, add language parsers (e.g. Elixir/BEAM), and customize rules internally. |
 | **Reselling as a Product / Service** | ❌ **NO** | The Commons Clause strictly prohibits selling the software or offering a paid SaaS/consulting service whose primary value derives from Flint AI. |
 | **Sublicensing & Redistribution** | ⚠️ **Limited** | Any derivative must carry the Apache 2.0 + Commons Clause notice. |
@@ -101,10 +101,10 @@ Flint AI supports any OpenAI-compatible gateway (e.g., LiteLLM proxy, Cloudflare
 
 ```bash
 # 1. Custom Gateway URL
-export OPENAI_BASE_URL="https://llm.complear.com/v1"
+export OPENAI_BASE_URL="https://api.your-gateway.com/v1"
 
-# 2. API Key (e.g. from token file)
-export OPENAI_API_KEY="$(head -n 1 ~/dev_cf_key.txt)"
+# 2. API Key (e.g. from token file or env)
+export OPENAI_API_KEY="<your-api-key>"
 
 # 3. Model Selection
 export SCANNER_MODEL="openai/cf/qwen2.5-coder-32b"
@@ -144,9 +144,9 @@ flintai scan /path/to/project -o report.json
 
 ---
 
-## 7. Complear Scan Audit Summary
+## 7. Real-World Elixir Project Audit Case Study
 
-When audited against `/home/pedro/complear` (540 files, 383 Elixir files), the scan identified **4 verified Critical vulnerabilities**:
+When audited against a production Elixir/Phoenix codebase (540 total files, 383 Elixir files), the scan triaged 17 static alerts down to **4 actionable Critical vulnerabilities**:
 
 | Finding | File Location | Vulnerability Category | CVSS | Real-World Risk |
 | :--- | :--- | :--- | :---: | :--- |
