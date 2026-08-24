@@ -157,11 +157,9 @@ def parse_model_string(model_string: str) -> tuple[str, str | None]:
             )
             return provider, rest.strip()
 
-    if ms.lower() in ("google", "gemini"):
-        return PROVIDER_GOOGLE, None
-
-    if ms.lower() == "litellm":
-        return PROVIDER_LITELLM, None
+    if ms.lower() in _KNOWN_PROVIDERS or ms.lower() in _PROVIDER_ALIASES:
+        p = _PROVIDER_ALIASES.get(ms.lower(), ms.lower())
+        return p, None
 
     if "gemini" in ms.lower():
         return PROVIDER_GOOGLE, ms
@@ -170,6 +168,7 @@ def parse_model_string(model_string: str) -> tuple[str, str | None]:
         return "openai", ms
 
     return PROVIDER_GOOGLE, ms
+
 
 
 def _resolve_model_string(model_string: str | None = None) -> tuple[str, str]:
