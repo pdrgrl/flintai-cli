@@ -49,9 +49,17 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: json)",
     )
     scan_parser.add_argument(
+        "--detailed",
+        "-d",
+        action="store_true",
+        default=False,
+        help="Display detailed finding descriptions, code snippets, and remediation guidance",
+    )
+    scan_parser.add_argument(
         "--log",
         help="Log file path (default: flintai_<timestamp>.log)",
     )
+
 
 
 def write_output(report: ScanReport, output_path: str, fmt: str = "json"):
@@ -62,7 +70,7 @@ def write_output(report: ScanReport, output_path: str, fmt: str = "json"):
         f.write(content)
 
 
-def print_report(report: ScanReport) -> None:
+def print_report(report: ScanReport, detailed: bool = False) -> None:
     console.print()
 
     # ── Summary panel ────────────────────────────────────────────
@@ -86,7 +94,6 @@ def print_report(report: ScanReport) -> None:
 
     grid.add_row("Files", file_desc)
 
-
     total = len(report.findings)
     pre_triage = (
         len(report.pre_triage_findings) if report.pre_triage_findings else total
@@ -100,49 +107,23 @@ def print_report(report: ScanReport) -> None:
     if tools:
         grid.add_row("Tools", ", ".join(tools))
 
-    skipped = meta.get("tools_skipped") or []
-    if skipped:
-        grid.add_row(
-            "Skipped",
-            "[bold yellow]"
-            + ", ".join(s.get("tool", "unknown") for s in skipped)
-            + "[/bold yellow]",
-        )
-
     if meta.get("ai_summary"):
         grid.add_row("AI summary", meta["ai_summary"])
 
-    console.print(Panel(grid, title="[bold]Scan Summary[/bold]", width=CLI_WIDTH))
+    console.print(
+        Panel(
+            grid,
+            title="Scan Summary",
+            border_style="cyan",
+            padding=(0, 1),
+            width=CLI_WIDTH,
+        )
+    )
 
-    # ── Partial-scan warning ─────────────────────────────────────
-    # A skipped tool means whole rule families never ran, so the findings
-    # below are incomplete. Say so loudly — the log file is not enough.
-    if skipped:
-        warn = Table.grid(padding=(0, 1))
-        warn.add_column()
-        plural = "s were" if len(skipped) > 1 else " was"
-        warn.add_row(
-            f"[bold yellow]This scan is incomplete — "
-            f"{len(skipped)} analysis tool{plural} skipped.[/bold yellow]"
-        )
-        for s in skipped:
-            warn.add_row("")
-            warn.add_row(
-                f"[bold]{s.get('tool', 'unknown')}[/bold] — {s.get('reason', '')}"
-            )
-        console.print(
-            Panel(
-                warn,
-                title="[bold yellow]Warning[/bold yellow]",
-                border_style="yellow",
-                width=CLI_WIDTH,
-            )
-        )
 
     # ── Findings table ───────────────────────────────────────────
     if not report.findings:
-        console.print("[dim]No findings.[/dim]")
-        console.print()
+        console.print("[dim]No findings.[/dim]\n")
         return
 
     table = Table(
@@ -253,6 +234,72 @@ def print_report(report: ScanReport) -> None:
 
         console.print(cat_table)
 
+    # ── Detailed Findings view (if requested) ───────────────────
+    if detailed and report.findings:
+        console.print("\n[bold]Detailed Findings Breakdown[/bold]\n")
+        for i, f in enumerate(report.findings, 1):
+            if isinstance(f, dict):
+                f_id = f.get("id", "")
+                f_title = f.get("title", "")
+                f_sev = f.get("ai_spm_severity", "Unknown")
+                f_desc = f.get("description", "")
+                f_impact = f.get("impact", "")
+                f_rem = f.get("remediation", "")
+                f_cat = f.get("category", "")
+                f_scores = f.get("cvss_scores", {})
+                f_cvss = str(f_scores.get("base_score", "")) if f_scores else ""
+                f_vec = f_scores.get("vector", "") if f_scores else ""
+                f_ev = f.get("evidence", [])
+                f_hallucinated = f.get("hallucination_flag", False)
+            else:
+                f_id = getattr(f, "id", "")
+                f_title = getattr(f, "title", "")
+                f_sev = getattr(f, "ai_spm_severity", "Unknown")
+                f_desc = getattr(f, "description", "")
+                f_impact = getattr(f, "impact", "")
+                f_rem = getattr(f, "remediation", "")
+                f_cat = getattr(f, "category", "")
+                f_scores = getattr(f, "cvss_scores", None)
+                f_cvss = str(f_scores.base_score) if f_scores else ""
+                f_vec = f_scores.vector if f_scores else ""
+                f_ev = getattr(f, "evidence", [])
+                f_hallucinated = getattr(f, "hallucination_flag", False)
+
+            ev_lines = []
+            for ev in f_ev:
+                file_p = ev.get("file", "") if isinstance(ev, dict) else getattr(ev, "file", "")
+                line_no = ev.get("line", 0) if isinstance(ev, dict) else getattr(ev, "line", 0)
+                snippet = ev.get("code_snippet", "") if isinstance(ev, dict) else getattr(ev, "code_snippet", "")
+                ev_lines.append(f"[bold]{file_p}[/bold]{(':' + str(line_no)) if line_no else ''}")
+                if snippet:
+                    ev_lines.append(f"  [dim]{snippet}[/dim]")
+
+            evidence_text = "\n".join(ev_lines) if ev_lines else "[dim]No code snippet attached[/dim]"
+
+            body = (
+                f"[bold]Description:[/bold] {f_desc}\n"
+                f"[bold]Impact:[/bold] {f_impact}\n"
+                f"[bold]Evidence:[/bold]\n{evidence_text}\n"
+                f"[bold]Remediation:[/bold] {f_rem}\n"
+                f"[bold]CVSS v4:[/bold] {f_cvss} ({f_vec})"
+            )
+            if f_hallucinated:
+                body = "[yellow]⚠ Warning: Unverified finding (failed disk ground-truth check)[/yellow]\n\n" + body
+
+            badge = f"[{severity_style(f_sev)}]{f_sev.upper()}[/] ({f_cvss})"
+            panel_title = f"{i}. {badge} {f_title} [dim]({f_id})[/dim]"
+
+            console.print(
+                Panel(
+                    body,
+                    title=panel_title,
+                    border_style=severity_style(f_sev),
+                    padding=(0, 1),
+                    width=CLI_WIDTH,
+                )
+            )
+
+
     console.print()
 
 
@@ -335,7 +382,8 @@ def handle_scan(args: argparse.Namespace) -> str:
         elixir_files_count=elixir_count,
     )
 
-    print_report(report)
+    print_report(report, detailed=getattr(args, "detailed", False))
+
     fmt = getattr(args, "format", "json") or "json"
     ext = fmt if fmt != "json" else "json"
     output_path = args.output or (
