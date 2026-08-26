@@ -17,30 +17,27 @@ import sys
 import time
 import traceback
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, find_dotenv
 from rich.panel import Panel
 from rich.text import Text
 
 from flintai.cli import eval_cli, init_cli, scan_cli
 from flintai.cli.console import CLI_WIDTH, console
-from flintai.cli.telemetry import (
-    command_span,
-    emit_event,
-    init_telemetry,
-    record_error,
-    record_interruption,
-)
 from flintai.cli.utils import (
     ensure_client_id,
     ensure_telemetry_consent,
     get_client_id,
+    get_flintai_dir,
     get_telemetry_consent,
     is_ci,
 )
 from flintai.cli.version import VERSION
 from flintai.eval.common.log import setup_file_logging, silence_noisy_loggers
-from flintai.eval.db.json.repository_json import JsonRepository
+
+if TYPE_CHECKING:
+    from flintai.eval.db.json.repository_json import JsonRepository
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +156,8 @@ def _dispatch_scan(args: argparse.Namespace) -> str | None:
 
 def _dispatch_eval(args: argparse.Namespace) -> str | None:
     """Run the requested command. Returns output file path if any."""
+    from flintai.eval.db.json.repository_json import JsonRepository
+
     if args.command != "eval":
         console.print(f"[red]Unknown command: {args.command}[/red]")
         sys.exit(1)
@@ -219,10 +218,49 @@ def _print_error(error: BaseException) -> None:
     console.print(panel)
 
 
-def main(argv: list[str] | None = None) -> None:
-    silence_noisy_loggers()
-    load_dotenv()
+def _load_environment(override: bool = False) -> None:
+    """Load env vars with precedence: real environment > local ``.env`` > global.
 
+    Both dotfiles are read into a single mapping — a project-local ``.env`` from
+    the current working directory layered over the global ``~/.flintai/.env`` so
+    the local file wins for any shared key — and then applied to ``os.environ``
+    in one pass. Applying the merged mapping ourselves (rather than two
+    ``load_dotenv`` calls) is what lets a value already in ``os.environ`` — set
+    from the shell, CI, or the command line (e.g. ``FOO=bar flintai ...``) —
+    stay authoritative.
+
+    The global file is resolved via ``get_flintai_dir()`` rather than
+    ``get_flintai_env_path()`` so that a ``cwd/.env`` cannot mask the global
+    file — its global-only keys (e.g. a persisted client id) must still load.
+
+    ``override`` controls whether the merged dotfile values overwrite entries
+    already in ``os.environ``. It stays ``False`` on normal startup so real
+    shell/CI/command-line variables win over the dotfiles. It must be ``True``
+    when reloading right after ``init`` (re)writes an env file — otherwise stale
+    values loaded earlier this run would shadow the freshly written ones. Since
+    ``init`` may write to *either* the local or the global file, the reload has
+    to be able to pick up updates from both, which is why the flag applies to
+    the merged result rather than to one file.
+    """
+    merged: dict[str, str | None] = {}
+
+    global_env = get_flintai_dir() / ".env"
+    if global_env.exists():
+        merged.update(dotenv_values(global_env))
+
+    local_dotenv = find_dotenv(usecwd=True)
+    if local_dotenv:
+        # Local layered last so it wins over the global file for shared keys.
+        merged.update(dotenv_values(local_dotenv))
+
+    for key, value in merged.items():
+        if value is None:
+            continue
+        if override or key not in os.environ:
+            os.environ[key] = value
+
+
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="flintai",
         description="Flint AI CLI — AI Agent Evaluation Framework",
@@ -239,7 +277,19 @@ def main(argv: list[str] | None = None) -> None:
     init_cli.register(subparsers)
     scan_cli.register(subparsers)
 
+    # Parse first: --version / --help / arg errors exit here, before we pay for
+    # the heavy imports below (telemetry SDK, eval framework logging).
     args = parser.parse_args(argv)
+
+    from flintai.cli.telemetry import (
+        command_span,
+        emit_event,
+        init_telemetry,
+        record_error,
+        record_interruption,
+    )
+
+    silence_noisy_loggers()
 
     ci = is_ci()
     flintai_env = init_cli.get_flintai_env_path()
@@ -257,14 +307,16 @@ def main(argv: list[str] | None = None) -> None:
             console.print()
             init_cli.run_init()
 
-    if flintai_env.exists():
-        load_dotenv(flintai_env)
+    _load_environment()
 
     log_path = getattr(args, "log", None) or f"flintai_{_TIMESTAMP}.log"
     setup_file_logging(log_path)
     _print_logo()
 
-    ensure_client_id()
+    # On a first-time `flintai init` the .env doesn't exist yet and init (run
+    # via _dispatch below) is the sole author of the client id.
+    if not (is_first_time and args.command == "init"):
+        ensure_client_id()
     if args.command != "init":
         ensure_telemetry_consent()
 
@@ -275,8 +327,7 @@ def main(argv: list[str] | None = None) -> None:
 
     def _try_init_telemetry_after_init() -> None:
         """Re-check consent after init creates the .env for the first time."""
-        if flintai_env.exists():
-            load_dotenv(flintai_env, override=True)
+        _load_environment(override=True)
         ensure_client_id()
         if get_telemetry_consent():
             client_id = get_client_id()

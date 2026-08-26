@@ -9,15 +9,16 @@ import dataclasses
 import datetime
 import logging
 import os
+from typing import TYPE_CHECKING
 
 from rich.panel import Panel
 from rich.table import Table
 
 from flintai.cli.console import CLI_WIDTH, console, severity_style
 from flintai.cli.file_filter import FileType, RelevantFile, find_relevant_files
-from flintai.scan.agent_scanner import run_core
-from flintai.schema import RepoFile
-from flintai.scan.schema import ScanReport
+
+if TYPE_CHECKING:
+    from flintai.scan.schema import ScanReport
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +236,11 @@ def print_report(report: ScanReport) -> None:
 
 
 def handle_scan(args: argparse.Namespace) -> str:
+    # Imported lazily: pulling in the agent scanner loads the Google ADK stack,
+    # which is expensive and only needed when a scan actually runs.
+    from flintai.scan.agent_scanner import run_core
+    from flintai.schema import RepoFile
+
     path: str = os.path.abspath(os.path.expanduser(args.path))
 
     if not os.path.exists(path):

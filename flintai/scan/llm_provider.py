@@ -60,6 +60,31 @@ DEFAULT_MODEL = "gemini-3.6-flash"
 
 _PROVIDER_ALIASES = {"gemini": "google"}
 
+# Reasoning effort for OpenAI gpt-5 reasoning models. See _openai_reasoning_effort.
+DEFAULT_REASONING_EFFORT = "medium"
+
+
+def _openai_reasoning_effort(name: str) -> str | None:
+    """Return the ``reasoning_effort`` to set for an OpenAI gpt-5 reasoning model.
+
+    The gpt-5 reasoning-model endpoints (e.g. the ``gpt-5.6-*`` proxy) default to
+    reasoning **on** server-side and then reject function tools on
+    ``/v1/chat/completions`` ("... use /v1/responses or set reasoning_effort to
+    'none'"). litellm bridges gpt-5.4+ tool calls to the Responses API — where
+    tools and reasoning coexist — **only when ``reasoning_effort`` is set
+    explicitly** (any value, including ``"none"``); left unset the call stays on
+    chat/completions and fails. So set it here for the gpt-5 reasoning family.
+
+    Returns ``None`` (leave unset) for everything else — non-gpt-5 models, and
+    the ``gpt-5-chat*`` variants which are plain chat models that reject
+    ``reasoning_effort`` outright. ``SCANNER_REASONING_EFFORT`` overrides the
+    level; ``drop_params=True`` drops it for any model that still rejects it.
+    """
+    base = name.split("/")[-1]
+    if "gpt-5" not in name or base.startswith("gpt-5-chat"):
+        return None
+    return os.getenv("SCANNER_REASONING_EFFORT", DEFAULT_REASONING_EFFORT)
+
 
 def parse_model_string(model_string: str) -> tuple[str, str | None]:
     """Parse 'provider:model' -> (provider, model)."""
@@ -100,10 +125,29 @@ def make_model(
     if provider == PROVIDER_GOOGLE:
         return model or DEFAULT_MODEL
 
-    LiteLlm = _import_litellm()
+    # ``drop_params=True`` tells litellm to silently drop params a given model
+    # rejects instead of raising, so a single provider quirk doesn't fail the
+    # scan — e.g. GPT-5 reasoning models only accept ``temperature=1`` and error
+    # on our ``temperature=0.0``. litellm consumes ``drop_params`` itself (it
+    # never reaches the provider request body).
+    #
+    # ``reasoning_effort`` is set (only) for OpenAI gpt-5 reasoning models to
+    # route their tool calls through the Responses API — see
+    # ``_openai_reasoning_effort``. It rides along as an ``completion`` kwarg
+    # (via ADK's ``_additional_args``) so litellm's Responses-API bridge sees it.
     name = model if provider == PROVIDER_LITELLM else f"{provider}/{model}"
-    return LiteLlm(model=name, temperature=temperature)
+    extra_args: dict[str, Any] = {}
+    reasoning_effort = _openai_reasoning_effort(name)
+    if reasoning_effort is not None:
+        extra_args["reasoning_effort"] = reasoning_effort
 
+    LiteLlm = _import_litellm()
+    return LiteLlm(
+       model=name,
+       temperature=temperature,
+       drop_params=True,
+       **extra_args,
+    )
 
 def is_anthropic_model(model: ADKModel) -> bool:
     """Return True if *model* looks like an Anthropic / Claude model."""
