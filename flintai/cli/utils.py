@@ -19,6 +19,14 @@ def get_flintai_dir() -> Path:
 
 
 def get_flintai_env_path() -> Path:
+    """Return the ``.env`` to use, preferring a project-local one.
+
+    If the current working directory contains a ``.env`` it takes precedence;
+    otherwise fall back to the global ``~/.flintai/.env``.
+    """
+    cwd_env = Path.cwd() / ".env"
+    if cwd_env.exists():
+        return cwd_env
     return get_flintai_dir() / ".env"
 
 
@@ -81,7 +89,7 @@ def prompt_telemetry_consent() -> str:
     console.print(
         "[dim]No code, prompts, keys, or personal data is ever collected.[/dim]"
     )
-    console.print("[dim]You can change this at any time in ~/.flintai/.env.[/dim]")
+    console.print("[dim]You can change this at any time in your .env config.[/dim]")
     console.print()
     choice = select(
         "Do you consent to sharing anonymous usage analytics?",

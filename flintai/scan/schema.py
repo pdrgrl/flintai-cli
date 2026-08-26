@@ -202,6 +202,9 @@ class Finding:
     agent_fingerprints: list[str] = field(
         default_factory=list
     )  # Agent fingerprints this finding belongs to
+    tool_fingerprints: list[str] = field(
+        default_factory=list
+    )  # Tools this finding's evidence falls within
     agent_name: str = ""  # Agent name/ID reported by the AI reasoning agent
 
 

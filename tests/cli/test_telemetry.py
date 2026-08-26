@@ -298,7 +298,7 @@ _OUTCOMES = [
 
 def _configure_main_env(monkeypatch, tmp_path, *, consent):
     monkeypatch.setattr(main_mod, "silence_noisy_loggers", lambda: None)
-    monkeypatch.setattr(main_mod, "load_dotenv", lambda *a, **k: None)
+    monkeypatch.setattr(main_mod, "_load_environment", lambda *a, **k: None)
     monkeypatch.setattr(main_mod, "setup_file_logging", lambda *a, **k: None)
     monkeypatch.setattr(main_mod, "_print_logo", lambda: None)
     monkeypatch.setattr(main_mod, "is_ci", lambda: True)
@@ -360,8 +360,9 @@ class TestFailureIsolationEndToEnd:
         _configure_main_env(monkeypatch, tmp_path, consent=True)
         _set_dispatch(monkeypatch, **dispatch_kwargs)
         # Keep the in-memory providers installed by the `inmem` fixture; don't
-        # let main() replace them with real network exporters.
-        monkeypatch.setattr(main_mod, "init_telemetry", lambda *a, **k: None)
+        # let main() replace them with real network exporters. main() imports
+        # init_telemetry from the telemetry module lazily, so patch it there.
+        monkeypatch.setattr(telemetry, "init_telemetry", lambda *a, **k: None)
 
         assert _invoke_main(["eval", "models", "list"]) == expected_code
 
@@ -371,7 +372,8 @@ class TestFailureIsolationEndToEnd:
     ):
         _configure_main_env(monkeypatch, tmp_path, consent=True)
         _set_dispatch(monkeypatch, **dispatch_kwargs)
-        monkeypatch.setattr(main_mod, "init_telemetry", lambda *a, **k: None)
+        # main() imports init_telemetry lazily from the telemetry module.
+        monkeypatch.setattr(telemetry, "init_telemetry", lambda *a, **k: None)
 
         tracer_provider = TracerProvider()
         tracer_provider.add_span_processor(

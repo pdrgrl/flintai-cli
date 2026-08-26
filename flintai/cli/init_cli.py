@@ -22,19 +22,19 @@ from flintai.cli.utils import (
 
 _PROVIDER_DEFAULTS: dict[str, dict[str, str | None]] = {
     "gemini": {
-        "model": "gemini-3.6-flash",
+        "model": "gemini-2.5-flash",
         "api_key_var": "GEMINI_API_KEY",
     },
     "openai": {
-        "model": "gpt-5.4",
+        "model": "gpt-5.2",
         "api_key_var": "OPENAI_API_KEY",
     },
     "anthropic": {
-        "model": "claude-sonnet-4-6",
+        "model": "claude-haiku-4-5-20251001",
         "api_key_var": "ANTHROPIC_API_KEY",
     },
     "litellm": {
-        "model": "gpt-5.4",
+        "model": "gpt-5.2",
         "api_key_var": None,
     },
 }
