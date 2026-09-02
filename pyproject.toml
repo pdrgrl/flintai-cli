@@ -55,7 +55,7 @@ dependencies = [
 # ``pip install flintai-cli[full]``.
 full = [
   "garak==0.14.0",
-  "transformers[torch]==5.5.0",
+  "transformers[torch]==5.10.1",
 ]
 
 [dependency-groups]
