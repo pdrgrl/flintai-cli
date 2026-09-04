@@ -2,10 +2,12 @@ from typing import Any
 
 import requests
 from openai import AsyncOpenAI
+from pydantic import BaseModel
 
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse
+from flintai.eval.core.models.response_schema import to_json_schema
 
 
 class OllamaModel(Model):
@@ -26,8 +28,19 @@ class OllamaModel(Model):
         self._model = model
         self._temperature = temperature
 
-    async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
+    async def _generate(
+        self,
+        messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
+        **kwargs: Any,
+    ) -> ModelResponse:
         openai_messages = [converter_openai.from_message(m) for m in messages]
+        if output_schema is not None:
+            # Ollama constrains output via its native top-level ``format`` field
+            # (a JSON schema), passed through the OpenAI-compatible body.
+            extra_body = kwargs.setdefault("extra_body", {})
+            extra_body.setdefault("format", to_json_schema(output_schema))
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=openai_messages,

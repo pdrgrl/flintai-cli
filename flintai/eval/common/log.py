@@ -108,7 +108,7 @@ def setup_file_logging(log_path: str) -> None:
 
     os.environ["LITELLM_LOG"] = "CRITICAL"
     try:
-        import litellm
+        import litellm  # noqa: PLC0415
 
         litellm.suppress_debug_info = True
     except ImportError:

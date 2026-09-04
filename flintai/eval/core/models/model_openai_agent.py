@@ -23,12 +23,18 @@ Example server::
         return {"output": result.final_output}
 """
 
-from typing import Any
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 
 from flintai.eval.common.schema import Content, Message, Part, Role
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class OpenAIAgentModel(Model):
@@ -38,21 +44,30 @@ class OpenAIAgentModel(Model):
         self,
         host: str = "http://localhost:8000",
         endpoint: str = "/run",
+        connector_factory: Callable[[], aiohttp.BaseConnector] | None = None,
     ):
         self._host = host.rstrip("/")
         self._endpoint = endpoint
+        # Optional aiohttp connector factory; the worker passes the SSRF-guarded
+        # one (platform/ssrf.py). None keeps the default connector.
+        self._connector_factory = connector_factory
 
     async def _generate(
         self,
         messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
         **kwargs: Any,
     ) -> ModelResponse:
+        # An agent under test cannot enforce a JSON schema; output_schema is
+        # accepted for interface parity and ignored.
         if len(messages) > 1:
             raise ValueError("OpenAIAgentModel does not support multiple messages")
         text_parts = [p.text for p in messages[0].content.parts if p.text]
         prompt_text = " ".join(text_parts)
 
-        async with aiohttp.ClientSession() as session:
+        connector = self._connector_factory() if self._connector_factory else None
+        async with aiohttp.ClientSession(connector=connector) as session:
             async with session.post(
                 f"{self._host}{self._endpoint}",
                 json={"input": prompt_text},

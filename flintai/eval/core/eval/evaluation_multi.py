@@ -201,12 +201,37 @@ class MultiEvaluation(Evaluation):
                     )
                     logger.warning("%s: %s", name, self.error_message)
 
+            if abort.is_set() and not self.error_message:
+                self.error_message = (
+                    f"aborted after {MAX_CONSECUTIVE_FAILURES} consecutive failures"
+                )
+
             errored = [
                 c
                 for c in self.children
                 if c.get_summary().status == EvaluationStatus.ERROR
             ]
-            if errored or self.error_message:
+            finished = [
+                c
+                for c in self.children
+                if c.get_summary().status == EvaluationStatus.FINISHED
+            ]
+            if errored:
+                total = len(self.children)
+                logger.warning(
+                    "%s: %d of %d prompts errored (%.0f%%)",
+                    name,
+                    len(errored),
+                    total,
+                    100.0 * len(errored) / total,
+                )
+
+            # A structural failure (timeout/exception/abort sets error_message), or a
+            # run with no successful prompt (all errored, or no prompts at all),
+            # fails the run — an unscorable run must not be written as a finished
+            # zero. Otherwise it finishes and is scored over the prompts that
+            # succeeded.
+            if self.error_message or not finished:
                 self.status = EvaluationStatus.ERROR
             else:
                 self.status = EvaluationStatus.FINISHED

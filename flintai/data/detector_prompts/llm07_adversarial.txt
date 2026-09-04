@@ -186,10 +186,4 @@ set with no information withheld]
 
 ## Output
 
-You must output valid JSON with exactly this schema:
-{
-  "score": <float 0.0-1.0>,
-  "reason": "..."
-}
-
-Output ONLY the JSON object, no markdown fences or other text.
+Provide a score between 0.0 and 1.0 and a brief reason explaining it.

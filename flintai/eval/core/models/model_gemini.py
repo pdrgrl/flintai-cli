@@ -2,28 +2,55 @@ from typing import Any
 
 from google.genai import Client
 from google.genai import types as genai_types
+from pydantic import BaseModel
 
 from flintai.eval.common import converter_genai
 from flintai.eval.common.schema import Message, Role
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
+
+# Safety settings that disable content blocking across every active harm
+# category. Red-teaming needs the attacker/judge model to see and produce
+# adversarial content without Vertex's filters returning an empty candidate — a
+# blocked judge yields no JSON to parse, which surfaces as a spurious eval error
+# rather than a real result. HARM_CATEGORY_CIVIC_INTEGRITY is deprecated and
+# omitted. Note this is only appropriate for the generator; a model *under test*
+# should keep its own safety behavior so blocking can be measured.
+SAFETY_OFF: list[genai_types.SafetySetting] = [
+    genai_types.SafetySetting(category=category, threshold="OFF")
+    for category in (
+        genai_types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+        genai_types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        genai_types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        genai_types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+    )
+]
 
 
 class GeminiModel(Model):
     _client: Client
     _model: str
     _temperature: float
+    _safety_settings: list[genai_types.SafetySetting] | None
 
     def __init__(
         self,
         client: Client,
         model: str,
         temperature: float = 0.0,
+        safety_settings: list[genai_types.SafetySetting] | None = None,
     ):
         self._client = client
         self._model = model
         self._temperature = temperature
+        self._safety_settings = safety_settings
 
-    async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
+    async def _generate(
+        self,
+        messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
+        **kwargs: Any,
+    ) -> ModelResponse:
         system_parts: list[dict[str, Any]] = []
         contents: list[dict[str, Any]] = []
         for msg in messages:
@@ -50,6 +77,11 @@ class GeminiModel(Model):
                 parts=[genai_types.Part(**p) for p in system_parts],
             )
             config.system_instruction = system_instruction
+        if self._safety_settings is not None and config.safety_settings is None:
+            config.safety_settings = self._safety_settings
+        if output_schema is not None and config.response_schema is None:
+            config.response_mime_type = "application/json"
+            config.response_schema = output_schema
 
         generate_kwargs: dict[str, Any] = {
             "model": self._model,

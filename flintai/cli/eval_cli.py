@@ -15,6 +15,8 @@ from rich.text import Text
 
 from flintai.cli.console import CLI_WIDTH, console
 from flintai.cli.utils import get_flintai_config_path
+from flintai.eval.core.eval.evaluation import EvaluationStatus
+from flintai.eval.db.base.eval.model_eval_types import DbModelEvaluation
 
 if TYPE_CHECKING:
     from flintai.eval.db.base.eval.model_eval_types import DbModelEvaluation
@@ -525,7 +527,6 @@ def _model_evaluations_attach(
     store: JsonRepository,
     user_store: JsonRepository,
 ) -> None:
-    from flintai.eval.db.base.eval.model_eval_types import DbModelEvaluation
 
     models = _resolve_models(args, store)
     evaluations = _resolve_evaluations(args, store)
@@ -707,8 +708,10 @@ async def handle_run(
 ) -> str | None:
     # Imported lazily: the runner and eval core pull in the evaluation
     # framework, which is only needed when a run actually executes.
-    from flintai.cli.rich_observer import create_progress
-    from flintai.cli.runner import (
+    from flintai.cli.rich_observer import (  # noqa: PLC0415 - deferred import cost
+        create_progress,
+    )
+    from flintai.cli.runner import (  # noqa: PLC0415 - deferred import cost
         MAX_CONSECUTIVE_RUN_FAILURES,
         CliRunResult,
         log_run_summary,
@@ -716,7 +719,6 @@ async def handle_run(
         run_cli_evaluation,
         write_output,
     )
-    from flintai.eval.core.eval.evaluation import EvaluationStatus
 
     model_tag_filter = _parse_tags(args.model_tag)
     eval_tag_filter = _parse_tags(args.eval_tag)

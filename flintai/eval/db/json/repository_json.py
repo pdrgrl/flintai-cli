@@ -36,6 +36,9 @@ from flintai.eval.db.base.eval.model_eval_types import (
     ModelEvaluationListView,
     ModelEvaluationSortOrder,
 )
+from flintai.eval.db.base.message.message_collection_helpers import (
+    create_message_collection,
+)
 from flintai.eval.db.base.message.message_collection_repository import (
     MessageCollectionRepository,
 )
@@ -238,9 +241,6 @@ class JsonMessageCollectionRepository(
         self,
         id: str,
     ) -> MessageCollection:
-        from flintai.eval.db.base.message.message_collection_helpers import (
-            create_message_collection,
-        )
 
         return create_message_collection(self.get(id))
 

@@ -96,7 +96,9 @@ class EvaluationRepository(ABC):
 
         Raises KeyError if the evaluation does not exist.
         """
-        from flintai.eval.db.base.eval.eval_helpers import create_evaluation
+        from flintai.eval.db.base.eval.eval_helpers import (  # noqa: PLC0415 - deferred import cost
+            create_evaluation,
+        )
 
         return create_evaluation(
             self.get(id),

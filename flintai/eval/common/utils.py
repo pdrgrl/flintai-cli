@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -5,6 +6,57 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from dataclasses_json import config
+
+
+def extract_json(text: str) -> dict:
+    """Extract a JSON object from model output.
+
+    Handles markdown fences, leading/trailing prose, and thinking text that
+    some models prepend to JSON output — Gemini in particular tends to wrap its
+    JSON in a ```json fence, which a bare json.loads cannot parse.
+    """
+    cleaned = text.strip()
+
+    # Strip markdown fences (```json ... ``` or ``` ... ```)
+    if "```" in cleaned:
+        fence = re.search(
+            r"```(?:json)?\s*\n?(.*?)```",
+            cleaned,
+            re.DOTALL,
+        )
+        if fence:
+            cleaned = fence.group(1).strip()
+
+    # Fix double braces (models sometimes echo {{ }})
+    if "{{" in cleaned:
+        cleaned = cleaned.replace("{{", "{").replace("}}", "}")
+
+    # Try parsing directly first
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # Find the first { ... } block in the text
+    start = cleaned.find("{")
+    if start != -1:
+        depth = 0
+        for i in range(start, len(cleaned)):
+            if cleaned[i] == "{":
+                depth += 1
+            elif cleaned[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        return json.loads(cleaned[start : i + 1])
+                    except json.JSONDecodeError:
+                        break
+
+    raise json.JSONDecodeError(
+        "No valid JSON object found in model output",
+        cleaned,
+        0,
+    )
 
 
 def setup_logging(level: int = logging.INFO) -> None:

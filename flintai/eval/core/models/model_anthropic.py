@@ -1,10 +1,13 @@
+import json
 from typing import Any
 
 from anthropic import AsyncAnthropic
+from pydantic import BaseModel
 
 from flintai.eval.common import converter_anthropic
-from flintai.eval.common.schema import Message, Role
+from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model import Model, ModelResponse
+from flintai.eval.core.models.response_schema import to_anthropic_tool
 
 
 class AnthropicModel(Model):
@@ -25,7 +28,13 @@ class AnthropicModel(Model):
         self._max_tokens = max_tokens
         self._temperature = temperature
 
-    async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
+    async def _generate(
+        self,
+        messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
+        **kwargs: Any,
+    ) -> ModelResponse:
         system_blocks = None
         api_messages = []
         for msg in messages:
@@ -48,6 +57,23 @@ class AnthropicModel(Model):
         if system_blocks is not None:
             create_kwargs["system"] = system_blocks
 
+        if output_schema is not None and "tools" not in create_kwargs:
+            # Anthropic has no cross-version response_format: force a single
+            # tool whose input_schema is the target schema and read the
+            # tool_use input back as the JSON payload.
+            tool, tool_choice = to_anthropic_tool(output_schema)
+            create_kwargs["tools"] = [tool]
+            create_kwargs["tool_choice"] = tool_choice
+
         response = await self._client.messages.create(**create_kwargs)
+
+        if output_schema is not None:
+            for block in response.content:
+                if getattr(block, "type", None) == "tool_use":
+                    payload = json.dumps(block.input)
+                    return ModelResponse(
+                        Message(content=Content.text(Role.ASSISTANT, payload)),
+                    )
+
         message = converter_anthropic.to_message(response)
         return ModelResponse(message)

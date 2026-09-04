@@ -8,13 +8,19 @@ response from the returned events.
 Typical ADK server URL: ``http://localhost:8000``
 """
 
-from typing import Any
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import requests
 
 from flintai.eval.common.schema import Content, Message, Part, Role
 from flintai.eval.core.models.model import Model, ModelResponse, ResponseStatus
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class ADKModel(Model):
@@ -36,11 +42,15 @@ class ADKModel(Model):
         host: str = "http://localhost:8000",
         user_id: str = "aired",
         immediate_result: bool = False,
+        connector_factory: Callable[[], aiohttp.BaseConnector] | None = None,
     ):
         self._app_name = app_name
         self._host = host.rstrip("/")
         self._user_id = user_id
         self._immediate_result = immediate_result
+        # Optional aiohttp connector factory; the worker passes the SSRF-guarded
+        # one (platform/ssrf.py). None keeps the default connector.
+        self._connector_factory = connector_factory
 
     async def _create_session(
         self,
@@ -56,14 +66,19 @@ class ADKModel(Model):
     async def _generate(
         self,
         messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
         **_kwargs: Any,
     ) -> ModelResponse:
+        # An agent under test cannot enforce a JSON schema; output_schema is
+        # accepted for interface parity and ignored.
         if len(messages) > 1:
             raise ValueError(
                 "ADKModel does not support multiple messages; use session-based history"
             )
 
-        async with aiohttp.ClientSession() as session:
+        connector = self._connector_factory() if self._connector_factory else None
+        async with aiohttp.ClientSession(connector=connector) as session:
             session_id = await self._create_session(session)
 
             text_parts = [p.text for p in messages[0].content.parts if p.text]

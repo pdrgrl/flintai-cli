@@ -37,7 +37,10 @@ class SingleEvaluation(Evaluation):
             total_evaluations=1,
             finished_evaluations=1 if self.status == EvaluationStatus.FINISHED else 0,
             error_evaluations=1 if self.status == EvaluationStatus.ERROR else 0,
-            max_score=1.0,
+            # An errored prompt is a measurement failure, not a zero result:
+            # contribute nothing to either side of the mean so it drops out of
+            # the score instead of dragging it down.
+            max_score=0.0 if self.status == EvaluationStatus.ERROR else 1.0,
             achieved_score=self.score
             if self.status == EvaluationStatus.FINISHED
             else 0.0,

@@ -16,6 +16,10 @@ from rich.table import Table
 
 from flintai.cli.console import CLI_WIDTH, console, severity_style
 from flintai.cli.file_filter import FileType, RelevantFile, find_relevant_files
+from flintai.cli.output_formatters import (
+    OutputFormat,
+    get_scan_output_formatter,
+)
 
 if TYPE_CHECKING:
     from flintai.scan.schema import ScanReport
@@ -51,10 +55,6 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 
 
 def write_output(report: ScanReport, output_path: str, fmt: str = "json"):
-    from flintai.cli.output_formatters import (
-        OutputFormat,
-        get_scan_output_formatter,
-    )
 
     formatter = get_scan_output_formatter(OutputFormat(fmt))
     content = formatter.format(report)
@@ -238,7 +238,9 @@ def print_report(report: ScanReport) -> None:
 def handle_scan(args: argparse.Namespace) -> str:
     # Imported lazily: pulling in the agent scanner loads the Google ADK stack,
     # which is expensive and only needed when a scan actually runs.
-    from flintai.scan.agent_scanner import run_core
+    from flintai.scan.agent_scanner import (  # noqa: PLC0415 - deferred import cost
+        run_core,
+    )
     from flintai.schema import RepoFile
 
     path: str = os.path.abspath(os.path.expanduser(args.path))

@@ -8,6 +8,7 @@ from flintai.eval.core.models.model import Model, ModelResponse
 from flintai.eval.core.optional_deps import require_transformers_pipeline
 
 if TYPE_CHECKING:
+    from pydantic import BaseModel
     from transformers import Pipeline
 
 
@@ -38,7 +39,15 @@ class HuggingFaceModel(Model):
             self._pipeline = model
         self._temperature = temperature
 
-    async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
+    async def _generate(
+        self,
+        messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
+        **kwargs: Any,
+    ) -> ModelResponse:
+        # A local text-generation pipeline cannot enforce a JSON schema;
+        # output_schema is accepted for interface parity and ignored.
         return await asyncio.to_thread(
             self._generate_sync,
             messages,

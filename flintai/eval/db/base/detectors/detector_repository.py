@@ -76,7 +76,7 @@ class DetectorRepository(ABC):
 
         Raises KeyError if the detector does not exist.
         """
-        from flintai.eval.db.base.detectors.detector_helpers import (
+        from flintai.eval.db.base.detectors.detector_helpers import (  # noqa: PLC0415 - deferred import cost
             create_detector,
         )
 

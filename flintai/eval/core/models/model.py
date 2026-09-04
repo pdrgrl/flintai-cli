@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any
 
+from pydantic import BaseModel
+
 from flintai.eval.common.schema import Content, Message, PartType, Role
 
 logger = logging.getLogger(__name__)
@@ -52,6 +54,8 @@ class Model(ABC):
     async def generate(
         self,
         contents: ModelContent,
+        *,
+        output_schema: type[BaseModel] | None = None,
         **kwargs: Any,
     ) -> ModelResponse:
         """Generate a response from the model.
@@ -61,6 +65,10 @@ class Model(ABC):
                 - A string (converted to a user message)
                 - A single Message
                 - A list of Messages
+            output_schema: Optional Pydantic model describing the JSON shape
+                the response must take. When set, the adapter constrains the
+                output using the provider's native structured-output mechanism.
+                Models under test that cannot enforce a schema ignore it.
         """
         if isinstance(contents, str):
             messages = [
@@ -77,7 +85,9 @@ class Model(ABC):
         model_name = type(self).__name__
 
         try:
-            response = await self._generate(messages, **kwargs)
+            response = await self._generate(
+                messages, output_schema=output_schema, **kwargs
+            )
         except Exception as e:
             logger.error(
                 "%s: prompt=%d chars (%s: %s)",
@@ -110,6 +120,8 @@ class Model(ABC):
     async def _generate(
         self,
         messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
         **kwargs: Any,
     ) -> ModelResponse:
         pass

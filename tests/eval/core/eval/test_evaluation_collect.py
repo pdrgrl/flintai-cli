@@ -27,7 +27,7 @@ class LeafEvaluation(Evaluation):
             total_evaluations=1,
             finished_evaluations=1 if self.status == EvaluationStatus.FINISHED else 0,
             error_evaluations=1 if self.status == EvaluationStatus.ERROR else 0,
-            max_score=1.0,
+            max_score=0.0 if self.status == EvaluationStatus.ERROR else 1.0,
             achieved_score=self.score
             if self.status == EvaluationStatus.FINISHED
             else 0.0,
@@ -83,7 +83,7 @@ class TestMultiEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(summary.max_score, 2.0)
         self.assertEqual(summary.finished_evaluations, 2)
 
-    async def test_child_error_propagates(self):
+    async def test_partial_error_finishes_and_scores_successes(self):
         c = SimpleCollect(
             leaf_scores=[1.0, 0.5],
             fail_indices=[1],
@@ -92,19 +92,24 @@ class TestMultiEvaluation(unittest.IsolatedAsyncioTestCase):
 
         await c.run(AsyncMock(), concurrency=2)
 
-        self.assertEqual(c.status, EvaluationStatus.ERROR)
+        # One prompt errored, one succeeded: the run finishes and is scored over
+        # the successful prompt only.
+        self.assertEqual(c.status, EvaluationStatus.FINISHED)
         summary = c.get_summary()
+        self.assertAlmostEqual(summary.score, 1.0)
         self.assertTrue(
             any("intentional failure" in m for m in summary.error_messages),
         )
 
-    async def test_empty_children(self):
+    async def test_empty_children_is_error(self):
         c = SimpleCollect(leaf_scores=[])
         await c.init()
 
         await c.run(AsyncMock(), concurrency=1)
 
-        self.assertEqual(c.status, EvaluationStatus.FINISHED)
+        # A run with no measurable prompt is unscorable, so it errors rather than
+        # finishing with a (coerced) zero score that would count in weighted health.
+        self.assertEqual(c.status, EvaluationStatus.ERROR)
         summary = c.get_summary()
         self.assertIsNone(summary.score)
 
@@ -179,10 +184,15 @@ class TestMultiEvaluation(unittest.IsolatedAsyncioTestCase):
 
         await c.run(AsyncMock(), concurrency=2)
 
+        # One prompt succeeded, so the run finishes and is scored over that
+        # prompt only — the errored prompt contributes to neither side of the mean.
+        self.assertEqual(c.status, EvaluationStatus.FINISHED)
         summary = c.get_summary()
         self.assertEqual(summary.error_evaluations, 1)
         self.assertEqual(summary.finished_evaluations, 1)
         self.assertAlmostEqual(summary.achieved_score, 0.5)
+        self.assertAlmostEqual(summary.max_score, 1.0)
+        self.assertAlmostEqual(summary.score, 0.5)
 
 
 if __name__ == "__main__":

@@ -3,12 +3,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from openai.types.chat import ChatCompletionMessage
 from openai.types.chat.chat_completion import ChatCompletion, Choice
+from pydantic import BaseModel
 
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.models.model_ollama import (
     OllamaModel,
     discover_ollama_models,
 )
+
+
+class _Score(BaseModel):
+    score: float
 
 
 def _make_completion(text: str) -> ChatCompletion:
@@ -89,6 +94,22 @@ class TestOllamaModel(unittest.IsolatedAsyncioTestCase):
 
         call_kwargs = mock_client.chat.completions.create.call_args
         self.assertEqual(call_kwargs.kwargs["model"], "mistral:7b")
+
+    async def test_output_schema_sets_native_format(self):
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(
+            return_value=_make_completion('{"score": 1.0}'),
+        )
+
+        model = OllamaModel(model="llama3")
+        model._client = mock_client
+
+        msg = Message(content=Content.text(Role.USER, "Hi"))
+        await model.generate(msg, output_schema=_Score)
+
+        extra_body = mock_client.chat.completions.create.call_args.kwargs["extra_body"]
+        self.assertEqual(extra_body["format"]["type"], "object")
+        self.assertIn("score", extra_body["format"]["properties"])
 
     def test_init_sets_base_url(self):
         with patch(
