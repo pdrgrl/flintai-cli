@@ -16,6 +16,10 @@ from rich.progress import Progress
 from rich.table import Table
 
 from flintai.cli.console import CLI_WIDTH, console, score_style, status_style
+from flintai.cli.output_formatters import (
+    OutputFormat,
+    get_eval_output_formatter,
+)
 from flintai.cli.rich_observer import RichObserver, pad_description
 from flintai.eval.core.eval.evaluation import (
     EvaluationResult,
@@ -263,10 +267,6 @@ def write_output(
     output_path: str,
     fmt: str = "json",
 ) -> None:
-    from flintai.cli.output_formatters import (
-        OutputFormat,
-        get_eval_output_formatter,
-    )
 
     formatter = get_eval_output_formatter(OutputFormat(fmt))
     content = formatter.format(runs, config_path)

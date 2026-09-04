@@ -1,6 +1,6 @@
-import json
 import logging
-from dataclasses import dataclass
+
+from pydantic import BaseModel, Field
 
 from flintai.eval.common.schema import Content, Message, Role
 from flintai.eval.core.detectors.detector import DetectorResult
@@ -11,14 +11,14 @@ from flintai.eval.core.models.model import (
     extract_text_from_conversation,
     extract_text_from_message,
 )
+from flintai.eval.core.models.response_schema import parse_model_response
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class DetectorLLMResponse:
-    score: float
+class DetectorLLMResponse(BaseModel):
     reason: str
+    score: float = Field(ge=0.0, le=1.0)
 
 
 class AdversarialModelDetector(ModelDetector):
@@ -55,20 +55,20 @@ class AdversarialModelDetector(ModelDetector):
                 content=Content.text(Role.USER, latest_response),
             ),
         )
-        detector_model_response = await self._model.generate(messages)
-
-        detector_response_text = extract_text_from_message(
-            detector_model_response.message
+        detector_model_response = await self._model.generate(
+            messages, output_schema=DetectorLLMResponse
         )
+
         try:
-            detector_response = DetectorLLMResponse(
-                **json.loads(detector_response_text)
+            detector_response = parse_model_response(
+                detector_model_response, DetectorLLMResponse
             )
-        except Exception as e:
+        except ValueError as exc:
             raise ValueError(
-                "AdversarialModelDetector LLM returned invalid data structure: %s ",
-                e,
-            ) from e
+                "AdversarialModelDetector LLM returned invalid data structure "
+                f"(status={detector_model_response.status.name}: {exc}"
+            ) from exc
+
         logger.debug(
             "AdversarialModelDetector: score=%.2f",
             detector_response.score,

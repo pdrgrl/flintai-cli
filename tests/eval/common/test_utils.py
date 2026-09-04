@@ -1,7 +1,12 @@
+import json
 import unittest
 from unittest.mock import patch
 
-from flintai.eval.common.utils import resolve_env, resolve_env_dict
+from flintai.eval.common.utils import (
+    extract_json,
+    resolve_env,
+    resolve_env_dict,
+)
 
 
 class TestResolveEnv(unittest.TestCase):
@@ -72,6 +77,35 @@ class TestResolveEnvDict(unittest.TestCase):
 
     def test_empty_dict(self):
         self.assertEqual(resolve_env_dict({}), {})
+
+
+class TestExtractJson(unittest.TestCase):
+    def test_plain_json(self):
+        self.assertEqual(extract_json('{"key": "value"}')["key"], "value")
+
+    def test_markdown_fences(self):
+        # Gemini's habit: valid JSON wrapped in a ```json fence.
+        data = extract_json('```json\n{"key": "value"}\n```')
+        self.assertEqual(data["key"], "value")
+
+    def test_bare_fences(self):
+        data = extract_json('```\n{"key": "value"}\n```')
+        self.assertEqual(data["key"], "value")
+
+    def test_leading_prose(self):
+        data = extract_json('Here is the JSON output:\n{"prompts": ["a", "b"]}')
+        self.assertEqual(data["prompts"], ["a", "b"])
+
+    def test_thinking_then_fenced_json(self):
+        text = 'Let me think...\n\n```\n{"prompts": ["p1", "p2"]}\n```'
+        self.assertEqual(len(extract_json(text)["prompts"]), 2)
+
+    def test_double_braces_are_normalized(self):
+        self.assertEqual(extract_json('{{"key": "value"}}')["key"], "value")
+
+    def test_no_json_raises(self):
+        with self.assertRaises(json.JSONDecodeError):
+            extract_json("no json here at all")
 
 
 if __name__ == "__main__":

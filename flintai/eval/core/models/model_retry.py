@@ -3,6 +3,8 @@ import logging
 import random
 from typing import Any
 
+from pydantic import BaseModel
+
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse
 
@@ -41,11 +43,19 @@ class ExponentialRetryModel(Model):
         self._max_retries = max_retries
         self._base_delay = base_delay
 
-    async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
+    async def _generate(
+        self,
+        messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
+        **kwargs: Any,
+    ) -> ModelResponse:
         last_exc: Exception | None = None
         for attempt in range(self._max_retries + 1):
             try:
-                return await self._model.generate(messages, **kwargs)
+                return await self._model.generate(
+                    messages, output_schema=output_schema, **kwargs
+                )
             except Exception as exc:
                 if not _is_transient(exc) or attempt == self._max_retries:
                     raise
@@ -87,12 +97,20 @@ class FibonacciRetryModel(Model):
         self._max_retries = max_retries
         self._max_delay = max_delay
 
-    async def _generate(self, messages: list[Message], **kwargs: Any) -> ModelResponse:
+    async def _generate(
+        self,
+        messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
+        **kwargs: Any,
+    ) -> ModelResponse:
         last_exc: Exception | None = None
         delays = _fibonacci_delays(self._max_delay)
         for attempt in range(self._max_retries + 1):
             try:
-                return await self._model.generate(messages, **kwargs)
+                return await self._model.generate(
+                    messages, output_schema=output_schema, **kwargs
+                )
             except Exception as exc:
                 if not _is_transient(exc) or attempt == self._max_retries:
                     raise

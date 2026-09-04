@@ -14,13 +14,19 @@ def create_detector(
     if db_detector.type == DetectorType.GARAK:
         if not db_detector.detector_name:
             raise ValueError("detector_name is required for GARAK detectors")
-        from flintai.eval.core.detectors.detector_garak import GarakDetector
+        from flintai.eval.core.detectors.detector_garak import (  # noqa: PLC0415 - deferred import cost
+            GarakDetector,
+        )
 
         return GarakDetector(db_detector.detector_name)
 
     elif db_detector.type == DetectorType.MODEL:
-        from flintai.eval.core.detectors.detector_model import ModelDetector
-        from flintai.eval.core.models.generator_model import get_generator_model
+        from flintai.eval.core.detectors.detector_model import (  # noqa: PLC0415 - patched at source in tests
+            ModelDetector,
+        )
+        from flintai.eval.core.models.generator_model import (  # noqa: PLC0415 - patched at source in tests
+            get_generator_model,
+        )
 
         model = get_generator_model()
         kwargs = {}
@@ -29,10 +35,12 @@ def create_detector(
         return ModelDetector(model=model, **kwargs)
 
     elif db_detector.type == DetectorType.ADVERSARIAL_MODEL:
-        from flintai.eval.core.detectors.detector_model_adversarial import (
+        from flintai.eval.core.detectors.detector_model_adversarial import (  # noqa: PLC0415 - patched at source in tests
             AdversarialModelDetector,
         )
-        from flintai.eval.core.models.generator_model import get_generator_model
+        from flintai.eval.core.models.generator_model import (  # noqa: PLC0415 - patched at source in tests
+            get_generator_model,
+        )
 
         model = get_generator_model()
         kwargs = {}
@@ -42,20 +50,26 @@ def create_detector(
         return AdversarialModelDetector(model=model, **kwargs)
 
     elif db_detector.type == DetectorType.PII:
-        from flintai.eval.core.detectors.detector_pii import PIIDetector
+        from flintai.eval.core.detectors.detector_pii import (  # noqa: PLC0415 - patched at source in tests
+            PIIDetector,
+        )
 
         return PIIDetector()
 
     elif db_detector.type == DetectorType.SECRET:
-        from flintai.eval.core.detectors.detector_secret import SecretDetector
+        from flintai.eval.core.detectors.detector_secret import (  # noqa: PLC0415 - patched at source in tests
+            SecretDetector,
+        )
 
         return SecretDetector()
 
     elif db_detector.type == DetectorType.TOPIC_GUARD:
-        from flintai.eval.core.detectors.detector_topic_guard import (
+        from flintai.eval.core.detectors.detector_topic_guard import (  # noqa: PLC0415 - patched at source in tests
             TopicGuardDetector,
         )
-        from flintai.eval.core.models.generator_model import get_generator_model
+        from flintai.eval.core.models.generator_model import (  # noqa: PLC0415 - patched at source in tests
+            get_generator_model,
+        )
 
         if not db_detector.agent_objective and not db_detector.agent_instructions:
             raise ValueError(

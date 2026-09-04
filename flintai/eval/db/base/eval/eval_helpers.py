@@ -28,7 +28,7 @@ def create_evaluation(
             )
         if db_evaluation.detector_id is None:
             raise ValueError("detector_id must be set on the DbEvaluation")
-        from flintai.eval.core.eval.evaluation_message_list import (
+        from flintai.eval.core.eval.evaluation_message_list import (  # noqa: PLC0415 - patched at source in tests
             MessageListEvaluation,
         )
 
@@ -46,7 +46,7 @@ def create_evaluation(
         )
 
     elif db_evaluation.type == EvaluationType.GARAK_PROBE:
-        from flintai.eval.core.eval.evaluation_garak_probe import (
+        from flintai.eval.core.eval.evaluation_garak_probe import (  # noqa: PLC0415 - patched at source in tests
             GarakProbeEvaluation,
         )
 
@@ -57,7 +57,7 @@ def create_evaluation(
         )
 
     elif db_evaluation.type == EvaluationType.GARAK_MODULE:
-        from flintai.eval.core.eval.evaluation_garak_module import (
+        from flintai.eval.core.eval.evaluation_garak_module import (  # noqa: PLC0415 - patched at source in tests
             GarakModuleEvaluation,
         )
 
@@ -69,14 +69,14 @@ def create_evaluation(
         )
 
     elif db_evaluation.type == EvaluationType.METRIC_TOXICITY:
-        from flintai.eval.core.eval.metric_toxicity import (
+        from flintai.eval.core.eval.metric_toxicity import (  # noqa: PLC0415 - patched at source in tests
             ToxicityMetricEvaluation,
         )
 
         return ToxicityMetricEvaluation()
 
     elif db_evaluation.type == EvaluationType.METRIC_CONCISENESS:
-        from flintai.eval.core.eval.metric_conciseness import (
+        from flintai.eval.core.eval.metric_conciseness import (  # noqa: PLC0415 - patched at source in tests
             ConcisenessMetricEvaluation,
         )
 
@@ -85,7 +85,7 @@ def create_evaluation(
         )
 
     elif db_evaluation.type == EvaluationType.METRIC_FACTUAL_ACCURACY:
-        from flintai.eval.core.eval.metric_factual_accuracy import (
+        from flintai.eval.core.eval.metric_factual_accuracy import (  # noqa: PLC0415 - patched at source in tests
             FactualAccuracyMetricEvaluation,
         )
 
@@ -94,7 +94,7 @@ def create_evaluation(
         )
 
     elif db_evaluation.type == EvaluationType.METRIC_INSTRUCTION_ADHERENCE:
-        from flintai.eval.core.eval.metric_instruction_adherence import (
+        from flintai.eval.core.eval.metric_instruction_adherence import (  # noqa: PLC0415 - patched at source in tests
             InstructionAdherenceMetricEvaluation,
         )
 
@@ -103,14 +103,16 @@ def create_evaluation(
         )
 
     elif db_evaluation.type == EvaluationType.METRIC_TONE:
-        from flintai.eval.core.eval.metric_tone import ToneMetricEvaluation
+        from flintai.eval.core.eval.metric_tone import (  # noqa: PLC0415 - patched at source in tests
+            ToneMetricEvaluation,
+        )
 
         return ToneMetricEvaluation(
             judge_model=get_generator_model(),
         )
 
     elif db_evaluation.type == EvaluationType.ADVERSARIAL_PROBE:
-        from flintai.eval.core.eval.evaluation_adversarial import (
+        from flintai.eval.core.eval.evaluation_adversarial import (  # noqa: PLC0415 - patched at source in tests
             AdversarialEvaluation,
         )
 
@@ -162,7 +164,7 @@ def create_evaluation(
         )
 
     elif db_evaluation.type == EvaluationType.TOPIC_GUARD:
-        from flintai.eval.core.eval.evaluation_topic_guard import (
+        from flintai.eval.core.eval.evaluation_topic_guard import (  # noqa: PLC0415 - patched at source in tests
             TopicGuardEvaluation,
         )
 

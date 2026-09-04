@@ -60,6 +60,43 @@ DEFAULT_MODEL = "gemini-3.6-flash"
 
 _PROVIDER_ALIASES = {"gemini": "google"}
 
+# The env var(s) each provider's SDK reads its API key from. Used to tell a
+# *missing* key (skip the LLM stage with a warning — the customer never
+# configured one) from an *invalid* one (the provider returns 401, a real
+# user-domain failure). Only providers we can check for are listed; anything
+# absent is assumed configured so an exotic provider is never skipped on a false
+# "missing key" — it runs, and if the key really is absent, fails as before.
+_PROVIDER_API_KEY_ENV_VARS = {
+    "google": ("GOOGLE_API_KEY", "GEMINI_API_KEY"),
+    "openai": ("OPENAI_API_KEY",),
+    "anthropic": ("ANTHROPIC_API_KEY",),
+}
+
+
+def _google_adc_present() -> bool:
+    """Whether Google credentials exist via the Vertex/ADC path (no API key)."""
+    if os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("1", "true"):
+        return True
+    return bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+
+
+def api_key_present(model_string: str | None = None) -> bool:
+    """Whether an API key (or equivalent credential) is configured for the model.
+
+    Resolves the provider the same way `make_model` does, then checks its known
+    key env var(s). Returns True for providers we have no mapping for, so a
+    provider we can't preflight is left to run rather than being skipped on a
+    guess.
+    """
+    provider, _ = _resolve_model_string(model_string)
+    if provider == PROVIDER_GOOGLE and _google_adc_present():
+        return True
+    env_vars = _PROVIDER_API_KEY_ENV_VARS.get(provider)
+    if env_vars is None:
+        return True
+    return any(os.getenv(var) for var in env_vars)
+
+
 # Reasoning effort for OpenAI gpt-5 reasoning models. See _openai_reasoning_effort.
 DEFAULT_REASONING_EFFORT = "medium"
 
@@ -189,19 +226,23 @@ def get_model_name(model_string: str | None = None) -> str:
 def _import_litellm() -> type[Any]:
     """Import and return the LiteLlm class from google-adk or a minimal shim."""
     try:
-        from google.adk.models.lite_llm import LiteLlm
+        from google.adk.models.lite_llm import (  # noqa: PLC0415 - deferred import cost
+            LiteLlm,
+        )
 
         return LiteLlm
     except ImportError:
         pass
     try:
-        from google.adk.models import LiteLlm  # type: ignore[no-redef]
+        from google.adk.models import (  # noqa: PLC0415 - import fallback ladder
+            LiteLlm,
+        )
 
         return LiteLlm
     except ImportError:
         pass
     try:
-        import litellm as _litellm  # noqa: F401
+        import litellm as _litellm  # noqa: F401, PLC0415
 
         class _LiteLlmShim:
             def __init__(self, model: str, **kwargs):

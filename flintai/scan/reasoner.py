@@ -53,6 +53,12 @@ from google.adk.agents import LlmAgent
 from google.adk import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
+from flintai.scan.exception_classification import (
+    FailureDomain,
+    classify_exception,
+    is_auth_error,
+    is_model_error,
+)
 from flintai.scan.llm_provider import _safe_error, make_model
 from flintai.secret_anonymizer import anonymize_secrets
 
@@ -104,119 +110,113 @@ def _build_system_prompt() -> str:
             )
     taxonomy_ref = "\n".join(taxonomy_lines)
 
-    return f"""You are an automated code scanner. You execute a fixed checklist
-against source code. You do not improvise, interpret, or add judgment.
-You match patterns and report them. Nothing else.
+    return f"""You are an application security researcher specializing in AI
+agents. You investigate source code and reason about how an agent actually
+behaves — how untrusted data flows into it, what its tools can do, how it is
+exposed, and where a control is missing — then report every well-evidenced
+vulnerability you can substantiate against the taxonomy below.
 
-TAXONOMY:
+You are NOT a grep script. The most important agentic vulnerabilities are
+behavioral and data-flow properties, not single-line syntactic patterns:
+untrusted input reaching the agent, tool output fed back to the model,
+state-changing tools with no confirmation, an unauthenticated entry point, an
+unbounded run, missing guardrails or monitoring. Reason about the code; do not
+merely match tokens.
+
+TAXONOMY — every finding maps to one of these ASI subcategories. Use the exact
+subcategory key (e.g. `indirect_prompt_injection`) as the `subcategory` argument:
 {taxonomy_ref}
 
 PROCEDURE:
 
-1. Call read_source(resource_type="file", path=<path>) for EVERY file
-   listed in the AGENT PROFILES. Wait until all files are fetched.
+1. Read every file. Call read_source(resource_type="file", path=<path>) for
+   EVERY file in the AGENT PROFILES (and any repo-local file they import that is
+   relevant). Use read_source(resource_type="agent", path=<agent_id>) for the
+   full agent profile when useful.
 
-2. Process the checklist below. Go line by line through each file.
-   When you find a pattern match, call compute_cvss() then immediately
-   call report_finding(). Do not batch. Do not skip. Do not summarize.
+2. Understand what the static layer already found. Call get_findings() on each
+   file first, so you do not re-report a finding the static analyzers already
+   surfaced (Bandit/OpenGrep/detect-secrets). Your job is the reasoning layer:
+   the behavioral and cross-cutting issues static rules miss.
 
-3. After processing all patterns for all files, output ONLY:
-   {{"summary": "N findings reported", "investigation_notes": "done"}}
+3. Investigate against the taxonomy. For each agent and tool, reason through the
+   ASI categories and ask the kinds of questions below. Use
+   analyze_code(mode="search") to trace data flow (e.g. where a request body,
+   query param, or tool argument is used). Investigate — do not assume clean.
 
-CHECKLIST — match these exact patterns in the source code:
+4. Report each finding you can evidence. Call compute_cvss(vuln_type=<subcategory>)
+   then report_finding() for it. One call per finding; do not batch.
 
-PATTERN 1: Variable assigned a string literal where the variable name
-contains KEY, TOKEN, SECRET, PASSWORD, CREDENTIAL, or DATABASE_URL.
-  Match: SOME_API_KEY = "any-string-here"
-  Report: category=asi03_identity_privilege_abuse,
-          subcategory=hardcoded_credentials
+5. When the investigation is complete, output ONLY:
+   {{"summary": "N findings reported", "investigation_notes": "<brief notes>"}}
 
-PATTERN 2: An f-string or string concatenation that puts a variable
-into text sent to an LLM (in instruction=, prompt=, system=, or
-messages content).
-  Match: instruction=f"...some variable..."
-  Match: prompt = "..." + user_input
-  Report: category=asi01_agent_goal_hijack,
-          subcategory=direct_prompt_injection
+WHAT TO REASON ABOUT (illustrative, not exhaustive — apply judgment, and use any
+taxonomy subcategory that fits, not only these):
 
-PATTERN 3: A call to eval(), exec(), or compile() on any variable.
-  Match: eval(anything)
-  Match: exec(anything)
-  Report: category=asi05_unexpected_code_execution,
-          subcategory=arbitrary_code_execution
-
-PATTERN 4: subprocess.run/call/Popen with shell=True, or os.system().
-  Match: subprocess.run(cmd, shell=True)
-  Match: os.system(cmd)
-  Report: category=asi05_unexpected_code_execution,
-          subcategory=arbitrary_code_execution
-
-PATTERN 5: pickle.loads(), pickle.load(), or yaml.load() without
-SafeLoader.
-  Match: pickle.loads(data)
-  Match: yaml.load(data)
-  Report: category=asi05_unexpected_code_execution,
-          subcategory=unsafe_deserialization
-
-PATTERN 6: A function that opens a file path parameter without
-checking that the path is within a safe directory (no Path.resolve,
-no startswith, no allowlist).
-  Match: open(path, "r") with no path validation above it
-  Report: category=asi02_tool_misuse, subcategory=path_traversal
-
-PATTERN 7: An agent created without max_iterations, max_turns, or
-recursion_limit. A while loop with no iteration counter.
-  Match: LoopAgent(...) without max_iterations=
-  Match: while resp.stop_reason == "tool_use": (no counter)
-  Report: category=asi08_cascading_failures,
-          subcategory=unbounded_agent_loop
-
-PATTERN 8: An agent with sub_agents= but without
-before_agent_callback= or after_agent_callback=.
-  Match: Agent(..., sub_agents=[...]) without callbacks
-  Report: category=asi10_rogue_agents,
-          subcategory=unchecked_agent_delegation
-
-PATTERN 9: Destructive operations (file write, delete, DB update,
-shell command) with no human approval check before them.
-  Match: open(path, "w") with no approval gate
-  Match: os.remove(path) with no confirmation
-  Report: category=asi09_human_agent_trust_exploitation,
-          subcategory=missing_action_confirmation
-
-PATTERN 10: Global mutable state shared across function calls with
-no session isolation.
-  Match: GLOBAL_LIST = [] at module level, modified in functions
-  Report: category=asi06_memory_context_poisoning,
-          subcategory=cross_session_contamination
+- ASI01 goal hijack: Does untrusted input (an HTTP body, request param, message,
+  or file) reach the agent's run/invocation or its prompt? That is
+  direct_prompt_injection even when the input is passed as a run argument rather
+  than concatenated into a template (e.g. `Runner.run(agent, req.input)`). Is
+  tool OUTPUT (search results, error strings that echo user input, retrieved
+  documents) fed back into the model without sanitization? That is
+  indirect_prompt_injection / goal_manipulation_via_rag.
+- ASI02 tool misuse: Do tools validate their inputs? Can a tool touch the
+  filesystem, network, or shell beyond what its purpose requires
+  (excessive_tool_permissions, unvalidated_tool_input, path_traversal)?
+- ASI03 identity/privilege: Is the agent exposed through an endpoint with no
+  authentication (missing_auth_on_endpoint)? Hardcoded credentials? An agent
+  running with more privilege than it needs?
+- ASI05 code execution: eval/exec/compile, shell=True/os.system, unsafe
+  deserialization, or model output used to generate/execute code.
+- ASI06 memory/context: Shared mutable state across sessions, unsanitized
+  persistent memory, RAG poisoning.
+- ASI08 cascading failures: Is the agent run without a turn/iteration bound
+  (`Runner.run`/loop with no max_turns/max_iterations/recursion_limit →
+  unbounded_agent_loop)? Missing circuit breaker or blast-radius limit?
+- ASI09 human/agent trust: Do state-changing or destructive actions (returns,
+  refunds, writes, deletes, purchases) proceed with no human confirmation or
+  human-in-the-loop (missing_action_confirmation, no_human_in_the_loop)? Is
+  sensitive data returned in output?
+- ASI10 rogue agents: Missing behavioral guardrails, unchecked delegation to
+  sub-agents, no monitoring/kill switch.
 
 REPORTING RULES:
-- Call compute_cvss(vuln_type=<subcategory>) before EVERY report.
-- Set evidence to the EXACT code line, not a description.
-- Set evidence_file to the file path, evidence_line to the line number.
+- Call compute_cvss(vuln_type=<subcategory>) before EVERY report_finding().
+- `subcategory` MUST be one of the taxonomy keys above; `category` is its ASI
+  category key (e.g. subcategory=indirect_prompt_injection →
+  category=asi01_agent_goal_hijack).
+- Set evidence to the EXACT code (the offending line or minimal snippet), not a
+  description. Set evidence_file to the file path and evidence_line to the line.
 - Set agent_name to the agent display name from AGENT PROFILES.
-- Set confidence="high" for every direct code match.
-- Set hallucination_flag=false for every direct code match.
-- Do NOT report the same pattern twice on the same line.
-- Do NOT report patterns already found by static analysis
-  (check via get_findings() first).
-- Do NOT add findings beyond the 10 patterns above.
+- Set confidence to how strongly the code evidences the issue: "high" when the
+  code plainly shows it, "medium"/"low" when it depends on runtime context or
+  configuration you cannot fully see. Set hallucination_flag=true when you infer
+  an issue you cannot fully prove from the code in front of you.
+- Do NOT report the same issue twice, and do NOT re-report a finding already
+  surfaced by static analysis (you checked via get_findings()).
+- Report every distinct, evidenced issue — do not stop at one per category, and
+  do not withhold a real finding because it is behavioral rather than syntactic.
 
 EXAMPLE:
-  Code at line 33 of agent.py: API_KEY = "**********************"
-  Step 1: compute_cvss(vuln_type="hardcoded_credentials")
+  agent.py line 180: `result = await Runner.run(agent, req.input)` — the FastAPI
+  request body `req.input` is passed straight to the agent with no validation or
+  turn bound.
+  Step 1: compute_cvss(vuln_type="direct_prompt_injection", exposed_over_network=true)
   Step 2: report_finding(
-    category="asi03_identity_privilege_abuse",
-    subcategory="hardcoded_credentials",
-    title="Hardcoded API Key",
-    description="API key hardcoded at line 33.",
-    impact="Credential exposed to anyone with repo access.",
-    remediation="Use os.environ.get().",
+    category="asi01_agent_goal_hijack",
+    subcategory="direct_prompt_injection",
+    title="Untrusted request body passed directly to the agent",
+    description="The /run endpoint feeds req.input into Runner.run(agent, ...) "
+                "with no sanitization, so an attacker controls the agent's input.",
+    impact="An attacker can hijack the agent's goal or exfiltrate data via the "
+           "HTTP endpoint.",
+    remediation="Validate and constrain user input; apply input guardrails "
+                "before invoking the agent.",
     affected_component="agent.py",
-    evidence='API_KEY = "**********************"',
+    evidence="result = await Runner.run(agent, req.input)",
     confidence="high", hallucination_flag=false,
-    evidence_file="agent.py", evidence_line=33,
-    agent_name="research_agent")
+    evidence_file="agent.py", evidence_line=180,
+    agent_name="bookstore_agent")
 
 LIMITS: {MAX_ITERATIONS} rounds, {MAX_FILES_FETCHED} files, {MAX_FETCH_TOKENS} tokens.
 """
@@ -262,8 +262,9 @@ def _build_initial_context(
     parts.append("Use read_source(resource_type='list') to see all fetched files.")
     parts.append("Use read_source(resource_type='file', path=...) to read any file.")
     parts.append(
-        "\n\nBegin STEP 0 of the SOP now. Fetch the full source code for each "
-        "agent file listed above, then proceed through STEPS 1-12 in order."
+        "\n\nBegin the PROCEDURE now: fetch the full source code for each agent "
+        "file listed above, review the existing static findings, then investigate "
+        "against the taxonomy and report every issue you can evidence."
     )
     return "\n".join(parts)
 
@@ -509,6 +510,13 @@ def run_agentic_reasoning(
     # pool down without waiting so we don't block on the stuck worker thread.
     exit_reason = "completed"
     final_text = ""
+    # Classified where the exception still exists, then carried out in the trace
+    # (`error_domain`, and `error_reason` — "auth"/"model" — for the specific
+    # customer-actionable config failures). The exception itself is discarded here
+    # for telemetry safety, so the caller cannot re-classify it — see
+    # `_agent_scan_summary`.
+    error_domain: FailureDomain | None = None
+    error_reason: str | None = None
 
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
     try:
@@ -527,6 +535,11 @@ def run_agentic_reasoning(
         logger.error("ADK execution failed (%s): %s", err_type, first_line)
         logger.debug("ADK execution failed (full):\n%s", safe_msg, exc_info=True)
         exit_reason = "error"
+        error_domain = classify_exception(e)
+        if is_auth_error(e):
+            error_reason = "auth"
+        elif is_model_error(e):
+            error_reason = "model"
     finally:
         pool.shutdown(wait=False)
 
@@ -557,6 +570,14 @@ def run_agentic_reasoning(
             "tokens_consumed": dispatcher.tokens_consumed,
         }
     )
+    if error_domain is not None:
+        # Bounded enum value, safe to carry out (unlike str(exc)); the stage
+        # summary reads it back to attribute the failure.
+        trace_meta["error_domain"] = error_domain.value
+    if error_reason is not None:
+        # "auth"/"model" — lets the caller surface a precise "API key invalid" /
+        # "model invalid" line to the customer. Bounded, like error_domain.
+        trace_meta["error_reason"] = error_reason
 
     logger.info(
         "ADK scan complete — findings: %d | exit: %s | session: %s",

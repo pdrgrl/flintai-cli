@@ -290,6 +290,7 @@ class TestCreateInnerModelADK(unittest.TestCase):
             app_name="my-app",
             host="http://adk-host:9000",
             immediate_result=True,
+            connector_factory=None,
         )
 
     @patch(
@@ -305,6 +306,7 @@ class TestCreateInnerModelADK(unittest.TestCase):
             app_name="my-app",
             host="http://localhost:8000",
             immediate_result=False,
+            connector_factory=None,
         )
 
 
@@ -323,6 +325,7 @@ class TestCreateInnerModelOpenAIAgent(unittest.TestCase):
         MockModel.assert_called_once_with(
             host="http://agent-host:5000",
             endpoint="/chat",
+            connector_factory=None,
         )
 
     @patch(
@@ -337,6 +340,7 @@ class TestCreateInnerModelOpenAIAgent(unittest.TestCase):
         MockModel.assert_called_once_with(
             host="http://localhost:8000",
             endpoint="/run",
+            connector_factory=None,
         )
 
 
@@ -355,6 +359,7 @@ class TestCreateInnerModelAnthropicAgent(unittest.TestCase):
         MockModel.assert_called_once_with(
             host="http://agent-host:5000",
             endpoint="/invoke",
+            connector_factory=None,
         )
 
     @patch(
@@ -369,6 +374,7 @@ class TestCreateInnerModelAnthropicAgent(unittest.TestCase):
         MockModel.assert_called_once_with(
             host="http://localhost:8000",
             endpoint="/run",
+            connector_factory=None,
         )
 
 
@@ -432,6 +438,7 @@ class TestCreateInnerModelGenericHTTP(unittest.TestCase):
             headers={"Authorization": "Bearer xyz"},
             input_path="request.text",
             output_path="response.text",
+            connector_factory=None,
         )
 
     @patch(
@@ -448,6 +455,7 @@ class TestCreateInnerModelGenericHTTP(unittest.TestCase):
             headers=None,
             input_path="input",
             output_path="output",
+            connector_factory=None,
         )
 
     @patch(
@@ -466,6 +474,7 @@ class TestCreateInnerModelGenericHTTP(unittest.TestCase):
             headers=None,
             input_path="input",
             output_path="output",
+            connector_factory=None,
         )
 
 
@@ -486,6 +495,7 @@ class TestCreateInnerModelLangServe(unittest.TestCase):
             base_url="http://langserve:8000",
             chain_path="/my-chain",
             headers={"X-Token": "abc"},
+            connector_factory=None,
         )
 
     @patch(
@@ -501,6 +511,7 @@ class TestCreateInnerModelLangServe(unittest.TestCase):
             base_url="http://localhost:8000",
             chain_path="",
             headers=None,
+            connector_factory=None,
         )
 
 
@@ -585,6 +596,7 @@ class TestEnvVarResolution(unittest.TestCase):
             },
             input_path="input",
             output_path="output",
+            connector_factory=None,
         )
 
     @patch.dict("os.environ", {}, clear=True)

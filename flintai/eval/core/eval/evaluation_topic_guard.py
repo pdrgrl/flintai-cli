@@ -20,10 +20,14 @@ from flintai.eval.core.eval.evaluation_adversarial import (
     _BLOCKED_STATUSES,
     _TARGET_BROKEN_SCORE_THRESHOLD,
     AdversarialEvaluation,
+    AttackerReply,
     _generate_starting_prompts,
     _parse_attacker_response,
 )
 from flintai.eval.core.eval.evaluation_single import SingleEvaluation
+from flintai.eval.core.models.generator_model import (
+    get_generator_model,
+)
 from flintai.eval.core.models.model import (
     Model,
     ModelResponse,
@@ -193,6 +197,7 @@ class TopicGuardTurnEvaluation(SingleEvaluation):
             ]
             attacker_response = await self._attacker_model.generate(
                 attacker_msgs,
+                output_schema=AttackerReply,
             )
 
             if attacker_response.message is None:
@@ -253,10 +258,6 @@ class TopicGuardEvaluation(AdversarialEvaluation):
             agent_instructions,
         )
         if detector is None:
-            from flintai.eval.core.models.generator_model import (
-                get_generator_model,
-            )
-
             detector = TopicGuardDetector(
                 model=get_generator_model(),
                 agent_objective=agent_objective,

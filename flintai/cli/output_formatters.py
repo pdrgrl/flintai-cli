@@ -418,7 +418,9 @@ def _strip_result(result: dict) -> dict:
 
 
 def prepare_eval_output(runs: list, config_path: str) -> dict:
-    from flintai.cli.runner import _aggregate_summary
+    # Deliberately lazy: runner imports get_eval_output_formatter from this
+    # module at import time, so hoisting this would close the cycle.
+    from flintai.cli.runner import _aggregate_summary  # noqa: PLC0415
 
     overall = _aggregate_summary(runs)
     raw: dict[str, Any] = {

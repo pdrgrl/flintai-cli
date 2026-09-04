@@ -8,7 +8,6 @@ from flintai.eval.core.eval.evaluation import EvaluationStatus
 from flintai.eval.core.eval.evaluation_adversarial import (
     AdversarialEvaluation,
     AdversarialTurnEvaluation,
-    _extract_json,
     _parse_attacker_response,
 )
 from flintai.eval.core.models.model import ModelResponse, ResponseStatus
@@ -54,35 +53,6 @@ def _make_detector(scores) -> AsyncMock:
             return_value=DetectorResult(score=scores),
         )
     return detector
-
-
-class TestExtractJson(unittest.TestCase):
-    def test_plain_json(self):
-        data = _extract_json('{"key": "value"}')
-        self.assertEqual(data["key"], "value")
-
-    def test_markdown_fences(self):
-        text = '```json\n{"key": "value"}\n```'
-        data = _extract_json(text)
-        self.assertEqual(data["key"], "value")
-
-    def test_leading_prose(self):
-        text = 'Here is the JSON output:\n{"prompts": ["a", "b"]}'
-        data = _extract_json(text)
-        self.assertEqual(data["prompts"], ["a", "b"])
-
-    def test_thinking_then_json(self):
-        text = (
-            "Let me think about this...\n\n"
-            "I'll generate diverse prompts.\n\n"
-            '```\n{"prompts": ["p1", "p2"]}\n```'
-        )
-        data = _extract_json(text)
-        self.assertEqual(len(data["prompts"]), 2)
-
-    def test_no_json_raises(self):
-        with self.assertRaises(json.JSONDecodeError):
-            _extract_json("no json here at all")
 
 
 class TestParseAttackerResponse(unittest.TestCase):

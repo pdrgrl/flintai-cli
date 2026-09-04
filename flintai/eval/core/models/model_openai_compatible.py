@@ -8,10 +8,12 @@ implements the ``/v1/chat/completions`` API.
 from typing import Any
 
 from openai import AsyncOpenAI
+from pydantic import BaseModel
 
 from flintai.eval.common import converter_openai
 from flintai.eval.common.schema import Message
 from flintai.eval.core.models.model import Model, ModelResponse
+from flintai.eval.core.models.response_schema import to_openai_response_format
 
 
 class OpenAICompatibleModel(Model):
@@ -38,9 +40,13 @@ class OpenAICompatibleModel(Model):
     async def _generate(
         self,
         messages: list[Message],
+        *,
+        output_schema: type[BaseModel] | None = None,
         **kwargs: Any,
     ) -> ModelResponse:
         openai_messages = [converter_openai.from_message(m) for m in messages]
+        if output_schema is not None and "response_format" not in kwargs:
+            kwargs["response_format"] = to_openai_response_format(output_schema)
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=openai_messages,

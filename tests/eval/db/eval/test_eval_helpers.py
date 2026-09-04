@@ -543,11 +543,15 @@ class TestCreateEvaluation(unittest.TestCase):
         "flintai.eval.core.models.generator_model.get_generator_model",
     )
     @unittest.mock.patch(
+        "flintai.eval.core.eval.evaluation_topic_guard.get_generator_model",
+    )
+    @unittest.mock.patch(
         "flintai.eval.db.base.eval.eval_helpers.get_generator_model",
     )
     def test_topic_guard_creates_evaluation(
         self,
         mock_get_model_helpers,
+        mock_get_model_topic_guard,
         mock_get_model,
     ):
         from flintai.eval.core.eval.evaluation_topic_guard import (
@@ -557,6 +561,7 @@ class TestCreateEvaluation(unittest.TestCase):
         mock_model = MagicMock()
         mock_get_model.return_value = mock_model
         mock_get_model_helpers.return_value = mock_model
+        mock_get_model_topic_guard.return_value = mock_model
         db_eval = DbEvaluation(
             type=EvaluationType.TOPIC_GUARD,
             name="tg-eval",

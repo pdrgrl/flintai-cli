@@ -156,7 +156,9 @@ def _dispatch_scan(args: argparse.Namespace) -> str | None:
 
 def _dispatch_eval(args: argparse.Namespace) -> str | None:
     """Run the requested command. Returns output file path if any."""
-    from flintai.eval.db.json.repository_json import JsonRepository
+    from flintai.eval.db.json.repository_json import (  # noqa: PLC0415 - deferred import cost
+        JsonRepository,
+    )
 
     if args.command != "eval":
         console.print(f"[red]Unknown command: {args.command}[/red]")
@@ -281,7 +283,7 @@ def main(argv: list[str] | None = None) -> None:
     # the heavy imports below (telemetry SDK, eval framework logging).
     args = parser.parse_args(argv)
 
-    from flintai.cli.telemetry import (
+    from flintai.cli.telemetry import (  # noqa: PLC0415 - deferred import cost
         command_span,
         emit_event,
         init_telemetry,

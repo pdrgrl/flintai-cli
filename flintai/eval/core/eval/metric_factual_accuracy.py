@@ -17,6 +17,9 @@ from flintai.eval.core.eval.evaluation_multi import MultiEvaluation
 from flintai.eval.core.eval.evaluation_single_prompt import (
     SinglePromptEvaluation,
 )
+from flintai.eval.core.models.generator_model import (
+    get_generator_model,
+)
 from flintai.eval.core.models.model import Model
 
 # (question, ground_truth_answer)
@@ -270,9 +273,7 @@ scope-bounded agent correctly refusing an off-topic \
 question is the RIGHT behavior, not a failure.
 
 The correct answer is:
-{answer}
-
-Output ONLY the numeric score, nothing else."""
+{answer}"""
 
 
 @dataclass_json
@@ -285,10 +286,6 @@ class FactualAccuracyMetricEvaluation(MultiEvaluation):
     def __init__(self, judge_model: Model | None = None):
         super().__init__()
         if judge_model is None:
-            from flintai.eval.core.models.generator_model import (
-                get_generator_model,
-            )
-
             judge_model = get_generator_model()
         self._judge_model = judge_model
 

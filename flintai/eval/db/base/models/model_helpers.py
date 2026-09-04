@@ -1,3 +1,7 @@
+from collections.abc import Callable
+
+import aiohttp
+
 from flintai.eval.common.utils import resolve_env, resolve_env_dict
 from flintai.eval.core.models.model import Model
 from flintai.eval.core.models.model_retry import RetryModel
@@ -8,11 +12,20 @@ def create_model(
     db_model: DbModel,
     max_retries: int = 5,
     resolve_env_vars: bool = True,
+    connector_factory: Callable[[], aiohttp.BaseConnector] | None = None,
 ) -> Model:
     """Create a Model instance from a DbModel,
-    wrapped in a RetryModel for transient error handling."""
+    wrapped in a RetryModel for transient error handling.
+
+    connector_factory, when set, is passed to the HTTP-based models so their
+    aiohttp sessions enforce the eval worker's request-time SSRF guard
+    (platform/ssrf.py). None keeps the default connector for CLI/local use."""
     return RetryModel(
-        _create_inner_model(db_model, resolve_env_vars=resolve_env_vars),
+        _create_inner_model(
+            db_model,
+            resolve_env_vars=resolve_env_vars,
+            connector_factory=connector_factory,
+        ),
         max_retries=max_retries,
     )
 
@@ -20,6 +33,7 @@ def create_model(
 def _create_inner_model(
     db_model: DbModel,
     resolve_env_vars: bool = True,
+    connector_factory: Callable[[], aiohttp.BaseConnector] | None = None,
 ) -> Model:
     temp = db_model.temperature
     if resolve_env_vars:
@@ -30,9 +44,13 @@ def _create_inner_model(
         headers = dict(db_model.headers)
 
     if db_model.type == ModelType.ANTHROPIC:
-        from anthropic import AsyncAnthropic
+        from anthropic import (  # noqa: PLC0415 - patched at source in tests
+            AsyncAnthropic,
+        )
 
-        from flintai.eval.core.models.model_anthropic import AnthropicModel
+        from flintai.eval.core.models.model_anthropic import (  # noqa: PLC0415 - patched at source in tests
+            AnthropicModel,
+        )
 
         client_kwargs = {}
         if key:
@@ -45,9 +63,11 @@ def _create_inner_model(
         )
 
     elif db_model.type == ModelType.OPENAI:
-        from openai import AsyncOpenAI
+        from openai import AsyncOpenAI  # noqa: PLC0415 - patched at source in tests
 
-        from flintai.eval.core.models.model_openai import OpenAIModel
+        from flintai.eval.core.models.model_openai import (  # noqa: PLC0415 - patched at source in tests
+            OpenAIModel,
+        )
 
         client_kwargs = {}
         if key:
@@ -60,9 +80,11 @@ def _create_inner_model(
         )
 
     elif db_model.type == ModelType.GEMINI:
-        from google.genai import Client
+        from google.genai import Client  # noqa: PLC0415 - patched at source in tests
 
-        from flintai.eval.core.models.model_gemini import GeminiModel
+        from flintai.eval.core.models.model_gemini import (  # noqa: PLC0415 - patched at source in tests
+            GeminiModel,
+        )
 
         client_kwargs = {}
         if key:
@@ -75,7 +97,9 @@ def _create_inner_model(
         )
 
     elif db_model.type == ModelType.LITELLM:
-        from flintai.eval.core.models.model_litellm import LiteLLMModel
+        from flintai.eval.core.models.model_litellm import (  # noqa: PLC0415 - patched at source in tests
+            LiteLLMModel,
+        )
 
         return LiteLLMModel(
             db_model.model_name,
@@ -83,7 +107,9 @@ def _create_inner_model(
         )
 
     elif db_model.type == ModelType.HUGGINGFACE:
-        from flintai.eval.core.models.model_huggingface import HuggingFaceModel
+        from flintai.eval.core.models.model_huggingface import (  # noqa: PLC0415 - patched at source in tests
+            HuggingFaceModel,
+        )
 
         return HuggingFaceModel(
             db_model.model_name,
@@ -92,7 +118,9 @@ def _create_inner_model(
         )
 
     elif db_model.type == ModelType.OLLAMA:
-        from flintai.eval.core.models.model_ollama import OllamaModel
+        from flintai.eval.core.models.model_ollama import (  # noqa: PLC0415 - patched at source in tests
+            OllamaModel,
+        )
 
         return OllamaModel(
             db_model.model_name,
@@ -101,34 +129,41 @@ def _create_inner_model(
         )
 
     elif db_model.type == ModelType.ADK:
-        from flintai.eval.core.models.model_adk import ADKModel
+        from flintai.eval.core.models.model_adk import (  # noqa: PLC0415 - patched at source in tests
+            ADKModel,
+        )
 
         return ADKModel(
             app_name=db_model.model_name,
             host=db_model.host or "http://localhost:8000",
             immediate_result=db_model.immediate_result,
+            connector_factory=connector_factory,
         )
 
     elif db_model.type == ModelType.OPENAI_AGENT:
-        from flintai.eval.core.models.model_openai_agent import OpenAIAgentModel
+        from flintai.eval.core.models.model_openai_agent import (  # noqa: PLC0415 - patched at source in tests
+            OpenAIAgentModel,
+        )
 
         return OpenAIAgentModel(
             host=db_model.host or "http://localhost:8000",
             endpoint=db_model.endpoint or "/run",
+            connector_factory=connector_factory,
         )
 
     elif db_model.type == ModelType.ANTHROPIC_AGENT:
-        from flintai.eval.core.models.model_anthropic_agent import (
+        from flintai.eval.core.models.model_anthropic_agent import (  # noqa: PLC0415 - patched at source in tests
             AnthropicAgentModel,
         )
 
         return AnthropicAgentModel(
             host=db_model.host or "http://localhost:8000",
             endpoint=db_model.endpoint or "/run",
+            connector_factory=connector_factory,
         )
 
     elif db_model.type == ModelType.OPENAI_COMPATIBLE:
-        from flintai.eval.core.models.model_openai_compatible import (
+        from flintai.eval.core.models.model_openai_compatible import (  # noqa: PLC0415 - patched at source in tests
             OpenAICompatibleModel,
         )
 
@@ -141,7 +176,9 @@ def _create_inner_model(
         )
 
     elif db_model.type == ModelType.GENERIC_HTTP:
-        from flintai.eval.core.models.model_generic_http import GenericHttpModel
+        from flintai.eval.core.models.model_generic_http import (  # noqa: PLC0415 - patched at source in tests
+            GenericHttpModel,
+        )
 
         url = db_model.host or "http://localhost:8000"
         if db_model.endpoint:
@@ -152,15 +189,19 @@ def _create_inner_model(
             headers=headers or None,
             input_path=db_model.input_path or "input",
             output_path=db_model.output_path or "output",
+            connector_factory=connector_factory,
         )
 
     elif db_model.type == ModelType.LANGSERVE:
-        from flintai.eval.core.models.model_langserve import LangServeModel
+        from flintai.eval.core.models.model_langserve import (  # noqa: PLC0415 - patched at source in tests
+            LangServeModel,
+        )
 
         return LangServeModel(
             base_url=db_model.host or "http://localhost:8000",
             chain_path=db_model.endpoint or "",
             headers=headers or None,
+            connector_factory=connector_factory,
         )
 
     else:

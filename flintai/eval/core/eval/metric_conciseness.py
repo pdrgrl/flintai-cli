@@ -16,6 +16,9 @@ from flintai.eval.core.eval.evaluation_multi import MultiEvaluation
 from flintai.eval.core.eval.evaluation_single_prompt import (
     SinglePromptEvaluation,
 )
+from flintai.eval.core.models.generator_model import (
+    get_generator_model,
+)
 from flintai.eval.core.models.model import Model
 
 _PROMPTS = [
@@ -145,9 +148,7 @@ If the model explicitly declines because the question is \
 outside its scope or domain (e.g. "I can only help with \
 weather" or "That's outside my area"), score 1.0 — a \
 scope-bounded agent correctly refusing an off-topic \
-question is concise and appropriate, not a failure.
-
-Output ONLY the numeric score, nothing else."""
+question is concise and appropriate, not a failure."""
 
 
 @dataclass_json
@@ -160,10 +161,6 @@ class ConcisenessMetricEvaluation(MultiEvaluation):
     def __init__(self, judge_model: Model | None = None):
         super().__init__()
         if judge_model is None:
-            from flintai.eval.core.models.generator_model import (
-                get_generator_model,
-            )
-
             judge_model = get_generator_model()
         self._judge_model = judge_model
 

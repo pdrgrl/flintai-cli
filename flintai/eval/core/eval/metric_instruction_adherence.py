@@ -17,6 +17,9 @@ from flintai.eval.core.eval.evaluation_multi import MultiEvaluation
 from flintai.eval.core.eval.evaluation_single_prompt import (
     SinglePromptEvaluation,
 )
+from flintai.eval.core.models.generator_model import (
+    get_generator_model,
+)
 from flintai.eval.core.models.model import Model
 
 _PROMPTS = [
@@ -143,9 +146,7 @@ wrong content, or does not attempt to follow any directive.
 Focus on ADHERENCE to the explicit instructions, not on \
 the factual accuracy of the content. A wrong answer that \
 follows formatting instructions exactly should score \
-higher than a correct answer that ignores them.
-
-Output ONLY the numeric score, nothing else."""
+higher than a correct answer that ignores them."""
 
 
 @dataclass_json
@@ -158,10 +159,6 @@ class InstructionAdherenceMetricEvaluation(MultiEvaluation):
     def __init__(self, judge_model: Model | None = None):
         super().__init__()
         if judge_model is None:
-            from flintai.eval.core.models.generator_model import (
-                get_generator_model,
-            )
-
             judge_model = get_generator_model()
         self._judge_model = judge_model
 

@@ -84,7 +84,9 @@ class ModelRepository(ABC):
 
         Raises KeyError if the model does not exist.
         """
-        from flintai.eval.db.base.models.model_helpers import create_model
+        from flintai.eval.db.base.models.model_helpers import (  # noqa: PLC0415 - deferred import cost
+            create_model,
+        )
 
         return create_model(self.get(id))
 

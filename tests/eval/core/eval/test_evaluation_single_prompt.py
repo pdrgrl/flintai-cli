@@ -119,6 +119,25 @@ class TestSinglePromptEvaluation(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(summary.achieved_score, 0.6)
         self.assertAlmostEqual(summary.max_score, 1.0)
 
+    async def test_errored_summary_excluded_from_score(self):
+        model = AsyncMock()
+        model.generate = AsyncMock(side_effect=RuntimeError("model down"))
+        detector = AsyncMock()
+
+        e = SinglePromptEvaluation(
+            prompt=_make_prompt(),
+            detector=detector,
+        )
+        await e.init()
+        await e.run(model, concurrency=1)
+
+        summary = e.get_summary()
+        self.assertEqual(summary.status, EvaluationStatus.ERROR)
+        self.assertEqual(summary.error_evaluations, 1)
+        # Errored prompt contributes to neither side of the mean.
+        self.assertAlmostEqual(summary.max_score, 0.0)
+        self.assertAlmostEqual(summary.achieved_score, 0.0)
+
     def test_init_validates_fields(self):
         with self.assertRaises(TypeError):
             SinglePromptEvaluation()

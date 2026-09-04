@@ -9,7 +9,7 @@ from flintai.eval.db.base.message.message_collection_types import (
 def create_message_collection(db_collection: DbMessageCollection) -> MessageCollection:
     """Create a MessageCollection instance from a DbMessageCollection."""
     if db_collection.type == MessageCollectionType.IN_MEMORY:
-        from flintai.eval.core.message.message_collection_memory import (
+        from flintai.eval.core.message.message_collection_memory import (  # noqa: PLC0415 - mirrors the eval/db original
             InMemoryMessageCollection,
         )
 
@@ -24,7 +24,7 @@ def create_message_collection(db_collection: DbMessageCollection) -> MessageColl
         return InMemoryMessageCollection(messages=messages)
 
     elif db_collection.type == MessageCollectionType.CSV:
-        from flintai.eval.core.message.message_collection_csv import (
+        from flintai.eval.core.message.message_collection_csv import (  # noqa: PLC0415 - mirrors the eval/db original
             CsvMessageCollection,
         )
 
@@ -36,7 +36,7 @@ def create_message_collection(db_collection: DbMessageCollection) -> MessageColl
         )
 
     elif db_collection.type == MessageCollectionType.GARAK:
-        from flintai.eval.core.message.message_collection_garak import (
+        from flintai.eval.core.message.message_collection_garak import (  # noqa: PLC0415 - mirrors the eval/db original
             GarakMessageCollection,
         )
 

@@ -102,13 +102,17 @@ class TestBuildUserMessage(unittest.TestCase):
         self.assertIn("Handles PII", msg)
 
 
+def _response(text: str) -> ModelResponse:
+    return ModelResponse(message=Message(content=Content.text(Role.ASSISTANT, text)))
+
+
 class TestParseResponse(unittest.TestCase):
     def test_valid_json(self):
         data = {
             "prompts": ["p1", "p2", "p3"],
             "detector_prompt": "Check safety",
         }
-        result = _parse_response(json.dumps(data))
+        result = _parse_response(_response(json.dumps(data)))
         self.assertIsInstance(result, EvaluationPlan)
         self.assertIsInstance(
             result.prompts,
@@ -122,33 +126,37 @@ class TestParseResponse(unittest.TestCase):
 
     def test_json_with_markdown_fences(self):
         raw = '```json\n{"prompts": ["a"], "detector_prompt": "b"}\n```'
-        result = _parse_response(raw)
+        result = _parse_response(_response(raw))
         self.assertEqual(result.prompts.size(), 1)
         self.assertEqual(result.detector_prompt, "b")
 
-    def test_missing_prompts_defaults_to_empty(self):
-        result = _parse_response('{"detector_prompt": "x"}')
-        self.assertEqual(result.prompts.size(), 0)
+    def test_missing_prompts_raises(self):
+        # The schema requires both fields, so a missing one is a hard error
+        # rather than a silent default.
+        with self.assertRaises(ValueError):
+            _parse_response(_response('{"detector_prompt": "x"}'))
 
-    def test_missing_detector_prompt_defaults_to_empty(self):
-        result = _parse_response('{"prompts": ["a"]}')
-        self.assertEqual(result.detector_prompt, "")
+    def test_missing_detector_prompt_raises(self):
+        with self.assertRaises(ValueError):
+            _parse_response(_response('{"prompts": ["a"]}'))
 
     def test_invalid_json_raises(self):
         with self.assertRaises(ValueError) as ctx:
-            _parse_response("not json at all")
-        self.assertIn("invalid JSON", str(ctx.exception))
+            _parse_response(_response("not json at all"))
+        self.assertIn("did not match schema", str(ctx.exception))
 
     def test_prompts_not_list_raises(self):
         with self.assertRaises(ValueError):
-            _parse_response('{"prompts": "not a list", "detector_prompt": "x"}')
+            _parse_response(
+                _response('{"prompts": "not a list", "detector_prompt": "x"}')
+            )
 
     def test_prompt_messages_are_user_role(self):
         data = {
             "prompts": ["hello", "world"],
             "detector_prompt": "check",
         }
-        result = _parse_response(json.dumps(data))
+        result = _parse_response(_response(json.dumps(data)))
         messages = result.prompts.load()
         for msg in messages:
             self.assertEqual(msg.content.role, Role.USER)

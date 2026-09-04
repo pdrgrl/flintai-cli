@@ -215,6 +215,40 @@ class TestMultiEvaluation(unittest.TestCase):
         self.assertEqual(multi.status, EvaluationStatus.INITIALIZED)
         self.assertEqual(len(multi.children), 1)
 
+    def test_partial_failure_still_finishes(self):
+        children = [GracefulChild(should_fail=True), GracefulChild(should_fail=False)]
+        multi = StubMultiEvaluation(children=children)
+        asyncio.run(multi.init())
+        model = MagicMock(spec=Model)
+
+        asyncio.run(multi.run(model, concurrency=1))
+
+        # At least one prompt succeeded, so the run finishes despite the error.
+        self.assertEqual(multi.status, EvaluationStatus.FINISHED)
+
+    def test_all_errored_is_error(self):
+        children = [GracefulChild(should_fail=True), GracefulChild(should_fail=True)]
+        multi = StubMultiEvaluation(children=children)
+        asyncio.run(multi.init())
+        model = MagicMock(spec=Model)
+
+        asyncio.run(multi.run(model, concurrency=1))
+
+        self.assertEqual(multi.status, EvaluationStatus.ERROR)
+
+    def test_warns_on_errored_prompts_with_rate(self):
+        children = [GracefulChild(should_fail=True), GracefulChild(should_fail=False)]
+        multi = StubMultiEvaluation(children=children)
+        asyncio.run(multi.init())
+        model = MagicMock(spec=Model)
+
+        with self.assertLogs(
+            "flintai.eval.core.eval.evaluation_multi", level="WARNING"
+        ) as logs:
+            asyncio.run(multi.run(model, concurrency=1))
+
+        self.assertTrue(any("1 of 2 prompts errored" in m for m in logs.output))
+
     def test_run_with_errored_child_status(self):
         child = FakeChild(
             summary=EvaluationSummary(
